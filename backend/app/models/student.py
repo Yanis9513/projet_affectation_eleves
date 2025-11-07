@@ -1,26 +1,42 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, Enum, DateTime
 from sqlalchemy.orm import relationship
 from app.database import Base
+from datetime import datetime
+import enum
 
-# Association table for student preferences (many-to-many)
-student_preferences = Table(
-    'student_preferences',
-    Base.metadata,
-    Column('student_id', Integer, ForeignKey('students.id')),
-    Column('project_id', Integer, ForeignKey('projects.id')),
-    Column('preference_order', Integer)  # 1 = first choice, 2 = second choice, etc.
-)
+class EnglishLevel(str, enum.Enum):
+    A1 = "A1"
+    A2 = "A2"
+    B1 = "B1"
+    B2 = "B2"
+    C1 = "C1"
+    C2 = "C2"
+
+class Filiere(str, enum.Enum):
+    INFORMATIQUE = "Informatique"
+    ELECTRONIQUE = "Électronique"
+    ENERGIE = "Énergie"
+    BIOTECHNOLOGIE = "Biotechnologie"
+    SYSTEMES_EMBARQUES = "Systèmes Embarqués"
+    RESEAUX = "Réseaux et Télécommunications"
+    AUTRE = "Autre"
 
 class Student(Base):
     __tablename__ = "students"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    student_number = Column(String, unique=True, nullable=False)
-    ranking = Column(Integer)  # Academic ranking
-    language_level = Column(String)  # e.g., "B1", "B2", "C1"
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    student_number = Column(String, unique=True, index=True, nullable=False)
+    filiere = Column(Enum(Filiere), nullable=False)
+    english_level = Column(Enum(EnglishLevel), nullable=False, default=EnglishLevel.B1)
+    general_rank = Column(Integer, nullable=True)  # Rang général dans la filière
+    gpa = Column(Float, nullable=True)  # Note moyenne générale
+    promotion = Column(String, nullable=True)  # Ex: "2025", "2026"
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="student_profile")
-    project_preferences = relationship("Project", secondary=student_preferences, back_populates="interested_students")
-    assigned_project = relationship("Assignment", back_populates="student", uselist=False)
+    preferences = relationship("StudentPreference", back_populates="student", cascade="all, delete-orphan")
+    assignments = relationship("Assignment", back_populates="student", cascade="all, delete-orphan")
+    form_responses = relationship("StudentResponse", back_populates="student", cascade="all, delete-orphan")

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import auth, students, projects, assignments
+from app.api.routes import auth, students, projects, assignments, teachers, forms, preferences
 from app.database import engine, Base
 
 # Create database tables
@@ -24,7 +24,10 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(students.router, prefix="/api/students", tags=["Students"])
+app.include_router(teachers.router, prefix="/api/teachers", tags=["Teachers"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
+app.include_router(forms.router, prefix="/api/forms", tags=["Forms"])
+app.include_router(preferences.router, prefix="/api/preferences", tags=["Preferences"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 
 @app.get("/")
