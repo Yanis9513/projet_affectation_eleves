@@ -8,23 +8,29 @@ from app.models import (
     EnglishLevel, Filiere, FormQuestion, QuestionType,
     StudentPreference
 )
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timedelta
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash password using bcrypt directly"""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def seed_database():
     """Peupler la base de données avec des données de test"""
     db = SessionLocal()
     
     try:
-        print("🌱 Peuplement de la base de données...")
+        print("Peuplement de la base de donnees...")
+        
+        # Check if database already has data
+        existing_admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
+        if existing_admin:
+            print("\nLa base de donnees contient deja des donnees. Arret du peuplement.")
+            print("   Pour reinitialiser, arretez le serveur backend et supprimez student_assignment.db")
+            return
         
         # 1. Créer un Admin
-        print("\n📝 Création de l'administrateur...")
+        print("\nCreation de l'administrateur...")
         admin_user = User(
             email="admin@esiee.fr",
             username="admin",
@@ -35,10 +41,10 @@ def seed_database():
         )
         db.add(admin_user)
         db.commit()
-        print("   ✓ Admin créé: admin@esiee.fr / admin123")
+        print("   Admin cree: admin@esiee.fr / admin123")
         
         # 2. Créer des Professeurs
-        print("\n👨‍🏫 Création des professeurs...")
+        print("\nCreation des professeurs...")
         teachers_data = [
             {
                 "email": "prof.dupont@esiee.fr",
@@ -86,12 +92,12 @@ def seed_database():
             )
             db.add(teacher)
             teachers.append(teacher)
-            print(f"   ✓ Professeur créé: {t_data['email']} / prof123")
+            print(f"   Professeur cree: {t_data['email']} / prof123")
         
         db.commit()
         
         # 3. Créer des Élèves
-        print("\n👨‍🎓 Création des élèves...")
+        print("\nCreation des eleves...")
         students_data = [
             {"num": "E2025001", "fname": "Alice", "lname": "Dubois", "filiere": Filiere.INFORMATIQUE, "eng": EnglishLevel.B2, "rank": 1, "gpa": 16.5},
             {"num": "E2025002", "fname": "Bob", "lname": "Leroy", "filiere": Filiere.INFORMATIQUE, "eng": EnglishLevel.B1, "rank": 5, "gpa": 14.8},
@@ -129,12 +135,12 @@ def seed_database():
             )
             db.add(student)
             students.append(student)
-            print(f"   ✓ Élève créé: {user.email} / student123")
+            print(f"   Eleve cree: {user.email} / student123")
         
         db.commit()
         
         # 4. Créer des Projets
-        print("\n📊 Création des projets...")
+        print("\nCreation des projets...")
         projects_data = [
             {
                 "title": "Application Mobile IA",
@@ -203,12 +209,12 @@ def seed_database():
             )
             db.add(project)
             projects.append(project)
-            print(f"   ✓ Projet créé: {p_data['title']}")
+            print(f"   Projet cree: {p_data['title']}")
         
         db.commit()
         
         # 5. Créer des questions de formulaire pour certains projets
-        print("\n📋 Création des formulaires...")
+        print("\nCreation des formulaires...")
         
         # Formulaire pour "Application Mobile IA"
         form1_questions = [
@@ -274,11 +280,11 @@ def seed_database():
             )
             db.add(question)
         
-        print("   ✓ Formulaires créés")
+        print("   Formulaires crees")
         db.commit()
         
         # 6. Créer des préférences pour quelques élèves
-        print("\n⭐ Création des préférences des élèves...")
+        print("\nCreation des preferences des eleves...")
         
         # Alice préfère: AI Mobile > E-commerce > Blockchain
         preferences_alice = [
@@ -303,27 +309,27 @@ def seed_database():
         for pref in preferences_alice + preferences_bob + preferences_charlie:
             db.add(pref)
         
-        print("   ✓ Préférences créées")
+        print("   Preferences creees")
         db.commit()
         
         print("\n" + "="*60)
-        print("✅ Base de données peuplée avec succès!")
+        print("Base de donnees peuplee avec succes!")
         print("="*60)
-        print("\n📊 Résumé:")
+        print("\nResume:")
         print(f"   - 1 Administrateur")
         print(f"   - {len(teachers)} Professeurs")
-        print(f"   - {len(students)} Élèves")
+        print(f"   - {len(students)} Eleves")
         print(f"   - {len(projects)} Projets")
-        print(f"   - Formulaires personnalisés pour 2 projets")
-        print(f"   - Préférences pour 3 élèves")
+        print(f"   - Formulaires personnalises pour 2 projets")
+        print(f"   - Preferences pour 3 eleves")
         
-        print("\n🔑 Comptes de test:")
+        print("\nComptes de test:")
         print("   Admin: admin@esiee.fr / admin123")
         print("   Prof: prof.dupont@esiee.fr / prof123")
-        print("   Élève: alice.dubois@edu.esiee.fr / student123")
+        print("   Eleve: alice.dubois@edu.esiee.fr / student123")
         
     except Exception as e:
-        print(f"\n❌ Erreur lors du peuplement: {e}")
+        print(f"\nErreur lors du peuplement: {e}")
         db.rollback()
         raise
     finally:

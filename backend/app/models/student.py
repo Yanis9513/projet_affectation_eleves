@@ -37,6 +37,7 @@ class Student(Base):
     
     # Relationships
     user = relationship("User", back_populates="student_profile")
-    preferences = relationship("StudentPreference", back_populates="student", cascade="all, delete-orphan")
+    preferences = relationship("StudentPreference", foreign_keys="[StudentPreference.student_id]", back_populates="student", cascade="all, delete-orphan")
     assignments = relationship("Assignment", back_populates="student", cascade="all, delete-orphan")
     form_responses = relationship("StudentResponse", back_populates="student", cascade="all, delete-orphan")
+    projects = relationship("Project", secondary="project_students", back_populates="students")

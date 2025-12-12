@@ -53,15 +53,28 @@ export const studentAPI = {
 
 // Project APIs
 export const projectAPI = {
-  getAll: () => api.get('/projects/'),
+  getAll: (params) => api.get('/projects/', { params }),
   getById: (id) => api.get(`/projects/${id}`),
   create: (projectData) => api.post('/projects/', projectData),
   update: (id, projectData) => api.put(`/projects/${id}`, projectData),
   delete: (id) => api.delete(`/projects/${id}`),
+  uploadStudents: (projectId, students) => 
+    api.post(`/projects/${projectId}/upload-students`, { students }),
+  getStudents: (projectId) => api.get(`/projects/${projectId}/students`),
+  removeStudent: (projectId, studentId) => 
+    api.delete(`/projects/${projectId}/students/${studentId}`),
   addPreference: (projectId, studentId, preferenceOrder) =>
     api.post(`/projects/${projectId}/preferences/${studentId}`, {
       preference_order: preferenceOrder,
     }),
+}
+
+// Preference APIs
+export const preferenceAPI = {
+  submitPartnerPreference: (studentId, preferenceData) =>
+    api.post(`/preferences/students/${studentId}/partner-preference`, preferenceData),
+  getStudentPreferences: (studentId) =>
+    api.get(`/preferences/students/${studentId}/preferences`),
 }
 
 // Assignment APIs

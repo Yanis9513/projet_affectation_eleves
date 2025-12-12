@@ -1,100 +1,174 @@
-import { useState } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { TextInput, Select } from '../components/Input'
+import Button from '../components/Button'
+import { Alert } from '../components/Loading'
 
 function LoginPage() {
   const navigate = useNavigate()
-  const { setIsLoggedIn, setUserRole } = useOutletContext()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState('student')
+  const location = useLocation()
+  const { isLoggedIn, userRole, login } = useAuth()
+  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    role: 'student'
+  })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  // If already logged in, redirect to dashboard
+  if (isLoggedIn) {
+    return <Navigate to={`/${userRole}`} replace />
+  }
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+    setError('') // Clear error when user types
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    // TODO: Implement actual login API call
-    // For now, just simulate login
-    console.log('Login attempt:', { email, password, role })
-    
-    // Simulate successful login
-    setIsLoggedIn(true)
-    setUserRole(role)
-    navigate(`/${role}`)
+    setError('')
+    setLoading(true)
+
+    try {
+      // TODO: Replace with actual API call
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Simulate validation
+      if (!formData.email || !formData.password) {
+        throw new Error('Veuillez remplir tous les champs')
+      }
+
+      // For demo: accept any email/password
+      const userData = {
+        email: formData.email,
+        name: formData.email.split('@')[0],
+        role: formData.role
+      }
+
+      // Login with AuthContext
+      login(userData, formData.role)
+
+      // Redirect to where they were trying to go, or dashboard
+      const from = location.state?.from?.pathname || `/${formData.role}`
+      navigate(from, { replace: true })
+
+    } catch (err) {
+      setError(err.message || 'Une erreur est survenue')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="card">
-        <div className="flex justify-center mb-4">
-          <img src="/logo-esiee.svg" alt="ESIEE Paris" className="h-16" />
+    <div className="max-w-md mx-auto animate-fadeIn">
+      <div className="bg-white rounded-lg shadow-lg p-8 border-t-4 border-esiee-blue">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <img 
+            src="/logo-esiee.svg" 
+            alt="ESIEE Paris" 
+            className="h-16 transition-transform hover:scale-110 duration-300" 
+          />
         </div>
-        <h2 className="text-3xl font-bold text-center text-primary-600 mb-6">Connexion</h2>
-        
+
+        {/* Title */}
+        <h2 className="text-3xl font-bold text-center text-esiee-blue mb-2">
+          Connexion
+        </h2>
+        <p className="text-center text-gray-600 mb-6">
+          Connectez-vous pour accéder à votre espace
+        </p>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert 
+            type="error" 
+            message={error} 
+            onClose={() => setError('')}
+            className="mb-4"
+          />
+        )}
+
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
-              placeholder="vous@exemple.com"
-              required
-            />
-          </div>
+          <TextInput
+            label="Adresse Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="prenom.nom@edu.esiee.fr"
+            required
+            disabled={loading}
+          />
 
-          {/* Password */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Mot de passe
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-              placeholder="••••••••"
-              required
-            />
-          </div>
+          <TextInput
+            label="Mot de passe"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="••••••••"
+            required
+            disabled={loading}
+          />
 
-          {/* Role Selection */}
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-              Je suis
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="input-field"
-            >
-              <option value="student">Étudiant</option>
-              <option value="teacher">Enseignant/Admin</option>
-            </select>
-          </div>
+          <Select
+            label="Je suis"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            options={[
+              { value: 'student', label: '👨‍🎓 Étudiant' },
+              { value: 'teacher', label: '👨‍🏫 Enseignant / Admin' },
+            ]}
+            disabled={loading}
+          />
 
-          {/* Submit Button */}
-          <button type="submit" className="btn-primary w-full">
-            Se connecter
-          </button>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            disabled={loading}
+          >
+            {loading ? 'Connexion en cours...' : 'Se connecter'}
+          </Button>
         </form>
 
-        <div className="mt-4 text-center">
-          <a href="#" className="text-primary-600 hover:text-primary-700 text-sm">
-            Mot de passe oublié ?
-          </a>
+        {/* Additional Links */}
+        <div className="mt-6 space-y-3">
+          <div className="text-center">
+            <a 
+              href="#" 
+              className="text-esiee-blue hover:text-blue-700 text-sm transition-colors duration-200"
+            >
+              Mot de passe oublié ?
+            </a>
+          </div>
+          <div className="text-center text-sm text-gray-600">
+            Pas encore de compte ?{' '}
+            <a 
+              href="#" 
+              className="text-esiee-blue hover:text-blue-700 font-medium transition-colors duration-200"
+            >
+              S'inscrire ici
+            </a>
+          </div>
         </div>
 
-        <div className="mt-4 text-center text-sm text-gray-600">
-          Pas encore de compte ?{' '}
-          <a href="#" className="text-primary-600 hover:text-primary-700 font-medium">
-            S'inscrire ici
-          </a>
+        {/* Demo Info */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-xs text-gray-600 text-center">
+            💡 <strong>Mode Démo:</strong> Utilisez n'importe quel email/mot de passe pour vous connecter
+          </p>
         </div>
       </div>
     </div>

@@ -5,38 +5,28 @@ from app.database import get_db
 from app.models.preference import StudentPreference
 from app.models.student import Student
 from app.models.project import Project
+from app.schemas import PreferenceCreate, PreferenceResponse, MessageResponse
 from pydantic import BaseModel, validator
 from datetime import datetime
 
 router = APIRouter()
 
-# Pydantic schemas
+# Additional schemas (keeping existing ones for compatibility)
 class PreferenceBase(BaseModel):
     project_id: int
     rank: int
 
-class PreferenceCreate(PreferenceBase):
-    pass
-
 class PreferenceUpdate(BaseModel):
     rank: int
-
-class PreferenceResponse(PreferenceBase):
-    id: int
-    student_id: int
-    created_at: datetime
-    updated_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 class PreferenceWithProjectResponse(PreferenceResponse):
     project: dict
 
 class PreferencesBulkCreate(BaseModel):
-    preferences: List[PreferenceCreate]
+    preferences: List[PreferenceBase]
     
     @validator('preferences')
+    @classmethod
     def validate_preferences(cls, v):
         if not v:
             raise ValueError("La liste de préférences ne peut pas être vide")
@@ -111,6 +101,80 @@ def create_student_preferences(
         db.refresh(pref)
     
     return db_preferences
+
+# ===== NEW: PARTNER PREFERENCE ENDPOINT =====
+
+@router.post("/students/{student_id}/partner-preference", response_model=MessageResponse)
+def submit_partner_preference(
+    student_id: int,
+    preference_data: PreferenceCreate,
+    db: Session = Depends(get_db)
+):
+    """Submit partner preference for a group project"""
+    
+    # Verify student exists
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Verify project exists
+    project = db.query(Project).filter(Project.id == preference_data.project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Verify project allows partner preferences
+    if not project.partner_preference_enabled:
+        raise HTTPException(
+            status_code=400,
+            detail="This project does not allow partner preferences"
+        )
+    
+    # Check if project is still open
+    if not project.is_active or not project.is_open_for_preferences:
+        raise HTTPException(status_code=400, detail="Project is no longer accepting preferences")
+    
+    # Verify deadline
+    if project.deadline and project.deadline < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Deadline has passed")
+    
+    # Verify preferred partner exists (if provided)
+    if preference_data.preferred_partner_id:
+        partner = db.query(Student).filter(Student.id == preference_data.preferred_partner_id).first()
+        if not partner:
+            raise HTTPException(status_code=404, detail="Preferred partner not found")
+        
+        # Prevent self-selection
+        if preference_data.preferred_partner_id == student_id:
+            raise HTTPException(status_code=400, detail="Cannot select yourself as partner")
+    
+    # Check if preference already exists
+    existing_pref = db.query(StudentPreference).filter(
+        StudentPreference.student_id == student_id,
+        StudentPreference.project_id == preference_data.project_id
+    ).first()
+    
+    if existing_pref:
+        # Update existing preference
+        existing_pref.preferred_partner_id = preference_data.preferred_partner_id
+        existing_pref.rank = preference_data.rank
+        if preference_data.university_ranking:
+            existing_pref.university_ranking = preference_data.university_ranking
+        db.commit()
+        message = "Partner preference updated successfully"
+    else:
+        # Create new preference
+        new_pref = StudentPreference(
+            student_id=student_id,
+            project_id=preference_data.project_id,
+            preferred_partner_id=preference_data.preferred_partner_id,
+            rank=preference_data.rank,
+            university_ranking=preference_data.university_ranking
+        )
+        db.add(new_pref)
+        db.commit()
+        message = "Partner preference submitted successfully"
+    
+    return MessageResponse(message=message, success=True)
 
 @router.get("/students/{student_id}/preferences", response_model=List[PreferenceWithProjectResponse])
 def get_student_preferences(student_id: int, db: Session = Depends(get_db)):

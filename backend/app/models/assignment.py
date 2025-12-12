@@ -9,6 +9,7 @@ class Assignment(Base):
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    group_number = Column(Integer, nullable=True)  # Group number within the project
     
     # Scores et satisfaction
     preference_rank = Column(Integer, nullable=True)  # Le rang de préférence obtenu (1 = premier choix)

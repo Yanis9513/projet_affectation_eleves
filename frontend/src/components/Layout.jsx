@@ -1,54 +1,93 @@
-import { Outlet, Link } from 'react-router-dom'
-import { useState } from 'react'
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 function Layout() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userRole, setUserRole] = useState('student') // 'student' or 'teacher'
+  const { isLoggedIn, userRole, user, logout } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
-      <nav className="bg-white shadow-md border-b-4 border-primary-600">
+      <nav className="bg-white shadow-md border-b-4 border-esiee-blue sticky top-0 z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <img src="/logo-esiee.svg" alt="ESIEE Paris" className="h-10" />
-              <Link to="/" className="text-xl font-bold text-primary-600 hover:text-primary-700">
-                Affectation d'Étudiants
-              </Link>
-            </div>
+            <Link to="/" className="flex items-center space-x-3 cursor-pointer">
+              <img src="/logo-esiee.svg" alt="ESIEE Paris" className="h-10 transition-transform hover:scale-110 duration-300" />
+            </Link>
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-4">
               {isLoggedIn ? (
                 <>
-                  <Link to={`/${userRole}`} className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md transition-colors">
-                    Tableau de bord
+                  {/* User greeting */}
+                  <span className="text-gray-600 text-sm">
+                    Bonjour, <span className="font-semibold text-esiee-blue">{user?.name || user?.email?.split('@')[0]}</span>
+                  </span>
+                  
+                  <Link 
+                    to={`/${userRole}`} 
+                    className={`px-3 py-2 rounded-md transition-all duration-200 ${
+                      isActive(`/${userRole}`) 
+                        ? 'bg-esiee-blue text-white' 
+                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                    }`}
+                  >
+                    📊 Tableau de bord
                   </Link>
-                  <Link to="/projects" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md transition-colors">
-                    Projets
+                  <Link 
+                    to="/projects" 
+                    className={`px-3 py-2 rounded-md transition-all duration-200 ${
+                      isActive('/projects') 
+                        ? 'bg-esiee-blue text-white' 
+                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                    }`}
+                  >
+                    📁 Projets
                   </Link>
                   {userRole === 'student' && (
-                    <Link to="/preferences" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md transition-colors">
-                      Mes Préférences
+                    <Link 
+                      to="/preferences" 
+                      className={`px-3 py-2 rounded-md transition-all duration-200 ${
+                        isActive('/preferences') 
+                          ? 'bg-esiee-blue text-white' 
+                          : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                      }`}
+                    >
+                      ⭐ Mes Préférences
                     </Link>
                   )}
-                  {userRole === 'teacher' && (
-                    <Link to="/assignments" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md transition-colors">
-                      Affectations
-                    </Link>
-                  )}
-                  <button 
-                    onClick={() => setIsLoggedIn(false)}
-                    className="btn-secondary"
+                  <Link 
+                    to="/profile" 
+                    className={`px-3 py-2 rounded-md transition-all duration-200 ${
+                      isActive('/profile') 
+                        ? 'bg-esiee-blue text-white' 
+                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                    }`}
                   >
-                    Déconnexion
+                    👤 Mon Profil
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-all duration-200 font-medium"
+                  >
+                    🚪 Déconnexion
                   </button>
                 </>
               ) : (
-                <Link to="/login" className="btn-primary">
-                  Connexion
+                <Link 
+                  to="/login" 
+                  className="bg-esiee-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                >
+                  🔐 Connexion
                 </Link>
               )}
             </div>
@@ -57,12 +96,12 @@ function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet context={{ isLoggedIn, setIsLoggedIn, userRole, setUserRole }} />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+        <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-primary-100 mt-12">
+      <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center space-x-3">
             <img src="/logo-esiee.svg" alt="ESIEE Paris" className="h-8 opacity-70" />

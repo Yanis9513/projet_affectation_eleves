@@ -24,6 +24,7 @@ I've set up a complete project structure with:
 
 ### Step 1: Install Backend Dependencies
 
+**Using PowerShell (Recommended):**
 ```powershell
 cd backend
 python -m venv venv
@@ -38,14 +39,51 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 # You should see (venv) at the start of your prompt
 # Install dependencies
 pip install -r requirements.txt
-cp .env.example .env
+```
+
+**Using Git Bash / WSL / Linux:**
+```bash
+cd backend
+python -m venv venv
+
+# Activate using bash script
+source venv/Scripts/activate
+# OR
+. venv/Scripts/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ### Step 2: Start Backend Server
 
+**Using PowerShell:**
 ```powershell
-# In backend folder with venv activated
+# ⚠️ IMPORTANT: Make sure you're in the backend folder!
+cd backend
+
+# Activate venv (if not already activated)
+.\venv\Scripts\Activate.ps1
+
+# Start the server
 uvicorn main:app --reload
+```
+
+**Using Git Bash / WSL:**
+```bash
+cd backend
+
+# Activate venv
+source venv/Scripts/activate
+
+# Start the server
+uvicorn main:app --reload
+```
+
+**Quick Command (Without Activation):**
+```bash
+cd backend
+./venv/Scripts/python -m uvicorn main:app --reload
 ```
 
 ✅ Backend running at http://localhost:8000
@@ -140,11 +178,18 @@ your-project/
 **TailwindCSS:**
 - Use utility classes like `bg-blue-500`, `text-white`, `p-4`
 - Custom classes defined in `src/index.css`
-- Responsive with `md:`, `lg:` prefixes
+## 🐛 Common Issues
 
-## 📚 Important Files
+**"syntax error near unexpected token" when running Activate.ps1:**
+- You're using Git Bash/WSL instead of PowerShell
+- Solution: Use `source venv/Scripts/activate` instead
+- OR: Open Windows PowerShell and use `.\venv\Scripts\Activate.ps1`
 
-**Configuration:**
+**Backend won't start:**
+- Make sure venv is activated:
+  - PowerShell: `.\venv\Scripts\Activate.ps1`
+  - Git Bash: `source venv/Scripts/activate`
+- Install dependencies: `pip install -r requirements.txt`
 - `backend/.env` - Backend settings (database, secrets)
 - `frontend/vite.config.js` - Frontend settings
 - `frontend/tailwind.config.js` - Design system (colors, etc.)
