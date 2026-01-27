@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Button from './Button'
 import { Alert } from './Loading'
 
-export default function CSVUploader({ onStudentsUploaded, existingStudents = [] }) {
+export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) {
   const [students, setStudents] = useState(existingStudents)
   const [error, setError] = useState('')
   const [dragActive, setDragActive] = useState(false)
@@ -136,7 +136,9 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
     const updatedStudents = [...students]
     updatedStudents[index][field] = value
     setStudents(updatedStudents)
-    onStudentsUploaded(updatedStudents)
+    if (onUploadSuccess) {
+      onUploadSuccess(updatedStudents)
+    }
   }
 
   const handleFileUpload = (event) => {
@@ -162,7 +164,9 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
         // Merge with existing students
         const mergedStudents = [...students, ...newStudents]
         setStudents(mergedStudents)
-        onStudentsUploaded(mergedStudents)
+        if (onUploadSuccess) {
+          onUploadSuccess(mergedStudents)
+        }
         
         // Show success message
         setError('')
@@ -221,13 +225,19 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
   const handleDeleteStudent = (index) => {
     const updatedStudents = students.filter((_, i) => i !== index)
     setStudents(updatedStudents)
-    onStudentsUploaded(updatedStudents)
+    if (onUploadSuccess) {
+      onUploadSuccess(updatedStudents)
+    }
   }
 
   const handleAddManualStudent = () => {
-    // Validate email is provided
     if (!manualStudent.email || !manualStudent.email.includes('@')) {
       setError('Email valide requis')
+      return
+    }
+    
+    if (!manualStudent.email.endsWith('@edu.esiee.fr')) {
+      setError('Veuillez utiliser une adresse email @edu.esiee.fr')
       return
     }
 
@@ -251,7 +261,6 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
 
     const updatedStudents = [...students, newStudent]
     setStudents(updatedStudents)
-    onStudentsUploaded(updatedStudents)
     
     // Reset form
     setManualStudent({ name: '', email: '', filiere: '', rank: '', grade: '' })
@@ -490,6 +499,27 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {students.length > 0 && onUploadSuccess && (
+        <div className="mt-6 flex justify-end">
+          <Button 
+            variant="primary" 
+            onClick={async () => {
+              try {
+                await onUploadSuccess(students);
+                setStudents([]);
+                setError('');
+              } catch (err) {
+                setError('Erreur lors de l\'importation des étudiants');
+                console.error('Erreur lors de l\'importation:', err);
+              }
+            }}
+            className="px-6 py-2 text-lg"
+          >
+            Terminer l'importation
+          </Button>
         </div>
       )}
     </div>
