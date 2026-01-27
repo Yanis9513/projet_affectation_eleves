@@ -80,13 +80,25 @@ async def get_project(project_id: int, db: Session = Depends(get_db)):
         "students": students_data
     }
 
+from app.auth_utils import get_current_user
+from app.models.user import User
+
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
-async def create_project(project_data: ProjectCreate, db: Session = Depends(get_db)):
+async def create_project(
+    project_data: ProjectCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Create a new project with students"""
     
-    # TODO: Get teacher_id from authenticated user (for now using default)
-    # In production, extract from JWT token
-    teacher_id = 1  # Placeholder - will be replaced with auth
+    # Get teacher ID from authenticated user
+    if not current_user.teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can create projects"
+        )
+    
+    teacher_id = current_user.teacher_profile.id
     
     # Create project
     new_project = Project(
@@ -197,13 +209,19 @@ async def upload_students_to_project(
             first_name = name_parts[0] if name_parts else student_data.name
             last_name = name_parts[1] if len(name_parts) > 1 else ""
             
+            import secrets
+            from app.auth_utils import hash_password
+            
+            # Generate secure random password
+            temp_password = secrets.token_urlsafe(16)
+            
             new_user = User(
                 email=student_data.email,
                 username=student_data.email.split('@')[0],
                 first_name=first_name,
                 last_name=last_name,
                 role=UserRole.STUDENT,
-                hashed_password="temporary_password_hash"  # TODO: Generate proper password
+                hashed_password=hash_password(temp_password)
             )
             db.add(new_user)
             db.flush()  # Get the user ID
