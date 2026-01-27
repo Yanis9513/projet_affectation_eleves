@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, Navigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { TextInput } from '../components/Input'
 import Button from '../components/Button'
-import { Alert } from '../components/Loading'
+import { validateEmail, validatePassword } from '../utils/validation'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -14,7 +15,6 @@ function LoginPage() {
     email: '',
     password: ''
   })
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   // If already logged in, redirect to dashboard
@@ -27,22 +27,34 @@ function LoginPage() {
       ...formData,
       [e.target.name]: e.target.value
     })
-    setError('') // Clear error when user types
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
+
+    // Validate inputs
+    if (!formData.email || !formData.password) {
+      toast.error('Veuillez remplir tous les champs')
+      return
+    }
+
+    if (!validateEmail(formData.email)) {
+      toast.error('Adresse email invalide')
+      return
+    }
+
+    if (!validatePassword(formData.password)) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères')
+      return
+    }
+
     setLoading(true)
 
     try {
-      // Validate inputs
-      if (!formData.email || !formData.password) {
-        throw new Error('Veuillez remplir tous les champs')
-      }
-
       // Login with real API (login returns user data)
       const userData = await login(formData)
+
+      toast.success('Connexion réussie')
 
       // Redirect based on role
       const from = location.state?.from?.pathname || `/${userData.role}`
@@ -60,7 +72,7 @@ function LoginPage() {
         errorMessage = err.message
       }
       
-      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -85,16 +97,6 @@ function LoginPage() {
         <p className="text-center text-gray-600 mb-6">
           Connectez-vous pour accéder à votre espace
         </p>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert 
-            type="error" 
-            message={error} 
-            onClose={() => setError('')}
-            className="mb-4"
-          />
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">

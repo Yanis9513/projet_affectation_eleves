@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import Button from '../components/Button'
 import { CardSimple } from '../components/Card'
 import { TextInput } from '../components/Input'
-import { Loading, Alert } from '../components/Loading'
+import { SkeletonCard } from '../components/Skeleton'
 import { projectAPI, preferenceAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -13,8 +14,6 @@ function PreferencesPage() {
   const [partnerEmail, setPartnerEmail] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   useEffect(() => {
     loadData()
@@ -43,7 +42,7 @@ function PreferencesPage() {
       }
     } catch (err) {
       console.error('Error loading data:', err)
-      setError('Erreur lors du chargement des données')
+      toast.error('Erreur lors du chargement des données')
     } finally {
       setLoading(false)
     }
@@ -81,13 +80,11 @@ function PreferencesPage() {
 
   const handleSubmit = async () => {
     if (preferences.length === 0) {
-      setError('Veuillez sélectionner au moins un projet')
+      toast.error('Veuillez sélectionner au moins un projet')
       return
     }
 
     setSubmitting(true)
-    setError('')
-    setSuccess('')
 
     try {
       const currentUser = JSON.parse(localStorage.getItem('user'))
@@ -106,25 +103,33 @@ function PreferencesPage() {
         partner_email: partnerEmail || null
       })
       
-      setSuccess('Préférences soumises avec succès !')
-      setTimeout(() => setSuccess(''), 5000)
+      toast.success('Préférences soumises avec succès !')
     } catch (err) {
       console.error('Error submitting preferences:', err)
-      setError(err.response?.data?.detail || 'Erreur lors de la soumission')
+      toast.error(err.response?.data?.detail || 'Erreur lors de la soumission')
     } finally {
       setSubmitting(false)
     }
   }
 
   if (loading) {
-    return <Loading text="Chargement des projets..." />
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4 space-y-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h1 className="text-3xl font-bold text-esiee-blue mb-2">Mes Préférences de Projets</h1>
+            <p className="text-gray-600">Chargement des projets...</p>
+          </div>
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 space-y-6">
-        {error && <Alert type="error" message={error} onClose={() => setError('')} />}
-        {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
         
         <CardSimple className="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-esiee-blue">
           <h1 className="text-3xl font-bold text-esiee-blue mb-2">Mes Préférences de Projets</h1>

@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import Button from '../components/Button'
 import { CardSimple } from '../components/Card'
 import { TextInput, TextArea, Select } from '../components/Input'
-import { Alert } from '../components/Loading'
 import CSVUploader from '../components/CSVUploader'
 import { projectAPI } from '../services/api'
 
@@ -18,8 +18,6 @@ export default function CreateProjectPage() {
     partnerPreferenceEnabled: true,
     students: []
   })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const projectTypes = [
     { value: 'group_project', label: 'Projet de Groupe' },
@@ -33,7 +31,6 @@ export default function CreateProjectPage() {
       ...projectData,
       [name]: type === 'checkbox' ? checked : value
     })
-    setError('')
   }
 
   const handleStudentsUploaded = (students) => {
@@ -41,32 +38,32 @@ export default function CreateProjectPage() {
       ...projectData,
       students: students
     })
-    setSuccess(`${students.length} étudiants importés avec succès!`)
+    toast.success(`${students.length} étudiants importés avec succès!`)
   }
 
   const validateStep = (step) => {
     switch(step) {
       case 1:
         if (!projectData.name.trim()) {
-          setError('Le nom du projet est requis')
+          toast.error('Le nom du projet est requis')
           return false
         }
         if (!projectData.description.trim()) {
-          setError('La description est requise')
+          toast.error('La description est requise')
           return false
         }
         return true
       
       case 2:
         if (projectData.students.length === 0) {
-          setError('Veuillez importer au moins un étudiant')
+          toast.error('Veuillez importer au moins un étudiant')
           return false
         }
         return true
       
       case 3:
         if (!projectData.groupSize || projectData.groupSize < 2) {
-          setError('La taille du groupe doit être au moins 2')
+          toast.error('La taille du groupe doit être au moins 2')
           return false
         }
         return true
@@ -79,21 +76,14 @@ export default function CreateProjectPage() {
   const nextStep = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(currentStep + 1)
-      setError('')
-      setSuccess('')
     }
   }
 
   const prevStep = () => {
     setCurrentStep(currentStep - 1)
-    setError('')
-    setSuccess('')
   }
 
   const handleSubmit = async () => {
-    setError('')
-    setSuccess('')
-
     try {
       // Prepare data for API
       const apiData = {
@@ -116,16 +106,16 @@ export default function CreateProjectPage() {
       // Call API to create project
       const response = await projectAPI.create(apiData)
       
-      setSuccess('Projet créé avec succès!')
+      toast.success('Projet créé avec succès!')
       
-      // Redirect to teacher dashboard after 2 seconds
+      // Redirect to teacher dashboard after 1.5 seconds
       setTimeout(() => {
         navigate('/teacher')
-      }, 2000)
+      }, 1500)
       
     } catch (err) {
       console.error('Error creating project:', err)
-      setError(err.response?.data?.detail || err.message || 'Erreur lors de la création du projet')
+      toast.error(err.response?.data?.detail || err.message || 'Erreur lors de la création du projet')
     }
   }
 
@@ -201,13 +191,6 @@ export default function CreateProjectPage() {
         options={projectTypes}
         helperText="Le type de projet détermine la logique d'affectation"
       />
-
-      {projectData.type !== 'group_project' && (
-        <Alert
-          type="info"
-          message="Ce type de projet n'est pas encore complètement implémenté. Nous commençons avec 'Projet de Groupe'."
-        />
-      )}
     </CardSimple>
   )
 
@@ -217,12 +200,9 @@ export default function CreateProjectPage() {
         Étape 2: Importer les Étudiants
       </h2>
       
-      <Alert
-        type="info"
-        title="Format CSV Requis"
-        message="Le fichier doit contenir les colonnes: name, email, filiere, rank, grade"
-        className="mb-4"
-      />
+      <p className="text-sm text-gray-600 mb-4">
+        Format CSV requis: name, email, filiere, rank, grade
+      </p>
 
       <CSVUploader 
         onUploadSuccess={handleStudentsUploaded}
@@ -336,13 +316,14 @@ export default function CreateProjectPage() {
         </div>
 
         {/* Next Steps Info */}
-        <Alert
-          type="info"
-          title="Prochaines étapes"
-          message={projectData.partnerPreferenceEnabled 
-            ? "Après la création, un formulaire sera envoyé aux étudiants pour recueillir leurs préférences."
-            : "L'algorithme créera automatiquement les groupes de manière équilibrée."
-          }
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>Prochaines étapes:</strong>{' '}
+            {projectData.partnerPreferenceEnabled 
+              ? "Après la création, un formulaire sera envoyé aux étudiants pour recueillir leurs préférences."
+              : "L'algorithme créera automatiquement les groupes de manière équilibrée."}
+          </p>
+        </div>
         />
       </div>
     </CardSimple>
@@ -363,25 +344,6 @@ export default function CreateProjectPage() {
 
         {/* Step Indicator */}
         {renderStepIndicator()}
-
-        {/* Error/Success Messages */}
-        {error && (
-          <Alert 
-            type="error" 
-            message={error} 
-            onClose={() => setError('')}
-            className="mb-6"
-          />
-        )}
-
-        {success && (
-          <Alert 
-            type="success" 
-            message={success} 
-            onClose={() => setSuccess('')}
-            className="mb-6"
-          />
-        )}
 
         {/* Step Content */}
         <div className="mb-8">
