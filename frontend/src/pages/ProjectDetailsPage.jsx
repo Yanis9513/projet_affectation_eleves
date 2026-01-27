@@ -9,7 +9,6 @@ import { projectAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
 
-// Fonction de traduction pour les types de projet
 const translateProjectType = (type) => {
   const translations = {
     'group_project': 'Projet de groupe',
@@ -88,15 +87,20 @@ export default function ProjectDetailsPage() {
 
   const handleUploadMoreStudents = async (newStudents) => {
     try {
-      await projectAPI.uploadStudents(projectId, newStudents)
-      setSuccess(`${newStudents.length} étudiant(s) ajouté(s) avec succès`)
-      setShowUploadStudents(false)
-      // Reload students
+      if (newStudents && newStudents.length > 0) {
+        await projectAPI.uploadStudents(projectId, newStudents);
+        setSuccess(`${newStudents.length} étudiant(s) ajouté(s) avec succès`);
+        
+        const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`);
+        setStudents(studentsResponse.data || []);
+        
+        setShowUploadStudents(false);
+      }
+    } catch (err) {
+      console.error('Error updating students:', err)
+      setError('Erreur lors de la mise à jour des étudiants')
       const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`)
       setStudents(studentsResponse.data || [])
-    } catch (err) {
-      console.error('Error uploading students:', err)
-      setError('Erreur lors de l\'ajout des étudiants')
     }
   }
 
