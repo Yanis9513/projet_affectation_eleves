@@ -225,7 +225,7 @@ export default function CreateProjectPage() {
       />
 
       <CSVUploader 
-        onStudentsUploaded={handleStudentsUploaded}
+        onUploadSuccess={handleStudentsUploaded}
         existingStudents={projectData.students}
       />
     </CardSimple>
