@@ -5,6 +5,15 @@ import Button from '../components/Button';
 import { Loading } from '../components/Loading';
 import { projectAPI } from '../services/api';
 
+const translateProjectType = (type) => {
+  const translations = {
+    'group_project': 'Projet de groupe',
+    'english_leveling': 'Niveau d\'anglais',
+    'exchange_program': 'Programme d\'échange'
+  };
+  return translations[type] || type.replace('_', ' ');
+};
+
 export default function ProjectsPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
@@ -214,7 +223,7 @@ export default function ProjectsPage() {
                     </span>
                     {project.project_type && (
                       <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
-                        {project.project_type.replace('_', ' ')}
+                        {translateProjectType(project.project_type)}
                       </span>
                     )}
                   </div>
@@ -238,7 +247,7 @@ export default function ProjectsPage() {
                     )}
                     {project.project_type && (
                       <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                        {project.project_type.replace('_', ' ')}
+                        {translateProjectType(project.project_type)}
                       </span>
                     )}
                   </div>
