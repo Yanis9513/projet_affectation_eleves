@@ -50,7 +50,16 @@ function LoginPage() {
 
     } catch (err) {
       console.error('Login error:', err)
-      const errorMessage = err.response?.data?.detail || err.message || 'Erreur de connexion'
+      let errorMessage = 'Erreur de connexion'
+      
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail
+      } else if (err.message === 'Network Error') {
+        errorMessage = 'Impossible de se connecter au serveur'
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
       setError(errorMessage)
     } finally {
       setLoading(false)

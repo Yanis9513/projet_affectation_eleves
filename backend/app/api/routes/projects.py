@@ -100,34 +100,41 @@ async def create_project(
     
     teacher_id = current_user.teacher_profile.id
     
-    # Create project
-    new_project = Project(
-        teacher_id=teacher_id,
-        title=project_data.title,
-        description=project_data.description,
-        project_type=ProjectType[project_data.project_type.value.upper()],
-        group_size=project_data.group_size,
-        partner_preference_enabled=project_data.partner_preference_enabled,
-        required_english_level=project_data.required_english_level,
-        target_filiere=project_data.target_filiere,
-        deadline=project_data.deadline,
-        is_active=True,
-        is_open_for_preferences=True
-    )
-    
-    db.add(new_project)
-    db.commit()
-    db.refresh(new_project)
-    
-    # Create/link students if provided
-    if project_data.students:
-        await upload_students_to_project(
-            new_project.id, 
-            StudentUploadRequest(students=project_data.students), 
-            db
+    try:
+        # Create project
+        new_project = Project(
+            teacher_id=teacher_id,
+            title=project_data.title,
+            description=project_data.description,
+            project_type=ProjectType[project_data.project_type.value.upper()],
+            group_size=project_data.group_size,
+            partner_preference_enabled=project_data.partner_preference_enabled,
+            required_english_level=project_data.required_english_level,
+            target_filiere=project_data.target_filiere,
+            deadline=project_data.deadline,
+            is_active=True,
+            is_open_for_preferences=True
         )
-    
-    return new_project
+        
+        db.add(new_project)
+        db.commit()
+        db.refresh(new_project)
+        
+        # Create/link students if provided
+        if project_data.students:
+            await upload_students_to_project(
+                new_project.id, 
+                StudentUploadRequest(students=project_data.students), 
+                db
+            )
+        
+        return new_project
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating project: {str(e)}"
+        )
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
@@ -141,13 +148,20 @@ async def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Update only provided fields
-    update_data = project_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(project, field, value)
-    
-    db.commit()
-    db.refresh(project)
+    try:
+        # Update only provided fields
+        update_data = project_data.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(project, field, value)
+        
+        db.commit()
+        db.refresh(project)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating project: {str(e)}"
+        )
     return project
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
