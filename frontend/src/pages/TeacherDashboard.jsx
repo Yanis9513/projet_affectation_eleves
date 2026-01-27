@@ -77,14 +77,14 @@ export default function TeacherDashboard() {
               variant="outline"
               onClick={() => navigate('/profile')}
             >
-              👤 Mon Profil
+              Mon Profil
             </Button>
             <Button
               variant="primary"
               size="lg"
               onClick={() => navigate('/teacher/create-project')}
             >
-              ➕ Créer un Nouveau Projet
+              Créer un Nouveau Projet
             </Button>
           </div>
         </div>
