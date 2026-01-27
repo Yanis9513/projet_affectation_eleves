@@ -298,16 +298,17 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
           </div>
           
           <div className="flex justify-center gap-3 flex-wrap">
-            <label>
+            <label className="cursor-pointer">
               <input
                 type="file"
                 accept=".csv"
                 onChange={handleFileUpload}
                 className="hidden"
+                id="csv-upload"
               />
-              <Button variant="primary" as="span">
+              <span className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-esiee-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-esiee-blue">
                 📁 Sélectionner un fichier CSV
-              </Button>
+              </span>
             </label>
             
             <Button variant="secondary" onClick={() => setShowManualForm(!showManualForm)}>
