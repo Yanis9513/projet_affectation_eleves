@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useLocation, Navigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
-import { TextInput, Select } from '../components/Input'
+import { TextInput } from '../components/Input'
 import Button from '../components/Button'
-import { Alert } from '../components/Loading'
+import { validateEmail, validatePassword } from '../utils/validation'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -12,10 +13,8 @@ function LoginPage() {
   
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    role: 'student'
+    password: ''
   })
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   // If already logged in, redirect to dashboard
@@ -28,40 +27,52 @@ function LoginPage() {
       ...formData,
       [e.target.name]: e.target.value
     })
-    setError('') // Clear error when user types
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
+
+    // Validate inputs
+    if (!formData.email || !formData.password) {
+      toast.error('Veuillez remplir tous les champs')
+      return
+    }
+
+    if (!validateEmail(formData.email)) {
+      toast.error('Adresse email invalide')
+      return
+    }
+
+    if (!validatePassword(formData.password)) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères')
+      return
+    }
+
     setLoading(true)
 
     try {
-      // TODO: Replace with actual API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Login with real API (login returns user data)
+      const userData = await login(formData)
 
-      // Simulate validation
-      if (!formData.email || !formData.password) {
-        throw new Error('Veuillez remplir tous les champs')
-      }
+      toast.success('Connexion réussie')
 
-      // For demo: accept any email/password
-      const userData = {
-        email: formData.email,
-        name: formData.email.split('@')[0],
-        role: formData.role
-      }
-
-      // Login with AuthContext
-      login(userData, formData.role)
-
-      // Redirect to where they were trying to go, or dashboard
-      const from = location.state?.from?.pathname || `/${formData.role}`
+      // Redirect based on role
+      const from = location.state?.from?.pathname || `/${userData.role}`
       navigate(from, { replace: true })
 
     } catch (err) {
-      setError(err.message || 'Une erreur est survenue')
+      console.error('Login error:', err)
+      let errorMessage = 'Erreur de connexion'
+      
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail
+      } else if (err.message === 'Network Error') {
+        errorMessage = 'Impossible de se connecter au serveur'
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -87,16 +98,6 @@ function LoginPage() {
           Connectez-vous pour accéder à votre espace
         </p>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert 
-            type="error" 
-            message={error} 
-            onClose={() => setError('')}
-            className="mb-4"
-          />
-        )}
-
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <TextInput
@@ -118,18 +119,6 @@ function LoginPage() {
             onChange={handleChange}
             placeholder="••••••••"
             required
-            disabled={loading}
-          />
-
-          <Select
-            label="Je suis"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            options={[
-              { value: 'student', label: '👨‍🎓 Étudiant' },
-              { value: 'teacher', label: '👨‍🏫 Enseignant / Admin' },
-            ]}
             disabled={loading}
           />
 
@@ -162,13 +151,6 @@ function LoginPage() {
               S'inscrire ici
             </a>
           </div>
-        </div>
-
-        {/* Demo Info */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-xs text-gray-600 text-center">
-            💡 <strong>Mode Démo:</strong> Utilisez n'importe quel email/mot de passe pour vous connecter
-          </p>
         </div>
       </div>
     </div>

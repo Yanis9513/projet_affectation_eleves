@@ -9,6 +9,15 @@ import { projectAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
 
+const translateProjectType = (type) => {
+  const translations = {
+    'group_project': 'Projet de groupe',
+    'english_leveling': 'Niveau d\'anglais',
+    'exchange_program': 'Programme d\'échange'
+  }
+  return translations[type] || type
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function ProjectDetailsPage() {
@@ -78,15 +87,20 @@ export default function ProjectDetailsPage() {
 
   const handleUploadMoreStudents = async (newStudents) => {
     try {
-      await projectAPI.uploadStudents(projectId, newStudents)
-      setSuccess(`${newStudents.length} étudiant(s) ajouté(s) avec succès`)
-      setShowUploadStudents(false)
-      // Reload students
+      if (newStudents && newStudents.length > 0) {
+        await projectAPI.uploadStudents(projectId, newStudents);
+        setSuccess(`${newStudents.length} étudiant(s) ajouté(s) avec succès`);
+        
+        const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`);
+        setStudents(studentsResponse.data || []);
+        
+        setShowUploadStudents(false);
+      }
+    } catch (err) {
+      console.error('Error updating students:', err)
+      setError('Erreur lors de la mise à jour des étudiants')
       const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`)
       setStudents(studentsResponse.data || [])
-    } catch (err) {
-      console.error('Error uploading students:', err)
-      setError('Erreur lors de l\'ajout des étudiants')
     }
   }
 
@@ -223,7 +237,7 @@ export default function ProjectDetailsPage() {
               )}
               {project.project_type && (
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
-                  {project.project_type}
+                  {translateProjectType(project.project_type)}
                 </span>
               )}
             </div>

@@ -80,42 +80,61 @@ async def get_project(project_id: int, db: Session = Depends(get_db)):
         "students": students_data
     }
 
+from app.auth_utils import get_current_user
+from app.models.user import User
+
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
-async def create_project(project_data: ProjectCreate, db: Session = Depends(get_db)):
+async def create_project(
+    project_data: ProjectCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Create a new project with students"""
     
-    # TODO: Get teacher_id from authenticated user (for now using default)
-    # In production, extract from JWT token
-    teacher_id = 1  # Placeholder - will be replaced with auth
-    
-    # Create project
-    new_project = Project(
-        teacher_id=teacher_id,
-        title=project_data.title,
-        description=project_data.description,
-        project_type=ProjectType[project_data.project_type.value.upper()],
-        group_size=project_data.group_size,
-        partner_preference_enabled=project_data.partner_preference_enabled,
-        required_english_level=project_data.required_english_level,
-        target_filiere=project_data.target_filiere,
-        deadline=project_data.deadline,
-        is_active=True,
-        is_open_for_preferences=True
-    )
-    
-    db.add(new_project)
-    db.commit()
-    db.refresh(new_project)
-    
-    # Create/link students if provided
-    if project_data.students:
-        await upload_students_to_project(
-            new_project.id, 
-            StudentUploadRequest(students=project_data.students), 
-            db
+    # Get teacher ID from authenticated user
+    if not current_user.teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can create projects"
         )
     
-    return new_project
+    teacher_id = current_user.teacher_profile.id
+    
+    try:
+        # Create project
+        new_project = Project(
+            teacher_id=teacher_id,
+            title=project_data.title,
+            description=project_data.description,
+            project_type=ProjectType[project_data.project_type.value.upper()],
+            group_size=project_data.group_size,
+            partner_preference_enabled=project_data.partner_preference_enabled,
+            required_english_level=project_data.required_english_level,
+            target_filiere=project_data.target_filiere,
+            deadline=project_data.deadline,
+            is_active=True,
+            is_open_for_preferences=True
+        )
+        
+        db.add(new_project)
+        db.commit()
+        db.refresh(new_project)
+        
+        # Create/link students if provided
+        if project_data.students:
+            await upload_students_to_project(
+                new_project.id, 
+                StudentUploadRequest(students=project_data.students), 
+                db
+            )
+        
+        return new_project
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating project: {str(e)}"
+        )
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
@@ -129,13 +148,20 @@ async def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Update only provided fields
-    update_data = project_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(project, field, value)
-    
-    db.commit()
-    db.refresh(project)
+    try:
+        # Update only provided fields
+        update_data = project_data.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(project, field, value)
+        
+        db.commit()
+        db.refresh(project)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating project: {str(e)}"
+        )
     return project
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -197,13 +223,19 @@ async def upload_students_to_project(
             first_name = name_parts[0] if name_parts else student_data.name
             last_name = name_parts[1] if len(name_parts) > 1 else ""
             
+            import secrets
+            from app.auth_utils import hash_password
+            
+            # Generate secure random password
+            temp_password = secrets.token_urlsafe(16)
+            
             new_user = User(
                 email=student_data.email,
                 username=student_data.email.split('@')[0],
                 first_name=first_name,
                 last_name=last_name,
                 role=UserRole.STUDENT,
-                hashed_password="temporary_password_hash"  # TODO: Generate proper password
+                hashed_password=hash_password(temp_password)
             )
             db.add(new_user)
             db.flush()  # Get the user ID

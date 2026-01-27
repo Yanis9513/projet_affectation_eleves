@@ -176,7 +176,7 @@ function AssignmentsPage() {
             onClick={runAlgorithm}
             disabled={running}
           >
-            {running ? '⏳ Exécution...' : '🚀 Exécuter l\'algorithme'}
+            {running ? 'Exécution en cours...' : 'Exécuter l\'algorithme'}
           </Button>
           
           {assignments.length > 0 && (

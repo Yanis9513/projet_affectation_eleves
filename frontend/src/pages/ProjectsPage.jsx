@@ -1,9 +1,19 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import Card, { CardGrid } from '../components/Card';
 import Button from '../components/Button';
-import { Loading } from '../components/Loading';
+import { SkeletonCard } from '../components/Skeleton';
 import { projectAPI } from '../services/api';
+
+const translateProjectType = (type) => {
+  const translations = {
+    'group_project': 'Projet de groupe',
+    'english_leveling': 'Niveau d\'anglais',
+    'exchange_program': 'Programme d\'échange'
+  };
+  return translations[type] || type.replace('_', ' ');
+};
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
@@ -23,6 +33,7 @@ export default function ProjectsPage() {
       setProjects(response.data.filter(p => p.is_active && p.is_open_for_preferences));
     } catch (error) {
       console.error('Error loading projects:', error);
+      toast.error('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);
     }
@@ -65,7 +76,22 @@ export default function ProjectsPage() {
   const exchangeCount = projects.filter(p => p.project_type === 'exchange_program').length;
   
   if (loading) {
-    return <Loading />;
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Projets disponibles</h1>
+          <p className="text-gray-600">Chargement des projets...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -214,7 +240,7 @@ export default function ProjectsPage() {
                     </span>
                     {project.project_type && (
                       <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
-                        {project.project_type.replace('_', ' ')}
+                        {translateProjectType(project.project_type)}
                       </span>
                     )}
                   </div>
@@ -238,7 +264,7 @@ export default function ProjectsPage() {
                     )}
                     {project.project_type && (
                       <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                        {project.project_type.replace('_', ' ')}
+                        {translateProjectType(project.project_type)}
                       </span>
                     )}
                   </div>

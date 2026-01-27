@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -20,7 +21,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedRole = localStorage.getItem('userRole');
-    const storedToken = localStorage.getItem('authToken');
+    const storedToken = localStorage.getItem('token');
 
     if (storedUser && storedRole && storedToken) {
       setUser(JSON.parse(storedUser));
@@ -30,16 +31,28 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (userData, role, token = 'dummy-token-123') => {
-    // Save to state
-    setUser(userData);
-    setUserRole(role);
-    setIsLoggedIn(true);
+  const login = async (credentials) => {
+    try {
+      // Call real API
+      const response = await authAPI.login(credentials);
+      const { access_token, user: userData } = response.data;
 
-    // Save to localStorage
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('userRole', role);
-    localStorage.setItem('authToken', token);
+      // Save to state
+      setUser(userData);
+      setUserRole(userData.role);
+      setIsLoggedIn(true);
+
+      // Save to localStorage (use 'token' key to match api.js interceptor)
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('userRole', userData.role);
+      localStorage.setItem('token', access_token);
+
+      // Return user data for navigation
+      return userData;
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -51,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     // Clear localStorage
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
   };
 
   const value = {

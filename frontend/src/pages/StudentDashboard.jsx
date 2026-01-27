@@ -73,7 +73,7 @@ export default function StudentDashboard() {
           <CardSimple className={`bg-gradient-to-br ${student.hasSubmittedPreferences ? 'from-green-50 to-green-100 border-2 border-green-200' : 'from-orange-50 to-orange-100 border-2 border-orange-200'} hover:shadow-lg transition-all`}>
             <p className="text-gray-700 text-sm font-medium mb-1">Préférences</p>
             <p className={`text-2xl font-bold ${student.hasSubmittedPreferences ? 'text-green-600' : 'text-orange-600'}`}>
-              {student.hasSubmittedPreferences ? '✓ Envoyées' : '⚠ À faire'}
+              {student.hasSubmittedPreferences ? 'Envoyées' : 'À faire'}
             </p>
           </CardSimple>
         </div>
@@ -83,12 +83,9 @@ export default function StudentDashboard() {
           <CardSimple className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-3xl">🎉</span>
-                  <h3 className="text-2xl font-bold text-green-800">
-                    Projet Assigné !
-                  </h3>
-                </div>
+                <h3 className="text-2xl font-bold text-green-800 mb-3">
+                  Projet Assigné !
+                </h3>
                 <h4 className="text-xl font-bold text-esiee-blue mb-2">
                   {student.assignedProject.title}
                 </h4>
@@ -97,7 +94,7 @@ export default function StudentDashboard() {
                 </p>
                 {student.assignedProject.groupMembers && (
                   <div className="mb-3">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">👥 Membres de votre groupe:</p>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Membres de votre groupe:</p>
                     <div className="flex flex-wrap gap-2">
                       {student.assignedProject.groupMembers.map((member, idx) => (
                         <span key={idx} className="px-3 py-1 bg-white border border-green-300 rounded-full text-sm">
@@ -115,23 +112,20 @@ export default function StudentDashboard() {
           </CardSimple>
         ) : (
           <CardSimple className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300">
-            <div className="flex items-start gap-4">
-              <span className="text-4xl">⏳</span>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-yellow-800 mb-2">
-                  En attente d'affectation
-                </h3>
-                <p className="text-gray-700 mb-3">
-                  Les affectations seront annoncées prochainement une fois que tous les étudiants auront soumis leurs préférences.
-                </p>
-                {!student.hasSubmittedPreferences && (
-                  <div className="bg-orange-100 border-l-4 border-orange-500 p-3 rounded">
-                    <p className="text-orange-800 font-semibold text-sm">
-                      ⚠️ N'oubliez pas de soumettre vos préférences de projets !
-                    </p>
-                  </div>
-                )}
-              </div>
+            <div>
+              <h3 className="text-xl font-bold text-yellow-800 mb-2">
+                En attente d'affectation
+              </h3>
+              <p className="text-gray-700 mb-3">
+                Les affectations seront annoncées prochainement une fois que tous les étudiants auront soumis leurs préférences.
+              </p>
+              {!student.hasSubmittedPreferences && (
+                <div className="bg-orange-100 border-l-4 border-orange-500 p-3 rounded">
+                  <p className="text-orange-800 font-semibold text-sm">
+                    N'oubliez pas de soumettre vos préférences de projets !
+                  </p>
+                </div>
+              )}
             </div>
           </CardSimple>
         )}
@@ -195,7 +189,7 @@ export default function StudentDashboard() {
 
         {/* Quick Info Card */}
         <CardSimple className="mt-6 bg-gradient-to-r from-gray-50 to-white border-l-4 border-esiee-blue">
-          <h3 className="text-lg font-bold text-gray-800 mb-3">📋 Vos Informations</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-3">Vos Informations</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-gray-600 mb-1">Email</p>

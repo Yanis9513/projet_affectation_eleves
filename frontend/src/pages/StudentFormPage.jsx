@@ -57,8 +57,10 @@ export default function StudentFormPage() {
     setSubmitting(true)
 
     try {
-      // TODO: Get current student ID from auth context
-      const studentId = 1 // Placeholder - will be replaced with auth
+      const currentUser = JSON.parse(localStorage.getItem('user'))
+      if (!currentUser?.id) {
+        throw new Error('Utilisateur non connecté')
+      }
       
       const preferenceData = {
         project_id: parseInt(projectId),
@@ -100,7 +102,6 @@ export default function StudentFormPage() {
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
           <CardSimple className="text-center">
-            <div className="text-6xl mb-4">✅</div>
             <h2 className="text-2xl font-bold text-green-600 mb-4">
               Préférences Envoyées !
             </h2>
@@ -148,7 +149,7 @@ export default function StudentFormPage() {
 
         {/* Project Info */}
         <CardSimple className="mb-6 bg-blue-50 border-l-4 border-esiee-blue">
-          <h3 className="font-bold text-esiee-blue mb-2">📋 Informations du Projet</h3>
+          <h3 className="font-bold text-esiee-blue mb-2">Informations du Projet</h3>
           <p className="text-sm text-gray-700 mb-2">
             <strong>Description:</strong> {project.description}
           </p>
@@ -240,7 +241,7 @@ export default function StudentFormPage() {
                 variant="primary"
                 disabled={submitting}
               >
-                {submitting ? 'Envoi en cours...' : '✓ Envoyer mes Préférences'}
+                {submitting ? 'Envoi en cours...' : 'Envoyer mes Préférences'}
               </Button>
             </div>
           </form>

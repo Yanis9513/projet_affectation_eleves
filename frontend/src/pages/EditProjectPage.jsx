@@ -25,9 +25,9 @@ export default function EditProjectPage() {
   })
 
   const projectTypes = [
-    { value: 'group_project', label: '👥 Projet de Groupe (Group Project)' },
-    { value: 'english_leveling', label: '🇬🇧 Répartition par Niveau (English Leveling)' },
-    { value: 'exchange_program', label: '✈️ Programme d\'Échange (Exchange Program)' }
+    { value: 'group_project', label: 'Projet de Groupe' },
+    { value: 'english_leveling', label: 'Répartition par Niveau d\'Anglais' },
+    { value: 'exchange_program', label: 'Programme d\'Échange' }
   ]
 
   useEffect(() => {
