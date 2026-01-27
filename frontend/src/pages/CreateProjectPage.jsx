@@ -22,9 +22,9 @@ export default function CreateProjectPage() {
   const [success, setSuccess] = useState('')
 
   const projectTypes = [
-    { value: 'group_project', label: '👥 Projet de Groupe (Group Project)' },
-    { value: 'english_leveling', label: '🇬🇧 Répartition par Niveau (English Leveling)' },
-    { value: 'exchange_program', label: '✈️ Programme d\'Échange (Exchange Program)' }
+    { value: 'group_project', label: 'Projet de Groupe' },
+    { value: 'english_leveling', label: 'Répartition par Niveau d\'Anglais' },
+    { value: 'exchange_program', label: 'Programme d\'Échange' }
   ]
 
   const handleInputChange = (e) => {
@@ -293,7 +293,7 @@ export default function CreateProjectPage() {
       <div className="space-y-6">
         {/* Project Info Summary */}
         <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-800 mb-3">📋 Informations du Projet</h3>
+          <h3 className="font-bold text-gray-800 mb-3">Informations du Projet</h3>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <dt className="text-gray-600">Nom:</dt>
             <dd className="font-semibold text-gray-800">{projectData.name}</dd>
@@ -310,7 +310,7 @@ export default function CreateProjectPage() {
 
         {/* Students Summary */}
         <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-800 mb-3">👥 Étudiants</h3>
+          <h3 className="font-bold text-gray-800 mb-3">Étudiants</h3>
           <p className="text-sm text-gray-700">
             <strong className="text-esiee-blue">{projectData.students.length}</strong> étudiants importés
           </p>
@@ -318,7 +318,7 @@ export default function CreateProjectPage() {
 
         {/* Groups Configuration Summary */}
         <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-800 mb-3">⚙️ Configuration</h3>
+          <h3 className="font-bold text-gray-800 mb-3">Configuration</h3>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <dt className="text-gray-600">Taille des groupes:</dt>
             <dd className="font-semibold text-gray-800">{projectData.groupSize} étudiants</dd>
@@ -330,7 +330,7 @@ export default function CreateProjectPage() {
             
             <dt className="text-gray-600">Préférences partenaire:</dt>
             <dd className={`font-semibold ${projectData.partnerPreferenceEnabled ? 'text-green-600' : 'text-gray-500'}`}>
-              {projectData.partnerPreferenceEnabled ? '✓ Activées' : '✗ Désactivées'}
+              {projectData.partnerPreferenceEnabled ? 'Activées' : 'Désactivées'}
             </dd>
           </dl>
         </div>
@@ -424,7 +424,7 @@ export default function CreateProjectPage() {
                 variant="primary"
                 onClick={handleSubmit}
               >
-                ✓ Créer le Projet
+                Créer le Projet
               </Button>
             )}
           </div>

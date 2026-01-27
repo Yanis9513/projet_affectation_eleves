@@ -26,19 +26,19 @@ function HomePage() {
           {isLoggedIn ? (
             <Link to={`/${userRole}`}>
               <Button variant="primary" size="lg">
-                📊 Mon Tableau de Bord
+                Mon Tableau de Bord
               </Button>
             </Link>
           ) : (
             <>
               <Link to="/login">
                 <Button variant="primary" size="lg">
-                  🚀 Commencer
+                  Commencer
                 </Button>
               </Link>
               <a href="#features">
                 <Button variant="outline" size="lg">
-                  📖 En savoir plus
+                  En savoir plus
                 </Button>
               </a>
             </>
@@ -49,7 +49,6 @@ function HomePage() {
       {/* Features Section */}
       <div id="features" className="py-16 grid md:grid-cols-3 gap-8 mt-16 px-4">
         <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-blue-100">
-          <div className="text-esiee-blue text-5xl mb-6">👥</div>
           <h3 className="text-2xl font-bold mb-3 text-gray-800">Gestion des Étudiants</h3>
           <p className="text-gray-600 leading-relaxed">
             Gérez facilement les profils, préférences et informations académiques des étudiants
@@ -57,7 +56,6 @@ function HomePage() {
         </div>
 
         <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl shadow-lg p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-purple-100">
-          <div className="text-esiee-blue text-5xl mb-6">📊</div>
           <h3 className="text-2xl font-bold mb-3 text-gray-800">Création de Projets</h3>
           <p className="text-gray-600 leading-relaxed">
             Créez et gérez des projets avec des exigences et contraintes spécifiques
@@ -65,7 +63,6 @@ function HomePage() {
         </div>
 
         <div className="bg-gradient-to-br from-green-50 to-white rounded-xl shadow-lg p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-green-100">
-          <div className="text-esiee-blue text-5xl mb-6">🧬</div>
           <h3 className="text-2xl font-bold mb-3 text-gray-800">Affectation Intelligente</h3>
           <p className="text-gray-600 leading-relaxed">
             Utilisez des algorithmes génétiques pour optimiser les affectations
