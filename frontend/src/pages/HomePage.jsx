@@ -20,7 +20,7 @@ function HomePage() {
           Système d'Affectation d'Étudiants
         </h1>
         <p className="text-2xl text-gray-700 mb-10 max-w-3xl mx-auto">
-          Optimisez l'affectation des étudiants aux projets avec des algorithmes intelligents
+          Gestion et optimisation des affectations d'étudiants
         </p>
         <div className="space-x-4">
           {isLoggedIn ? (
@@ -63,7 +63,7 @@ function HomePage() {
         </div>
 
         <div className="bg-gradient-to-br from-green-50 to-white rounded-xl shadow-lg p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-green-100">
-          <h3 className="text-2xl font-bold mb-3 text-gray-800">Affectation Intelligente</h3>
+          <h3 className="text-2xl font-bold mb-3 text-gray-800">Affectation Automatique</h3>
           <p className="text-gray-600 leading-relaxed">
             Utilisez des algorithmes génétiques pour optimiser les affectations
           </p>
