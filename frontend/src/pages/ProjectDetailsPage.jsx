@@ -9,6 +9,16 @@ import { projectAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
 
+// Fonction de traduction pour les types de projet
+const translateProjectType = (type) => {
+  const translations = {
+    'group_project': 'Projet de groupe',
+    'english_leveling': 'Niveau d\'anglais',
+    'exchange_program': 'Programme d\'échange'
+  }
+  return translations[type] || type
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function ProjectDetailsPage() {
@@ -223,7 +233,7 @@ export default function ProjectDetailsPage() {
               )}
               {project.project_type && (
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
-                  {project.project_type}
+                  {translateProjectType(project.project_type)}
                 </span>
               )}
             </div>
