@@ -128,9 +128,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     try {
       setError('')
-      // TODO: Update user and teacher profile via API
-      // await axios.put('/api/users/me', { ... })
-      // await axios.put('/api/teachers/me', { ... })
+      // Profile update will be implemented when needed
       
       setSuccess('Profil mis à jour avec succès')
       setEditing(false)

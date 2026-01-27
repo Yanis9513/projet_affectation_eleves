@@ -29,10 +29,18 @@ function PreferencesPage() {
       )
       setProjects(availableProjects)
 
-      // TODO: Load existing preferences when API is ready
-      // const studentId = JSON.parse(localStorage.getItem('user'))?.id
-      // const prefsResponse = await preferenceAPI.getStudentPreferences(studentId)
-      // setPreferences(prefsResponse.data)
+      // Load existing preferences if user is logged in
+      const currentUser = JSON.parse(localStorage.getItem('user'))
+      if (currentUser?.id) {
+        try {
+          const prefsResponse = await preferenceAPI.getStudentPreferences(currentUser.id)
+          if (prefsResponse.data) {
+            setPreferences(prefsResponse.data)
+          }
+        } catch (err) {
+          // Preferences not yet set, ignore error
+        }
+      }
     } catch (err) {
       console.error('Error loading data:', err)
       setError('Erreur lors du chargement des données')
@@ -82,12 +90,16 @@ function PreferencesPage() {
     setSuccess('')
 
     try {
-      // TODO: Submit preferences to API when backend is ready
-      // const studentId = JSON.parse(localStorage.getItem('user'))?.id
-      // await preferenceAPI.submitPartnerPreference(studentId, {
-      //   project_preferences: preferences.map(p => ({ project_id: p.id, rank: p.order })),
-      //   partner_email: partnerEmail || null
-      // })
+      const currentUser = JSON.parse(localStorage.getItem('user'))
+      if (!currentUser?.id) {
+        throw new Error('Utilisateur non connecté')
+      }
+      
+      // Submit preferences to API
+      await preferenceAPI.submitPartnerPreference(currentUser.id, {
+        project_preferences: preferences.map(p => ({ project_id: p.id, rank: p.order })),
+        partner_email: partnerEmail || null
+      })
       
       console.log('Submitting preferences:', {
         preferences: preferences.map(p => ({ project_id: p.id, rank: p.order })),
@@ -123,7 +135,7 @@ function PreferencesPage() {
 
         {/* Partner Preference Section */}
         <CardSimple className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500">
-          <h2 className="text-xl font-bold text-purple-700 mb-3">👥 Préférence de Partenaire (Optionnel)</h2>
+          <h2 className="text-xl font-bold text-purple-700 mb-3">Préférence de Partenaire (Optionnel)</h2>
           <p className="text-gray-600 mb-4 text-sm">
             Si vous souhaitez être dans le même groupe qu'un camarade, entrez son email. 
             L'algorithme tentera de vous grouper ensemble si possible.
@@ -215,7 +227,7 @@ function PreferencesPage() {
             {preferences.length > 0 && (
               <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-sm text-gray-700 mb-3">
-                  ✅ Vous avez sélectionné <strong>{preferences.length} projet(s)</strong>.
+                  Vous avez sélectionné <strong>{preferences.length} projet(s)</strong>.
                   {partnerEmail && ` Partenaire: ${partnerEmail}`}
                 </p>
                 <Button

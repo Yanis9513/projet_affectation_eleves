@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { TextInput, Select } from '../components/Input'
+import { TextInput } from '../components/Input'
 import Button from '../components/Button'
 import { Alert } from '../components/Loading'
 
