@@ -43,7 +43,6 @@ async def get_students(db: Session = Depends(get_db)):
 async def get_student(student_id: int, db: Session = Depends(get_db)):
     """Get a specific student by ID"""
     from app.models.student import Student
-    from app.models.user import User
     
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:

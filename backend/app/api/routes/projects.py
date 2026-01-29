@@ -8,6 +8,7 @@ from app.schemas import (
 from app.models.project import Project, ProjectType
 from app.models.student import Student
 from app.models.user import User, UserRole
+from app.auth_utils import get_current_user
 from typing import List
 
 router = APIRouter()
@@ -79,9 +80,6 @@ async def get_project(project_id: int, db: Session = Depends(get_db)):
         **project.__dict__,
         "students": students_data
     }
-
-from app.auth_utils import get_current_user
-from app.models.user import User
 
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
