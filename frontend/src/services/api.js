@@ -27,9 +27,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Only redirect if not already on login page and not a login attempt
+      const isLoginPage = window.location.pathname === '/login'
+      const isLoginRequest = error.config?.url?.includes('/auth/login')
+      
+      if (!isLoginPage && !isLoginRequest) {
+        // Unauthorized - clear token and redirect to login
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('userRole')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }
@@ -79,10 +87,11 @@ export const preferenceAPI = {
 
 // Assignment APIs
 export const assignmentAPI = {
-  getAll: () => api.get('/assignments/'),
-  runAlgorithm: () => api.post('/assignments/run-algorithm'),
-  getStats: () => api.get('/assignments/stats'),
-  clearAll: () => api.delete('/assignments/'),
+  getAll: (projectId) => api.get('/assignments/', { params: projectId ? { project_id: projectId } : {} }),
+  getByProject: (projectId) => api.get('/assignments/', { params: { project_id: projectId } }),
+  runAlgorithm: (projectId) => api.post('/assignments/run-algorithm', { project_id: projectId }),
+  getStats: (projectId) => api.get('/assignments/stats', { params: projectId ? { project_id: projectId } : {} }),
+  clearAll: (projectId) => api.delete('/assignments/', { params: projectId ? { project_id: projectId } : {} }),
 }
 
 export default api

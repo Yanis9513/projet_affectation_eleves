@@ -1,0 +1,21 @@
+email,name,filiere,rank,grade
+alice.martin@edu.esiee.fr,Alice Martin,Informatique,1,16.8
+bob.dupont@edu.esiee.fr,Bob Dupont,Informatique,2,16.5
+claire.bernard@edu.esiee.fr,Claire Bernard,Informatique,3,16.2
+david.petit@edu.esiee.fr,David Petit,Informatique,4,15.9
+emma.durand@edu.esiee.fr,Emma Durand,Informatique,5,15.7
+felix.laurent@edu.esiee.fr,Felix Laurent,Informatique,6,15.5
+gabrielle.simon@edu.esiee.fr,Gabrielle Simon,Informatique,7,15.2
+hugo.michel@edu.esiee.fr,Hugo Michel,Informatique,8,15.0
+iris.leroy@edu.esiee.fr,Iris Leroy,Informatique,9,14.8
+jules.moreau@edu.esiee.fr,Jules Moreau,Informatique,10,14.6
+kim.fournier@edu.esiee.fr,Kim Fournier,Électronique,11,14.4
+leo.girard@edu.esiee.fr,Leo Girard,Électronique,12,14.2
+marie.blanc@edu.esiee.fr,Marie Blanc,Électronique,13,14.0
+nicolas.robin@edu.esiee.fr,Nicolas Robin,Électronique,14,13.8
+oceane.rousseau@edu.esiee.fr,Oceane Rousseau,Électronique,15,13.6
+paul.vincent@edu.esiee.fr,Paul Vincent,Énergie,16,13.4
+quentin.lambert@edu.esiee.fr,Quentin Lambert,Énergie,17,13.2
+rose.bonnet@edu.esiee.fr,Rose Bonnet,Énergie,18,13.0
+sophie.fontaine@edu.esiee.fr,Sophie Fontaine,Biotechnologie,19,12.8
+theo.chevalier@edu.esiee.fr,Theo Chevalier,Biotechnologie,20,12.6

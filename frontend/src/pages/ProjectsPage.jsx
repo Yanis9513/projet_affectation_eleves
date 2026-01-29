@@ -1,9 +1,19 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import Card, { CardGrid } from '../components/Card';
 import Button from '../components/Button';
-import { Loading } from '../components/Loading';
+import { SkeletonCard } from '../components/Skeleton';
 import { projectAPI } from '../services/api';
+
+const translateProjectType = (type) => {
+  const translations = {
+    'group_project': 'Projet de groupe',
+    'english_leveling': 'Niveau d\'anglais',
+    'exchange_program': 'Programme d\'échange'
+  };
+  return translations[type] || type.replace('_', ' ');
+};
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
@@ -23,6 +33,7 @@ export default function ProjectsPage() {
       setProjects(response.data.filter(p => p.is_active && p.is_open_for_preferences));
     } catch (error) {
       console.error('Error loading projects:', error);
+      toast.error('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);
     }
@@ -65,7 +76,22 @@ export default function ProjectsPage() {
   const exchangeCount = projects.filter(p => p.project_type === 'exchange_program').length;
   
   if (loading) {
-    return <Loading />;
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Projets disponibles</h1>
+          <p className="text-gray-600">Chargement des projets...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -73,16 +99,16 @@ export default function ProjectsPage() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 fade-in">
             Projets Disponibles
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 fade-in-delay-1">
             Découvrez les projets proposés par nos enseignants pour cette année
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 fade-in-delay-2">
           <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg p-6 border-l-4 border-esiee-blue hover:shadow-xl hover:-translate-y-0.5 transition-all">
             <p className="text-gray-700 text-sm font-medium mb-1">Total Projets</p>
             <p className="text-4xl font-bold text-gray-800">{projects.length}</p>
@@ -98,7 +124,7 @@ export default function ProjectsPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-6 fade-in-delay-3">
           <div className="relative">
             <input
               type="text"
@@ -122,8 +148,8 @@ export default function ProjectsPage() {
         </div>
 
         {/* Filters */}
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">🎯 Disponibilité</h3>
+        <div className="mb-4 fade-in-delay-3">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Disponibilité</h3>
           <div className="flex flex-wrap gap-2">
             <Button
               variant={filter === 'all' ? 'primary' : 'outline'}
@@ -150,7 +176,7 @@ export default function ProjectsPage() {
         </div>
 
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">🏷️ Type de Projet</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Type de Projet</h3>
           <div className="flex flex-wrap gap-2">
             <Button
               variant={typeFilter === 'all' ? 'primary' : 'outline'}
@@ -183,7 +209,7 @@ export default function ProjectsPage() {
                 size="sm"
                 onClick={() => setTypeFilter('exchange_program')}
               >
-                ✈️ Programme d'Échange ({exchangeCount})
+                Programme d'Échange ({exchangeCount})
               </Button>
             )}
           </div>
@@ -193,7 +219,7 @@ export default function ProjectsPage() {
         {loading ? (
           <Loading text="Chargement des projets..." />
         ) : (
-          <CardGrid>
+          <CardGrid className="fade-in-delay-4">
             {filteredProjects.map((project) => {
               const studentCount = project.students?.length || 0;
               const isAvailable = studentCount < project.max_students;
@@ -214,7 +240,7 @@ export default function ProjectsPage() {
                     </span>
                     {project.project_type && (
                       <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
-                        {project.project_type.replace('_', ' ')}
+                        {translateProjectType(project.project_type)}
                       </span>
                     )}
                   </div>
@@ -238,7 +264,7 @@ export default function ProjectsPage() {
                     )}
                     {project.project_type && (
                       <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                        {project.project_type.replace('_', ' ')}
+                        {translateProjectType(project.project_type)}
                       </span>
                     )}
                   </div>
@@ -259,8 +285,7 @@ export default function ProjectsPage() {
         )}
 
         {filteredProjects.length === 0 && !loading && (
-          <div className="text-center py-12 bg-white rounded-xl shadow-lg">
-            <div className="text-6xl mb-4">🔍</div>
+          <div className="text-center py-12 bg-white rounded-xl shadow-lg fade-in-delay-4">
             <h3 className="text-xl font-bold text-gray-700 mb-2">Aucun projet trouvé</h3>
             <p className="text-gray-500">
               {searchQuery ? `Aucun résultat pour "${searchQuery}"` : 'Aucun projet ne correspond à vos critères'}

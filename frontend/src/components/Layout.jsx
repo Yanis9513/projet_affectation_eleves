@@ -14,7 +14,7 @@ function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Navigation Bar */}
       <nav className="bg-white shadow-md border-b-4 border-esiee-blue sticky top-0 z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,9 +29,11 @@ function Layout() {
               {isLoggedIn ? (
                 <>
                   {/* User greeting */}
-                  <span className="text-gray-600 text-sm">
-                    Bonjour, <span className="font-semibold text-esiee-blue">{user?.name || user?.email?.split('@')[0]}</span>
-                  </span>
+                  <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-full">
+                    <span className="text-gray-700 text-sm">
+                      Bonjour, <span className="font-semibold text-esiee-blue">{user?.name || user?.email?.split('@')[0]}</span>
+                    </span>
+                  </div>
                   
                   <Link 
                     to={`/${userRole}`} 
@@ -96,7 +98,7 @@ function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-transition flex-grow">
         <Outlet />
       </main>
 

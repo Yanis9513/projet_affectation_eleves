@@ -1,17 +1,3 @@
-import React from 'react';
-
-/**
- * Reusable Card Component with ESIEE styling
- * Perfect for displaying projects, students, teachers, or any content
- * 
- * @param {ReactNode} children - Card content
- * @param {string} title - Optional card title
- * @param {ReactNode} header - Custom header content (overrides title)
- * @param {ReactNode} footer - Footer content (actions, buttons, etc.)
- * @param {boolean} hover - Add hover effect
- * @param {function} onClick - Make card clickable
- * @param {string} className - Additional classes
- */
 export default function Card({
   children,
   title,

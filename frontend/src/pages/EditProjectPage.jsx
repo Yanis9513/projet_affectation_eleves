@@ -25,9 +25,9 @@ export default function EditProjectPage() {
   })
 
   const projectTypes = [
-    { value: 'group_project', label: '👥 Projet de Groupe (Group Project)' },
-    { value: 'english_leveling', label: '🇬🇧 Répartition par Niveau (English Leveling)' },
-    { value: 'exchange_program', label: '✈️ Programme d\'Échange (Exchange Program)' }
+    { value: 'group_project', label: 'Projet de Groupe' },
+    { value: 'english_leveling', label: 'Répartition par Niveau d\'Anglais' },
+    { value: 'exchange_program', label: 'Programme d\'Échange' }
   ]
 
   useEffect(() => {
@@ -126,16 +126,16 @@ export default function EditProjectPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+      <div className="container mx-auto px-4 max-w-4xl fade-in">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 fade-in">
           <Button variant="outline" onClick={() => navigate(`/projects/${projectId}`)}>
             ← Retour au projet
           </Button>
         </div>
 
         {/* Main Form */}
-        <CardSimple>
+        <CardSimple className="fade-in-delay-1">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
               Modifier le Projet
@@ -148,7 +148,7 @@ export default function EditProjectPage() {
           {error && <Alert type="error" message={error} className="mb-6" />}
           {success && <Alert type="success" message={success} className="mb-6" />}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 fade-in-delay-2">
             {/* Basic Information */}
             <div>
               <h3 className="text-xl font-bold text-gray-800 mb-4">Informations de Base</h3>
@@ -263,7 +263,7 @@ export default function EditProjectPage() {
                 variant="primary"
                 disabled={saving}
               >
-                {saving ? 'Enregistrement...' : '💾 Enregistrer les Modifications'}
+                {saving ? 'Enregistrement...' : 'Enregistrer les Modifications'}
               </Button>
             </div>
           </form>

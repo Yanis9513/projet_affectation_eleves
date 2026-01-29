@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * Reusable Text Input Component
  */

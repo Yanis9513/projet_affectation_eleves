@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from './Button'
 import { Alert } from './Loading'
 
-export default function CSVUploader({ onStudentsUploaded, existingStudents = [] }) {
-  const [students, setStudents] = useState(existingStudents)
+export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) {
+  const [previewStudents, setPreviewStudents] = useState([])
+  const [deletedEmails, setDeletedEmails] = useState(new Set())
   const [error, setError] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [editingIndex, setEditingIndex] = useState(null)
@@ -15,6 +16,12 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
     rank: '',
     grade: ''
   })
+
+  useEffect(() => {
+    if (existingStudents.length > 0 && previewStudents.length === 0) {
+      setPreviewStudents(existingStudents)
+    }
+  }, [existingStudents])
 
   // Generate name from email if name is missing
   const generateNameFromEmail = (email) => {
@@ -37,7 +44,7 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
   const parseCSV = (text) => {
     const lines = text.trim().split('\n')
     if (lines.length < 2) {
-      throw new Error('❌ Le fichier CSV doit contenir au moins une ligne d\'en-tête et une ligne de données')
+      throw new Error(' Le fichier CSV doit contenir au moins une ligne d\'en-tête et une ligne de données')
     }
 
     // Parse header
@@ -45,7 +52,7 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
     
     // Validate required column (only email is mandatory now)
     if (!header.includes('email')) {
-      throw new Error('❌ Colonne requise manquante: "email" - Votre CSV doit avoir une colonne email')
+      throw new Error(' Colonne requise manquante: "email" - Votre CSV doit avoir une colonne email')
     }
 
     // Parse data rows
@@ -106,7 +113,7 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
 
     // Throw error if any critical errors
     if (errors.length > 0) {
-      throw new Error(`❌ Erreurs trouvées:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n... et ${errors.length - 5} autres erreurs` : ''}`)
+      throw new Error(` Erreurs trouvées:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n... et ${errors.length - 5} autres erreurs` : ''}`)
     }
 
     // Show warnings but continue
@@ -115,7 +122,7 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
     }
 
     if (parsedStudents.length === 0) {
-      throw new Error('❌ Aucun étudiant valide trouvé dans le fichier CSV')
+      throw new Error(' Aucun étudiant valide trouvé dans le fichier CSV')
     }
 
     return parsedStudents
@@ -133,10 +140,12 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
   }
 
   const handleEditStudent = (index, field, value) => {
-    const updatedStudents = [...students]
+    const updatedStudents = [...previewStudents]
     updatedStudents[index][field] = value
-    setStudents(updatedStudents)
-    onStudentsUploaded(updatedStudents)
+    setPreviewStudents(updatedStudents)
+    if (onUploadSuccess) {
+      onUploadSuccess(updatedStudents)
+    }
   }
 
   const handleFileUpload = (event) => {
@@ -149,27 +158,27 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
     }
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const text = e.target.result
         const parsedStudents = parseCSV(text)
         
-        // Check for duplicates with existing students
-        const existingEmails = new Set(students.map(s => s.email))
+        const existingEmails = new Set([...existingStudents.map(s => s.email), ...deletedEmails])
         const newStudents = parsedStudents.filter(s => !existingEmails.has(s.email))
         const duplicateCount = parsedStudents.length - newStudents.length
         
-        // Merge with existing students
-        const mergedStudents = [...students, ...newStudents]
-        setStudents(mergedStudents)
-        onStudentsUploaded(mergedStudents)
-        
-        // Show success message
-        setError('')
-        if (duplicateCount > 0) {
-          alert(`✅ ${newStudents.length} étudiants ajoutés avec succès!\n⚠️ ${duplicateCount} étudiants en double ignorés.`)
-        } else {
-          alert(`✅ ${newStudents.length} étudiants ajoutés avec succès!`)
+        if (newStudents.length > 0) {
+          setPreviewStudents(prev => [...prev, ...newStudents])
+          
+          setError('')
+          
+          if (duplicateCount > 0) {
+            setError(` ${newStudents.length} étudiants ajoutés à la prévisualisation. ${duplicateCount} doublons ignorés.`)
+          } else {
+            setError(` ${newStudents.length} étudiants ajoutés à la prévisualisation!`)
+          }
+        } else if (duplicateCount > 0) {
+          setError('Tous les étudiants de ce fichier existent déjà dans la liste.')
         }
       } catch (err) {
         setError(err.message)
@@ -204,10 +213,9 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
           const text = event.target.result
           const parsedStudents = parseCSV(text)
           
-          // Merge with existing students
-          const mergedStudents = [...students, ...parsedStudents]
-          setStudents(mergedStudents)
-          onStudentsUploaded(mergedStudents)
+          const mergedStudents = [...previewStudents, ...parsedStudents]
+          setPreviewStudents(mergedStudents)
+          onUploadSuccess(mergedStudents)
           setError('')
         } catch (err) {
           setError(err.message)
@@ -218,21 +226,34 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
       setError('Veuillez déposer un fichier CSV')
     }
   }
-  const handleDeleteStudent = (index) => {
-    const updatedStudents = students.filter((_, i) => i !== index)
-    setStudents(updatedStudents)
-    onStudentsUploaded(updatedStudents)
+  const handleDeleteStudent = async (index) => {
+    const studentToDelete = previewStudents[index]
+    const updatedStudents = previewStudents.filter((_, i) => i !== index)
+    
+    const newDeletedEmails = new Set([...deletedEmails, studentToDelete.email])
+    setDeletedEmails(newDeletedEmails)
+    
+    setPreviewStudents(updatedStudents)
+    
+    setError(`L'étudiant ${studentToDelete.name} a été retiré de la prévisualisation.`)
+    
+
   }
+  
 
   const handleAddManualStudent = () => {
-    // Validate email is provided
     if (!manualStudent.email || !manualStudent.email.includes('@')) {
       setError('Email valide requis')
       return
     }
+    
+    if (!manualStudent.email.endsWith('@edu.esiee.fr')) {
+      setError('Veuillez utiliser une adresse email @edu.esiee.fr')
+      return
+    }
 
     // Check for duplicate email
-    if (students.some(s => s.email === manualStudent.email)) {
+    if (previewStudents.some(s => s.email === manualStudent.email)) {
       setError('Un étudiant avec cet email existe déjà')
       return
     }
@@ -249,9 +270,8 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
       grade: manualStudent.grade ? parseFloat(manualStudent.grade) : null
     }
 
-    const updatedStudents = [...students, newStudent]
-    setStudents(updatedStudents)
-    onStudentsUploaded(updatedStudents)
+    const updatedStudents = [...previewStudents, newStudent]
+    setPreviewStudents(updatedStudents)
     
     // Reset form
     setManualStudent({ name: '', email: '', filiere: '', rank: '', grade: '' })
@@ -265,6 +285,7 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
       {error && (
         <Alert type="error" message={error} onClose={() => setError('')} />
       )}
+
 
       {/* CSV Upload Area */}
       <div
@@ -289,16 +310,17 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
           </div>
           
           <div className="flex justify-center gap-3 flex-wrap">
-            <label>
+            <label className="cursor-pointer">
               <input
                 type="file"
                 accept=".csv"
                 onChange={handleFileUpload}
                 className="hidden"
+                id="csv-upload"
               />
-              <Button variant="primary" as="span">
+              <span className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-esiee-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-esiee-blue">
                 📁 Sélectionner un fichier CSV
-              </Button>
+              </span>
             </label>
             
             <Button variant="secondary" onClick={() => setShowManualForm(!showManualForm)}>
@@ -406,11 +428,11 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
       )}
 
       {/* Students Table */}
-      {students.length > 0 && (
+      {(previewStudents.length > 0 || existingStudents.length > 0) && (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-4 bg-esiee-blue text-white">
             <h3 className="text-lg font-bold">
-              Étudiants Importés ({students.length})
+              Étudiants Importés ({previewStudents.length})
             </h3>
           </div>
           
@@ -427,7 +449,15 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {students.map((student, index) => (
+                {existingStudents.length > 0 && (
+                  <tr className="bg-gray-50">
+                    <td colSpan="6" className="px-6 py-2 text-sm font-medium text-gray-700">
+                      {existingStudents.length} étudiant(s) déjà inscrit(s) • {previewStudents.length} en attente d'import
+                    </td>
+                  </tr>
+                )}
+              
+              {previewStudents.map((student, index) => (
                   <tr key={student.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       {editingIndex === index ? (
@@ -480,9 +510,9 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
                     <td className="px-4 py-3">
                       <button
                         onClick={() => handleDeleteStudent(index)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-3"
                       >
-                        ✕ Supprimer
+                        Retirer de l'import
                       </button>
                     </td>
                   </tr>
@@ -490,6 +520,35 @@ export default function CSVUploader({ onStudentsUploaded, existingStudents = [] 
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {previewStudents.length > 0 && onUploadSuccess && (
+        <div className="mt-6 flex justify-end">
+          <Button 
+            variant="primary" 
+            onClick={async () => {
+              try {
+                const existingEmails = new Set(existingStudents.map(s => s.email));
+                const newStudents = previewStudents.filter(s => !existingEmails.has(s.email));
+                
+                if (newStudents.length > 0) {
+                  await onUploadSuccess(newStudents);
+                  setPreviewStudents([]);
+                } else {
+                  setError('Aucun nouvel étudiant à importer.');
+                  return;
+                }
+                setError('');
+              } catch (err) {
+                setError('Erreur lors de l\'importation des étudiants');
+                console.error('Erreur lors de l\'importation:', err);
+              }
+            }}
+            className="px-6 py-2 text-lg"
+          >
+            Terminer l'importation
+          </Button>
         </div>
       )}
     </div>

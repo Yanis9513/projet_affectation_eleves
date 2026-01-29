@@ -5,11 +5,17 @@ import Button from '../components/Button'
 import { Loading, Alert } from '../components/Loading'
 import ConfirmModal from '../components/ConfirmModal'
 import CSVUploader from '../components/CSVUploader'
-import { projectAPI } from '../services/api'
+import { projectAPI, assignmentAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const translateProjectType = (type) => {
+  const translations = {
+    'group_project': 'Projet de groupe',
+    'english_leveling': 'Niveau d\'anglais',
+    'exchange_program': 'Programme d\'échange'
+  }
+  return translations[type] || type
+}
 
 export default function ProjectDetailsPage() {
   const { projectId } = useParams()
@@ -37,22 +43,21 @@ export default function ProjectDetailsPage() {
       setProject(projectResponse.data)
 
       // Load students enrolled in this project
-      const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`)
+      const studentsResponse = await projectAPI.getStudents(projectId)
       setStudents(studentsResponse.data || [])
 
       // Try to load assignments/groups if they exist
       try {
-        const assignmentsResponse = await axios.get(`${API_BASE_URL}/api/assignments/?project_id=${projectId}`)
+        const assignmentsResponse = await assignmentAPI.getByProject(projectId)
         if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
           setAssignments(assignmentsResponse.data)
 
           // Load stats
-          const statsResponse = await axios.get(`${API_BASE_URL}/api/assignments/stats?project_id=${projectId}`)
+          const statsResponse = await assignmentAPI.getStats(projectId)
           setStats(statsResponse.data)
         }
       } catch (err) {
-        // No assignments yet, that's okay
-        console.log('No assignments yet for this project')
+        // No assignments yet, that's okay - silently ignore
       }
     } catch (err) {
       console.error('Error loading project details:', err)
@@ -78,15 +83,20 @@ export default function ProjectDetailsPage() {
 
   const handleUploadMoreStudents = async (newStudents) => {
     try {
-      await projectAPI.uploadStudents(projectId, newStudents)
-      setSuccess(`${newStudents.length} étudiant(s) ajouté(s) avec succès`)
-      setShowUploadStudents(false)
-      // Reload students
-      const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`)
-      setStudents(studentsResponse.data || [])
+      if (newStudents && newStudents.length > 0) {
+        await projectAPI.uploadStudents(projectId, newStudents);
+        setSuccess(`${newStudents.length} étudiant(s) ajouté(s) avec succès`);
+        
+        const studentsResponse = await projectAPI.getStudents(projectId);
+        setStudents(studentsResponse.data || []);
+        
+        setShowUploadStudents(false);
+      }
     } catch (err) {
-      console.error('Error uploading students:', err)
-      setError('Erreur lors de l\'ajout des étudiants')
+      console.error('Error updating students:', err)
+      setError('Erreur lors de la mise à jour des étudiants')
+      const studentsResponse = await projectAPI.getStudents(projectId)
+      setStudents(studentsResponse.data || [])
     }
   }
 
@@ -138,7 +148,6 @@ export default function ProjectDetailsPage() {
         <div className="container mx-auto px-4 max-w-4xl">
           <CardSimple>
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">❌</div>
               <h3 className="text-xl font-bold text-gray-700 mb-2">Erreur</h3>
               <p className="text-gray-600 mb-6">{error || 'Projet introuvable'}</p>
               <Button onClick={() => navigate('/projects')}>
@@ -155,7 +164,7 @@ export default function ProjectDetailsPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-6 flex justify-between items-center fade-in">
           <Button variant="outline" onClick={() => navigate('/projects')}>
             ← Retour aux projets
           </Button>
@@ -172,13 +181,13 @@ export default function ProjectDetailsPage() {
                 variant="outline"
                 onClick={() => navigate(`/teacher/edit-project/${projectId}`)}
               >
-                ✏️ Modifier
+                Modifier
               </Button>
               <Button
                 variant="danger"
-                onClick={() => setDeleteModal(true)}
+                onClick={() => setShowDeleteModal(true)}
               >
-                🗑️ Supprimer
+                Supprimer
               </Button>
             </div>
           )}
@@ -189,7 +198,7 @@ export default function ProjectDetailsPage() {
 
         {/* CSV Upload Section */}
         {isTeacher && showUploadStudents && (
-          <CardSimple className="mb-6 bg-blue-50 border-2 border-blue-200">
+          <CardSimple className="mb-6 bg-blue-50 border-2 border-blue-200 fade-in-delay-2">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               Ajouter des Étudiants au Projet
             </h3>
@@ -201,7 +210,7 @@ export default function ProjectDetailsPage() {
         )}
 
         {/* Project Information */}
-        <CardSimple className="mb-6">
+        <CardSimple className="mb-6 fade-in-delay-1">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -223,7 +232,7 @@ export default function ProjectDetailsPage() {
               )}
               {project.project_type && (
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
-                  {project.project_type}
+                  {translateProjectType(project.project_type)}
                 </span>
               )}
             </div>
@@ -260,7 +269,7 @@ export default function ProjectDetailsPage() {
 
         {/* Statistics */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 fade-in-delay-2">
             <CardSimple className="text-center">
               <div className="text-3xl font-bold text-esiee-blue">{stats.total_groups}</div>
               <div className="text-sm text-gray-600">Groupes créés</div>
@@ -285,7 +294,7 @@ export default function ProjectDetailsPage() {
 
         {/* Students List */}
         {students.length > 0 && (
-          <CardSimple className="mb-6">
+          <CardSimple className="mb-6 fade-in-delay-3">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               🎓 Étudiants Inscrits ({students.length})
             </h2>
@@ -330,7 +339,7 @@ export default function ProjectDetailsPage() {
 
         {/* Groups Display */}
         {assignments.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-4 fade-in-delay-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               👥 Groupes formés ({Object.keys(groupedAssignments).length})
             </h2>
@@ -443,7 +452,7 @@ export default function ProjectDetailsPage() {
             </div>
           </CardSimple>
         ) : (
-          <CardSimple className="text-center py-12">
+          <CardSimple className="text-center py-12 fade-in-delay-3">
             <div className="text-6xl mb-4">📊</div>
             <h3 className="text-xl font-bold text-gray-700 mb-2">
               Aucun étudiant inscrit
