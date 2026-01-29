@@ -4,7 +4,6 @@ import { CardSimple } from '../components/Card'
 import Button from '../components/Button'
 import { TextInput } from '../components/Input'
 import { Loading, Alert } from '../components/Loading'
-import axios from 'axios'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
