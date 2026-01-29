@@ -128,7 +128,7 @@ export default function CreateProjectPage() {
     ]
 
     return (
-      <div className="flex items-center justify-center mb-8">
+      <div className="flex items-center justify-center mb-8 fade-in-delay-1">
         {steps.map((step, index) => (
           <div key={step.num} className="flex items-center">
             <div className={`
@@ -331,7 +331,7 @@ export default function CreateProjectPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+      <div className="container mx-auto px-4 max-w-4xl fade-in">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
@@ -346,7 +346,7 @@ export default function CreateProjectPage() {
         {renderStepIndicator()}
 
         {/* Step Content */}
-        <div className="mb-8">
+        <div className="mb-8 fade-in-delay-2">
           {currentStep === 1 && renderStep1()}
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
@@ -354,7 +354,7 @@ export default function CreateProjectPage() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center fade-in-delay-3">
           <div>
             {currentStep > 1 && (
               <Button

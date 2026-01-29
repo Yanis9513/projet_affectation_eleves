@@ -64,15 +64,15 @@ export default function TeacherDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2 fade-in">
               Tableau de Bord Enseignant
             </h1>
-            <p className="text-gray-600">Gérez vos projets et affectations</p>
+            <p className="text-gray-600 fade-in-delay-1">Gérez vos projets et affectations</p>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 fade-in-delay-1 ml-4">
             <Button
               variant="outline"
               onClick={() => navigate('/profile')}
@@ -92,7 +92,7 @@ export default function TeacherDashboard() {
         {error && <Alert type="error" message={error} onClose={() => setError('')} className="mb-4" />}
         {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 fade-in-delay-2">
           <CardSimple className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
             <p className="text-gray-700 text-sm font-medium mb-1">Mes Projets</p>
             <p className="text-4xl font-bold text-esiee-blue">{projects.length}</p>
@@ -116,12 +116,11 @@ export default function TeacherDashboard() {
           </CardSimple>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 fade-in-delay-3">
           <h2 className="text-2xl font-bold text-gray-800">Mes Projets</h2>
           
           {projects.length === 0 ? (
-            <CardSimple className="text-center py-12">
-              <div className="text-6xl mb-4">📁</div>
+            <CardSimple className="text-center py-12 fade-in-delay-3">
               <p className="text-gray-600 mb-4">Aucun projet créé</p>
               <Button
                 variant="primary"
@@ -132,7 +131,7 @@ export default function TeacherDashboard() {
             </CardSimple>
           ) : (
             projects.map(project => (
-              <CardSimple key={project.id} className="hover:shadow-lg transition-shadow">
+              <CardSimple key={project.id} className="hover:shadow-lg transition-shadow fade-in-delay-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -156,10 +155,10 @@ export default function TeacherDashboard() {
                     <p className="text-gray-600 mb-3">{project.description}</p>
                     
                     <div className="flex gap-4 text-sm text-gray-600">
-                      <span>📊 {project.students?.length || 0}/{project.max_students} étudiants</span>
-                      <span>👥 Taille de groupe: {project.group_size || 'N/A'}</span>
+                      <span>{project.students?.length || 0}/{project.max_students} étudiants</span>
+                      <span>Taille de groupe: {project.group_size || 'N/A'}</span>
                       {project.project_type && (
-                        <span>🎯 Type: {project.project_type}</span>
+                        <span>Type: {project.project_type}</span>
                       )}
                     </div>
                   </div>
@@ -170,7 +169,7 @@ export default function TeacherDashboard() {
                       size="sm"
                       onClick={() => navigate(`/projects/${project.id}`)}
                     >
-                      👁️ Voir Détails
+                      Voir Détails
                     </Button>
                     <Button
                       variant="outline"

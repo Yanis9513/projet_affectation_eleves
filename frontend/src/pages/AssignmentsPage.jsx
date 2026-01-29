@@ -144,13 +144,13 @@ function AssignmentsPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 fade-in">
           <Button variant="outline" onClick={() => navigate('/teacher')}>
             ← Retour au tableau de bord
           </Button>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 fade-in-delay-1">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             Affectations de Groupes
           </h1>
@@ -164,7 +164,7 @@ function AssignmentsPage() {
         {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
 
         {/* Actions */}
-        <div className="mb-6 flex gap-3 flex-wrap">
+        <div className="mb-6 flex gap-3 flex-wrap fade-in-delay-2">
           <Button 
             variant="primary" 
             onClick={runAlgorithm}
@@ -187,7 +187,7 @@ function AssignmentsPage() {
 
         {/* Statistics */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 fade-in-delay-2">
             <CardSimple className="text-center">
               <div className="text-3xl font-bold text-esiee-blue">{stats.total_groups}</div>
               <div className="text-sm text-gray-600">Groupes créés</div>
@@ -212,7 +212,7 @@ function AssignmentsPage() {
 
         {/* Groups Display */}
         {assignments.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-4 fade-in-delay-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Groupes formés
             </h2>
@@ -264,8 +264,7 @@ function AssignmentsPage() {
               ))}
           </div>
         ) : (
-          <CardSimple className="text-center py-12">
-            <div className="text-6xl mb-4">📊</div>
+          <CardSimple className="text-center py-12 fade-in-delay-3">
             <h3 className="text-xl font-bold text-gray-700 mb-2">
               Aucune affectation
             </h3>

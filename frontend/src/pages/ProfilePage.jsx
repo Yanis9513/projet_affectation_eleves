@@ -149,13 +149,13 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 fade-in">
           <Button variant="outline" onClick={() => navigate(-1)}>
             ← Retour
           </Button>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 fade-in-delay-1">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             Mon Profil
           </h1>
@@ -168,7 +168,7 @@ export default function ProfilePage() {
         {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
 
         {/* Profile Card */}
-        <CardSimple className="mb-6">
+        <CardSimple className="mb-6 fade-in-delay-2">
           <div className="flex items-center gap-6 mb-6">
             <div className="w-24 h-24 rounded-full bg-esiee-blue text-white flex items-center justify-center text-3xl font-bold">
               {user?.first_name?.[0]}{user?.last_name?.[0]}
@@ -387,7 +387,7 @@ export default function ProfilePage() {
         </CardSimple>
 
         {/* Statistics Card */}
-        <CardSimple>
+        <CardSimple className="fade-in-delay-3">
           <h3 className="text-xl font-bold text-gray-800 mb-4">
             Statistiques
           </h3>

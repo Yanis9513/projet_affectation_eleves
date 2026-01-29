@@ -126,7 +126,7 @@ function PreferencesPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 space-y-6">
         
-        <CardSimple className="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-esiee-blue">
+        <CardSimple className="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-esiee-blue fade-in">
           <h1 className="text-3xl font-bold text-esiee-blue mb-2">Mes Préférences de Projets</h1>
           <p className="text-gray-600">
             Sélectionnez et classez vos projets préférés. Votre premier choix a la priorité la plus élevée.
@@ -134,7 +134,7 @@ function PreferencesPage() {
         </CardSimple>
 
         {/* Partner Preference Section */}
-        <CardSimple className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500">
+        <CardSimple className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 fade-in-delay-1">
           <h2 className="text-xl font-bold text-purple-700 mb-3">Préférence de Partenaire (Optionnel)</h2>
           <p className="text-gray-600 mb-4 text-sm">
             Si vous souhaitez être dans le même groupe qu'un camarade, entrez son email. 
@@ -150,7 +150,7 @@ function PreferencesPage() {
           />
         </CardSimple>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 fade-in-delay-2">
           {/* Available Projects */}
           <CardSimple>
             <h2 className="text-xl font-bold text-esiee-blue mb-4">Projets Disponibles</h2>
@@ -244,8 +244,8 @@ function PreferencesPage() {
         </div>
 
         {/* Information Box */}
-        <CardSimple className="bg-blue-50 border-l-4 border-blue-500">
-          <h3 className="text-lg font-bold text-blue-800 mb-2">ℹ️ Comment ça marche ?</h3>
+        <CardSimple className="bg-blue-50 border-l-4 border-blue-500 fade-in-delay-2">
+          <h3 className="text-lg font-bold text-blue-800 mb-2">Comment ça marche ?</h3>
           <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm">
             <li>Classez vos projets préférés par ordre de priorité (1 = préférence maximale)</li>
             <li>Vous pouvez réorganiser vos choix avec les flèches ↑ ↓</li>

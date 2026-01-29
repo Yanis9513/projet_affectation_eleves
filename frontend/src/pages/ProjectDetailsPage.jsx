@@ -148,7 +148,6 @@ export default function ProjectDetailsPage() {
         <div className="container mx-auto px-4 max-w-4xl">
           <CardSimple>
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">❌</div>
               <h3 className="text-xl font-bold text-gray-700 mb-2">Erreur</h3>
               <p className="text-gray-600 mb-6">{error || 'Projet introuvable'}</p>
               <Button onClick={() => navigate('/projects')}>
@@ -165,7 +164,7 @@ export default function ProjectDetailsPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-6 flex justify-between items-center fade-in">
           <Button variant="outline" onClick={() => navigate('/projects')}>
             ← Retour aux projets
           </Button>
@@ -199,7 +198,7 @@ export default function ProjectDetailsPage() {
 
         {/* CSV Upload Section */}
         {isTeacher && showUploadStudents && (
-          <CardSimple className="mb-6 bg-blue-50 border-2 border-blue-200">
+          <CardSimple className="mb-6 bg-blue-50 border-2 border-blue-200 fade-in-delay-2">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               Ajouter des Étudiants au Projet
             </h3>
@@ -211,7 +210,7 @@ export default function ProjectDetailsPage() {
         )}
 
         {/* Project Information */}
-        <CardSimple className="mb-6">
+        <CardSimple className="mb-6 fade-in-delay-1">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -270,7 +269,7 @@ export default function ProjectDetailsPage() {
 
         {/* Statistics */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 fade-in-delay-2">
             <CardSimple className="text-center">
               <div className="text-3xl font-bold text-esiee-blue">{stats.total_groups}</div>
               <div className="text-sm text-gray-600">Groupes créés</div>
@@ -295,7 +294,7 @@ export default function ProjectDetailsPage() {
 
         {/* Students List */}
         {students.length > 0 && (
-          <CardSimple className="mb-6">
+          <CardSimple className="mb-6 fade-in-delay-3">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               🎓 Étudiants Inscrits ({students.length})
             </h2>
@@ -340,7 +339,7 @@ export default function ProjectDetailsPage() {
 
         {/* Groups Display */}
         {assignments.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-4 fade-in-delay-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               👥 Groupes formés ({Object.keys(groupedAssignments).length})
             </h2>
@@ -453,7 +452,7 @@ export default function ProjectDetailsPage() {
             </div>
           </CardSimple>
         ) : (
-          <CardSimple className="text-center py-12">
+          <CardSimple className="text-center py-12 fade-in-delay-3">
             <div className="text-6xl mb-4">📊</div>
             <h3 className="text-xl font-bold text-gray-700 mb-2">
               Aucun étudiant inscrit

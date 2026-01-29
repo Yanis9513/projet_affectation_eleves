@@ -52,12 +52,12 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          Tableau de Bord Étudiant
+        <h1 className="text-4xl font-bold text-gray-800 mb-2 fade-in">
+          🎓 Tableau de Bord Étudiant
         </h1>
-        <p className="text-gray-600 mb-8">Bienvenue {student.name}</p>
+        <p className="text-gray-600 mb-8 fade-in-delay-1">Bienvenue {student.name}</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 fade-in-delay-2">
           <CardSimple className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 hover:shadow-lg transition-all">
             <p className="text-gray-700 text-sm font-medium mb-1">Filière</p>
             <p className="text-3xl font-bold text-esiee-blue">{student.filiere}</p>
@@ -80,7 +80,7 @@ export default function StudentDashboard() {
 
         {/* Assignment Status */}
         {student.assignedProject ? (
-          <CardSimple className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300">
+          <CardSimple className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 fade-in-delay-3">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="text-2xl font-bold text-green-800 mb-3">
@@ -111,7 +111,7 @@ export default function StudentDashboard() {
             </div>
           </CardSimple>
         ) : (
-          <CardSimple className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300">
+          <CardSimple className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 fade-in-delay-3">
             <div>
               <h3 className="text-xl font-bold text-yellow-800 mb-2">
                 En attente d'affectation
@@ -130,14 +130,13 @@ export default function StudentDashboard() {
           </CardSimple>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 fade-in-delay-4">
           {/* Browse Projects Card */}
           <CardSimple 
             className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 hover:shadow-xl transition-all cursor-pointer"
             onClick={() => navigate('/projects')}
           >
             <div className="text-center">
-              <div className="text-5xl mb-3">📁</div>
               <h3 className="text-lg font-bold text-gray-800 mb-2">Parcourir les Projets</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Découvrez tous les projets disponibles et leurs détails
@@ -154,7 +153,6 @@ export default function StudentDashboard() {
             onClick={() => navigate('/preferences')}
           >
             <div className="text-center">
-              <div className="text-5xl mb-3">⭐</div>
               <h3 className="text-lg font-bold text-gray-800 mb-2">Mes Préférences</h3>
               <p className="text-sm text-gray-600 mb-4">
                 {student.hasSubmittedPreferences ? 'Modifiez vos préférences' : 'Soumettez vos préférences de projets'}
@@ -175,7 +173,6 @@ export default function StudentDashboard() {
             onClick={() => navigate('/profile')}
           >
             <div className="text-center">
-              <div className="text-5xl mb-3">👤</div>
               <h3 className="text-lg font-bold text-gray-800 mb-2">Mon Profil</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Consultez et modifiez vos informations personnelles
@@ -188,7 +185,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Quick Info Card */}
-        <CardSimple className="mt-6 bg-gradient-to-r from-gray-50 to-white border-l-4 border-esiee-blue">
+        <CardSimple className="mt-6 bg-gradient-to-r from-gray-50 to-white border-l-4 border-esiee-blue fade-in-delay-5">
           <h3 className="text-lg font-bold text-gray-800 mb-3">Vos Informations</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>

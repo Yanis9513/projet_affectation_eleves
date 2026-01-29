@@ -99,7 +99,7 @@ export default function StudentFormPage() {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
-          <CardSimple className="text-center">
+          <CardSimple className="text-center fade-in">
             <h2 className="text-2xl font-bold text-green-600 mb-4">
               Préférences Envoyées !
             </h2>
@@ -136,7 +136,7 @@ export default function StudentFormPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 fade-in">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             Formulaire de Préférences
           </h1>
@@ -146,7 +146,7 @@ export default function StudentFormPage() {
         </div>
 
         {/* Project Info */}
-        <CardSimple className="mb-6 bg-blue-50 border-l-4 border-esiee-blue">
+        <CardSimple className="mb-6 bg-blue-50 border-l-4 border-esiee-blue fade-in-delay-1">
           <h3 className="font-bold text-esiee-blue mb-2">Informations du Projet</h3>
           <p className="text-sm text-gray-700 mb-2">
             <strong>Description:</strong> {project.description}
@@ -170,7 +170,7 @@ export default function StudentFormPage() {
         )}
 
         {/* Preference Form */}
-        <CardSimple>
+        <CardSimple className="fade-in-delay-2">
           <h2 className="text-2xl font-bold text-esiee-blue mb-6">
             Vos Préférences
           </h2>
@@ -202,7 +202,7 @@ export default function StudentFormPage() {
                 {preference.partnerId && (
                   <Alert
                     type="warning"
-                    message="⚠️ Important: L'algorithme tentera de vous grouper avec cette personne, mais cela dépend aussi de sa préférence et des contraintes du projet."
+                    message="Important: L'algorithme tentera de vous grouper avec cette personne, mais cela dépend aussi de sa préférence et des contraintes du projet."
                   />
                 )}
               </>
@@ -246,7 +246,7 @@ export default function StudentFormPage() {
         </CardSimple>
 
         {/* Help Section */}
-        <CardSimple className="mt-6">
+        <CardSimple className="mt-6 fade-in-delay-3">
           <h3 className="font-bold text-gray-800 mb-3">❓ Besoin d'aide ?</h3>
           <p className="text-sm text-gray-600 mb-2">
             Si vous avez des questions sur ce projet ou si vous rencontrez un problème, 

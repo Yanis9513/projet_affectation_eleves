@@ -75,8 +75,8 @@ function LoginPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto animate-fadeIn">
-      <div className="bg-white rounded-lg shadow-lg p-8 border-t-4 border-esiee-blue">
+    <div className="max-w-md mx-auto">
+      <div className="bg-white rounded-lg shadow-lg p-8 border-t-4 border-esiee-blue fade-in">
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <img 
