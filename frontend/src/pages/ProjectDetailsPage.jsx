@@ -60,8 +60,7 @@ export default function ProjectDetailsPage() {
           setStats(statsResponse.data)
         }
       } catch (err) {
-        // No assignments yet, that's okay
-        console.log('No assignments yet for this project')
+        // No assignments yet, that's okay - silently ignore
       }
     } catch (err) {
       console.error('Error loading project details:', err)

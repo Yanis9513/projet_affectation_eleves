@@ -67,8 +67,6 @@ export default function StudentFormPage() {
         preferred_partner_id: preference.partnerId ? parseInt(preference.partnerId) : null,
         rank: 1
       }
-
-      console.log('Submitting preference:', preferenceData)
       
       await preferenceAPI.submitPartnerPreference(studentId, preferenceData)
       

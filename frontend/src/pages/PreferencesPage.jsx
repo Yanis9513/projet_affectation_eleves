@@ -98,11 +98,6 @@ function PreferencesPage() {
         partner_email: partnerEmail || null
       })
       
-      console.log('Submitting preferences:', {
-        preferences: preferences.map(p => ({ project_id: p.id, rank: p.order })),
-        partner_email: partnerEmail || null
-      })
-      
       toast.success('Préférences soumises avec succès !')
     } catch (err) {
       console.error('Error submitting preferences:', err)
