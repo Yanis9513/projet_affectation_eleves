@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * Reusable Card Component with ESIEE styling
  * Perfect for displaying projects, students, teachers, or any content

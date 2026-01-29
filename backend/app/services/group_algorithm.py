@@ -8,9 +8,7 @@ This algorithm assigns students to groups based on:
 """
 
 from typing import List, Dict, Set, Tuple, Optional
-from datetime import datetime
 import random
-from collections import defaultdict
 
 
 class GroupFormationAlgorithm:

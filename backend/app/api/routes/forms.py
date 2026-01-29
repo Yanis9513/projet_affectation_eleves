@@ -68,7 +68,7 @@ def create_form_question(project_id: int, question: FormQuestionCreate, db: Sess
     # Créer la question
     db_question = FormQuestion(
         project_id=project_id,
-        **question.dict(exclude={'project_id'})
+        **question.model_dump(exclude={'project_id'})
     )
     db.add(db_question)
     db.commit()
@@ -176,7 +176,7 @@ def submit_student_responses(
             # Créer une nouvelle réponse
             db_response = StudentResponse(
                 student_id=student_id,
-                **response.dict()
+                **response.model_dump()
             )
             db.add(db_response)
             db_responses.append(db_response)

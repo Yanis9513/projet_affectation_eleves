@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -19,16 +19,22 @@ export const AuthProvider = ({ children }) => {
 
   // Load auth state from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedRole = localStorage.getItem('userRole');
-    const storedToken = localStorage.getItem('token');
+    try {
+      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem('token');
 
-    if (storedUser && storedRole && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setUserRole(storedRole);
-      setIsLoggedIn(true);
+      if (storedUser && storedToken) {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setUserRole(userData.role);
+        setIsLoggedIn(true);
+      }
+    } catch (error) {
+      console.error('Failed to load auth state:', error);
+      localStorage.clear();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (credentials) => {

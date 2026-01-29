@@ -62,15 +62,11 @@ function LoginPage() {
 
     } catch (err) {
       console.error('Login error:', err)
-      let errorMessage = 'Erreur de connexion'
       
-      if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail
-      } else if (err.message === 'Network Error') {
-        errorMessage = 'Impossible de se connecter au serveur'
-      } else if (err.message) {
-        errorMessage = err.message
-      }
+      const errorMessage = 
+        err.response?.data?.detail || 
+        (err.message === 'Network Error' ? 'Impossible de se connecter au serveur' : err.message) ||
+        'Erreur de connexion'
       
       toast.error(errorMessage)
     } finally {

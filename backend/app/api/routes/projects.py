@@ -148,7 +148,7 @@ async def update_project(
     
     try:
         # Update only provided fields
-        update_data = project_data.dict(exclude_unset=True)
+        update_data = project_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(project, field, value)
         

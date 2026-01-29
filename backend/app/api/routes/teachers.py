@@ -63,7 +63,7 @@ def update_teacher(teacher_id: int, teacher_update: TeacherUpdate, db: Session =
         raise HTTPException(status_code=404, detail="Professeur non trouvé")
     
     # Update fields
-    for field, value in teacher_update.dict(exclude_unset=True).items():
+    for field, value in teacher_update.model_dump(exclude_unset=True).items():
         setattr(teacher, field, value)
     
     db.commit()
