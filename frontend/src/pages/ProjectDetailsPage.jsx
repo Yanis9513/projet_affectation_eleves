@@ -182,13 +182,13 @@ export default function ProjectDetailsPage() {
                 variant="outline"
                 onClick={() => navigate(`/teacher/edit-project/${projectId}`)}
               >
-                ✏️ Modifier
+                Modifier
               </Button>
               <Button
                 variant="danger"
-                onClick={() => setDeleteModal(true)}
+                onClick={() => setShowDeleteModal(true)}
               >
-                🗑️ Supprimer
+                Supprimer
               </Button>
             </div>
           )}

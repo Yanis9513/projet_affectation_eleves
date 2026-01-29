@@ -1,21 +1,6 @@
 import React, { useEffect } from 'react';
 import Button from './Button';
 
-/**
- * Reusable Modal/Dialog Component
- * 
- * @param {boolean} isOpen - Control modal visibility
- * @param {function} onClose - Close handler
- * @param {string} title - Modal title
- * @param {ReactNode} children - Modal content
- * @param {ReactNode} footer - Custom footer (overrides default buttons)
- * @param {string} size - 'sm' | 'md' | 'lg' | 'xl'
- * @param {boolean} showCloseButton - Show X button in header
- * @param {function} onConfirm - Confirm button handler (if provided, shows confirm button)
- * @param {string} confirmText - Text for confirm button
- * @param {string} confirmVariant - Variant for confirm button
- * @param {boolean} closeOnOverlayClick - Close when clicking outside
- */
 export default function Modal({
   isOpen,
   onClose,

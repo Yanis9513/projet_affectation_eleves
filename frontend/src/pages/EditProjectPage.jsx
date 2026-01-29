@@ -263,7 +263,7 @@ export default function EditProjectPage() {
                 variant="primary"
                 disabled={saving}
               >
-                {saving ? 'Enregistrement...' : '💾 Enregistrer les Modifications'}
+                {saving ? 'Enregistrement...' : 'Enregistrer les Modifications'}
               </Button>
             </div>
           </form>

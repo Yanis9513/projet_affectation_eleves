@@ -295,7 +295,7 @@ export default function ProfilePage() {
               )}
 
               <Button variant="primary" onClick={() => setEditing(true)}>
-                ✏️ Modifier le profil
+                Modifier le profil
               </Button>
             </>
           ) : (
@@ -372,7 +372,7 @@ export default function ProfilePage() {
 
               <div className="flex gap-3">
                 <Button variant="primary" onClick={handleSave}>
-                  💾 Enregistrer
+                  Enregistrer
                 </Button>
                 <Button variant="outline" onClick={() => {
                   setEditing(false)

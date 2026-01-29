@@ -1,15 +1,3 @@
-/**
- * Reusable Button Component with ESIEE styling
- * 
- * @param {string} variant - 'primary' | 'secondary' | 'danger' | 'success' | 'outline'
- * @param {string} size - 'sm' | 'md' | 'lg'
- * @param {boolean} fullWidth - Make button full width
- * @param {boolean} disabled - Disable button
- * @param {string} type - 'button' | 'submit' | 'reset'
- * @param {function} onClick - Click handler
- * @param {ReactNode} children - Button content
- * @param {string} className - Additional classes
- */
 export default function Button({
   children,
   variant = 'primary',

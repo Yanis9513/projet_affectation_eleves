@@ -177,14 +177,14 @@ export default function TeacherDashboard() {
                       size="sm"
                       onClick={() => navigate(`/teacher/edit-project/${project.id}`)}
                     >
-                      ✏️ Modifier
+                      Modifier
                     </Button>
                     <Button
                       variant="danger"
                       size="sm"
                       onClick={() => handleDeleteClick(project)}
                     >
-                      🗑️ Supprimer
+                      Supprimer
                     </Button>
                   </div>
                 </div>

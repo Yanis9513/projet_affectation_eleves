@@ -176,10 +176,10 @@ function AssignmentsPage() {
           {assignments.length > 0 && (
             <>
               <Button variant="secondary" onClick={downloadResults}>
-                ⬇️ Télécharger CSV
+                Télécharger CSV
               </Button>
               <Button variant="outline" onClick={clearAssignments}>
-                🗑️ Effacer les affectations
+                Effacer les affectations
               </Button>
             </>
           )}
