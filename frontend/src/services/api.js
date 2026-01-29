@@ -87,10 +87,11 @@ export const preferenceAPI = {
 
 // Assignment APIs
 export const assignmentAPI = {
-  getAll: () => api.get('/assignments/'),
-  runAlgorithm: () => api.post('/assignments/run-algorithm'),
-  getStats: () => api.get('/assignments/stats'),
-  clearAll: () => api.delete('/assignments/'),
+  getAll: (projectId) => api.get('/assignments/', { params: projectId ? { project_id: projectId } : {} }),
+  getByProject: (projectId) => api.get('/assignments/', { params: { project_id: projectId } }),
+  runAlgorithm: (projectId) => api.post('/assignments/run-algorithm', { project_id: projectId }),
+  getStats: (projectId) => api.get('/assignments/stats', { params: projectId ? { project_id: projectId } : {} }),
+  clearAll: (projectId) => api.delete('/assignments/', { params: projectId ? { project_id: projectId } : {} }),
 }
 
 export default api

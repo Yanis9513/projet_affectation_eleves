@@ -3,11 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
 import { CardSimple } from '../components/Card'
 import { Loading, Alert } from '../components/Loading'
-import { projectAPI } from '../services/api'
-import axios from 'axios'
-
-// Use the base API URL from environment or default to localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { projectAPI, assignmentAPI } from '../services/api'
 
 function AssignmentsPage() {
   const { projectId } = useParams()
@@ -36,13 +32,13 @@ function AssignmentsPage() {
       setProject(projectResponse.data)
 
       // Load existing assignments
-      const assignmentsResponse = await axios.get(`${API_BASE_URL}/api/assignments/?project_id=${projectId}`)
+      const assignmentsResponse = await assignmentAPI.getByProject(projectId)
       setAssignments(assignmentsResponse.data || [])
 
       // Load stats if assignments exist
       if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
         try {
-          const statsResponse = await axios.get(`${API_BASE_URL}/api/assignments/stats?project_id=${projectId}`)
+          const statsResponse = await assignmentAPI.getStats(projectId)
           setStats(statsResponse.data)
         } catch (statsErr) {
           console.error('Error loading stats:', statsErr)
@@ -66,9 +62,7 @@ function AssignmentsPage() {
     setSuccess('')
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/assignments/run-algorithm`, {
-        project_id: parseInt(projectId)
-      })
+      const response = await assignmentAPI.runAlgorithm(parseInt(projectId))
 
       setSuccess(`Algorithme exécuté avec succès! ${response.data.groups_created} groupes créés.`)
       

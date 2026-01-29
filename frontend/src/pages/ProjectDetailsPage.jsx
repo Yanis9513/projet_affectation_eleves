@@ -5,9 +5,8 @@ import Button from '../components/Button'
 import { Loading, Alert } from '../components/Loading'
 import ConfirmModal from '../components/ConfirmModal'
 import CSVUploader from '../components/CSVUploader'
-import { projectAPI } from '../services/api'
+import { projectAPI, assignmentAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
 
 const translateProjectType = (type) => {
   const translations = {
@@ -17,8 +16,6 @@ const translateProjectType = (type) => {
   }
   return translations[type] || type
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function ProjectDetailsPage() {
   const { projectId } = useParams()
@@ -46,17 +43,17 @@ export default function ProjectDetailsPage() {
       setProject(projectResponse.data)
 
       // Load students enrolled in this project
-      const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`)
+      const studentsResponse = await projectAPI.getStudents(projectId)
       setStudents(studentsResponse.data || [])
 
       // Try to load assignments/groups if they exist
       try {
-        const assignmentsResponse = await axios.get(`${API_BASE_URL}/api/assignments/?project_id=${projectId}`)
+        const assignmentsResponse = await assignmentAPI.getByProject(projectId)
         if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
           setAssignments(assignmentsResponse.data)
 
           // Load stats
-          const statsResponse = await axios.get(`${API_BASE_URL}/api/assignments/stats?project_id=${projectId}`)
+          const statsResponse = await assignmentAPI.getStats(projectId)
           setStats(statsResponse.data)
         }
       } catch (err) {
@@ -90,7 +87,7 @@ export default function ProjectDetailsPage() {
         await projectAPI.uploadStudents(projectId, newStudents);
         setSuccess(`${newStudents.length} étudiant(s) ajouté(s) avec succès`);
         
-        const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`);
+        const studentsResponse = await projectAPI.getStudents(projectId);
         setStudents(studentsResponse.data || []);
         
         setShowUploadStudents(false);
@@ -98,7 +95,7 @@ export default function ProjectDetailsPage() {
     } catch (err) {
       console.error('Error updating students:', err)
       setError('Erreur lors de la mise à jour des étudiants')
-      const studentsResponse = await axios.get(`${API_BASE_URL}/api/projects/${projectId}/students`)
+      const studentsResponse = await projectAPI.getStudents(projectId)
       setStudents(studentsResponse.data || [])
     }
   }
