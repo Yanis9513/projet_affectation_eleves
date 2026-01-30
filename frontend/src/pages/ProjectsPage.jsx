@@ -29,8 +29,26 @@ export default function ProjectsPage() {
 
   const loadProjects = async () => {
     try {
-      const response = await projectAPI.getAll();
-      setProjects(response.data.filter(p => p.is_active && p.is_open_for_preferences));
+      const userRole = localStorage.getItem('userRole');
+      console.log('UserRole from localStorage:', userRole);
+      let response;
+      
+      // Load projects based on user role (case-insensitive)
+      if (userRole && userRole.toLowerCase() === 'student') {
+        console.log('Loading student projects only...');
+        // Students see only projects they're enrolled in
+        response = await projectAPI.getMyProjects();
+        console.log('Student projects loaded:', response.data);
+      } else {
+        console.log('Loading all projects (user is not student)');
+        // Teachers and others see all active projects
+        response = await projectAPI.getAll();
+        console.log('All projects loaded:', response.data);
+      }
+      
+      const filtered = response.data.filter(p => p.is_active && p.is_open_for_preferences);
+      console.log('Filtered projects:', filtered);
+      setProjects(filtered);
     } catch (error) {
       console.error('Error loading projects:', error);
       toast.error('Erreur lors du chargement des projets');

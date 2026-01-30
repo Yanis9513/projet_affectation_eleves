@@ -65,6 +65,7 @@ export const studentAPI = {
 // Project APIs
 export const projectAPI = {
   getAll: (params) => api.get('/projects/', { params }),
+  getMyProjects: () => api.get('/projects/me/my-projects'),
   getById: (id) => api.get(`/projects/${id}`),
   create: (projectData) => api.post('/projects/', projectData),
   update: (id, projectData) => api.put(`/projects/${id}`, projectData),

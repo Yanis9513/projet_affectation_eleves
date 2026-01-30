@@ -54,6 +54,44 @@ async def get_projects(
     
     return projects_with_students
 
+@router.get("/me/my-projects", response_model=List[ProjectWithStudents])
+async def get_my_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all projects for the current authenticated student"""
+    
+    # Get student profile for current user
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student profile not found")
+    
+    # Get all projects the student is enrolled in
+    projects = student.projects
+    
+    # Format response
+    projects_with_students = []
+    for project in projects:
+        students_data = []
+        for proj_student in project.students:
+            if proj_student.user:
+                full_name = f"{proj_student.user.first_name} {proj_student.user.last_name}" if proj_student.user.first_name else proj_student.user.email
+                students_data.append(StudentInProject(
+                    id=proj_student.id,
+                    name=full_name,
+                    email=proj_student.user.email,
+                    filiere=proj_student.filiere.value if proj_student.filiere else None,
+                    rank=proj_student.general_rank,
+                    grade=proj_student.gpa
+                ))
+        
+        projects_with_students.append({
+            **project.__dict__,
+            "students": students_data
+        })
+    
+    return projects_with_students
+
 @router.get("/{project_id}", response_model=ProjectWithStudents)
 async def get_project(project_id: int, db: Session = Depends(get_db)):
     """Get a specific project by ID with students"""
