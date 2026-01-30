@@ -18,6 +18,16 @@ export default function TeacherDashboard() {
     loadProjects();
   }, []);
 
+  
+  const translateProjectType = (type) => {
+    const translations = {
+      'group_project': 'Projet de groupe',
+      'english_leveling': 'Niveau d\'anglais',
+      'exchange_program': 'Programme d\'échange'
+    }
+    return translations[type] || type
+  }
+
   const loadProjects = async () => {
     try {
       const response = await projectAPI.getAll();
@@ -158,7 +168,7 @@ export default function TeacherDashboard() {
                       <span>{project.students?.length || 0}/{project.max_students} étudiants</span>
                       <span>Taille de groupe: {project.group_size || 'N/A'}</span>
                       {project.project_type && (
-                        <span>Type: {project.project_type}</span>
+                        <span>Type: {translateProjectType(project.project_type)}</span>
                       )}
                     </div>
                   </div>
