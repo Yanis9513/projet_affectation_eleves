@@ -48,12 +48,15 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   login: (credentials) => api.post('/auth/login', credentials),
   getCurrentUser: () => api.get('/auth/me'),
+  updateProfile: (userData) => api.put('/auth/me', userData),
 }
 
 // Student APIs
 export const studentAPI = {
   getAll: () => api.get('/students/'),
   getById: (id) => api.get(`/students/${id}`),
+  getProfile: () => api.get('/students/me/profile'),
+  updateProfile: (studentData) => api.put('/students/me/profile', studentData),
   create: (studentData) => api.post('/students/', studentData),
   update: (id, studentData) => api.put(`/students/${id}`, studentData),
   delete: (id) => api.delete(`/students/${id}`),
@@ -75,6 +78,14 @@ export const projectAPI = {
     api.post(`/projects/${projectId}/preferences/${studentId}`, {
       preference_order: preferenceOrder,
     }),
+}
+
+// Teacher APIs
+export const teacherAPI = {
+  getAll: () => api.get('/teachers/'),
+  getById: (id) => api.get(`/teachers/${id}`),
+  getProfile: () => api.get('/teachers/me/profile'),
+  updateProfile: (teacherData) => api.put('/teachers/me/profile', teacherData),
 }
 
 // Preference APIs

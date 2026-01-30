@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
 from app.models.teacher import Teacher
+from app.models.user import User
+from app.auth_utils import get_current_user
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -31,7 +33,62 @@ class TeacherWithUserResponse(TeacherResponse):
     user: dict
 
 # Routes
+@router.get("/me/profile", response_model=dict)
+def get_current_teacher_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Récupérer le profil du professeur courant"""
+    teacher = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Profil professeur non trouvé")
+    
+    return {
+        "id": teacher.id,
+        "user_id": teacher.user_id,
+        "department": teacher.department,
+        "office": teacher.office,
+        "phone": teacher.phone,
+        "bio": teacher.bio,
+        "user": {
+            "id": current_user.id,
+            "email": current_user.email,
+            "username": current_user.username,
+            "first_name": current_user.first_name,
+            "last_name": current_user.last_name,
+        }
+    }
+
+@router.put("/me/profile", response_model=dict)
+def update_current_teacher_profile(teacher_update: TeacherUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Mettre à jour le profil du professeur courant"""
+    teacher = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Profil professeur non trouvé")
+    
+    # Update fields
+    for field, value in teacher_update.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(teacher, field, value)
+    
+    db.commit()
+    db.refresh(teacher)
+    
+    return {
+        "id": teacher.id,
+        "user_id": teacher.user_id,
+        "department": teacher.department,
+        "office": teacher.office,
+        "phone": teacher.phone,
+        "bio": teacher.bio,
+        "user": {
+            "id": current_user.id,
+            "email": current_user.email,
+            "username": current_user.username,
+            "first_name": current_user.first_name,
+            "last_name": current_user.last_name,
+        }
+    }
+
 @router.get("/", response_model=List[TeacherResponse])
+
 def get_all_teachers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Récupérer la liste de tous les professeurs"""
     teachers = db.query(Teacher).offset(skip).limit(limit).all()
@@ -71,6 +128,7 @@ def update_teacher(teacher_id: int, teacher_update: TeacherUpdate, db: Session =
     return teacher
 
 @router.get("/{teacher_id}/projects")
+
 def get_teacher_projects(teacher_id: int, db: Session = Depends(get_db)):
     """Récupérer tous les projets d'un professeur"""
     teacher = db.query(Teacher).filter(Teacher.id == teacher_id).first()
