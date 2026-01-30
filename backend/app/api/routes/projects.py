@@ -8,7 +8,9 @@ from app.schemas import (
 from app.models.project import Project, ProjectType
 from app.models.student import Student
 from app.models.user import User, UserRole
+from app.models.teacher import Teacher
 from app.auth_utils import get_current_user
+from app.services.email_service import email_service
 from typing import List
 
 router = APIRouter()
@@ -227,6 +229,10 @@ async def upload_students_to_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
+    # Get teacher name
+    teacher = project.teacher
+    teacher_name = f"{teacher.user.first_name} {teacher.user.last_name}".strip() if teacher.user else "Professeur"
+    
     created_count = 0
     existing_count = 0
     result_students = []
@@ -243,6 +249,14 @@ async def upload_students_to_project(
                 # Link student to project if not already linked
                 if project not in student.projects:
                     student.projects.append(project)
+                    # Send enrollment email
+                    student_name = f"{existing_user.first_name} {existing_user.last_name}".strip() or existing_user.email
+                    email_service.send_student_enrollment_email(
+                        student_email=existing_user.email,
+                        student_name=student_name,
+                        project_title=project.title,
+                        teacher_name=teacher_name
+                    )
                 
                 full_name = f"{existing_user.first_name} {existing_user.last_name}" if existing_user.first_name else existing_user.email
                 result_students.append(StudentInProject(
@@ -313,6 +327,15 @@ async def upload_students_to_project(
             
             # Link student to project
             new_student.projects.append(project)
+            
+            # Send enrollment email
+            student_name = f"{new_user.first_name} {new_user.last_name}".strip()
+            email_service.send_student_enrollment_email(
+                student_email=new_user.email,
+                student_name=student_name,
+                project_title=project.title,
+                teacher_name=teacher_name
+            )
             
             created_count += 1
             full_name = f"{new_user.first_name} {new_user.last_name}".strip()
