@@ -128,35 +128,6 @@ function LoginPage() {
           </Button>
         </form>
 
-        {/* Quick Login Options */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600 text-center mb-3">Connexion rapide pour test :</p>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setFormData({ email: 'teacher@esiee.fr', password: 'password123' })
-                toast.info('Identifiants enseignant remplis')
-              }}
-              disabled={loading}
-            >
-              👨‍🏫 Enseignant
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setFormData({ email: 'student@edu.esiee.fr', password: 'password123' })
-                toast.info('Identifiants étudiant remplis')
-              }}
-              disabled={loading}
-            >
-              🎓 Étudiant
-            </Button>
-          </div>
-        </div>
-
         {/* Additional Links */}
         <div className="mt-6 space-y-3">
           <div className="text-center">
