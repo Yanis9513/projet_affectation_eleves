@@ -161,7 +161,12 @@ def submit_destination_preferences(
     # Vérifier que l'utilisateur est un étudiant
     student = db.query(Student).filter(Student.user_id == current_user.id).first()
     if not student:
-        raise HTTPException(status_code=403, detail="Seuls les étudiants peuvent soumettre des préférences")
+        # Log pour debugging
+        print(f"User {current_user.id} ({current_user.email}, role: {current_user.role}) attempted to submit preferences but has no student profile")
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Vous devez être un étudiant pour soumettre des préférences. User ID: {current_user.id}, Role: {current_user.role}"
+        )
     
     # Vérifier que le projet existe et est de type exchange_program
     project = db.query(Project).filter(Project.id == preferences_data.project_id).first()
