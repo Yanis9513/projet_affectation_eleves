@@ -232,20 +232,83 @@ def delete_student_preferences(student_id: int, db: Session = Depends(get_db)):
 @router.get("/projects/{project_id}/preferences")
 def get_project_preferences(project_id: int, db: Session = Depends(get_db)):
     """Récupérer toutes les préférences pour un projet (utile pour les professeurs)"""
+    from app.models.student import Student
+    from app.models.user import User
+    
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé")
     
     preferences = db.query(StudentPreference).filter(
         StudentPreference.project_id == project_id
-    ).order_by(StudentPreference.rank).all()
+    ).order_by(StudentPreference.student_id).all()
     
-    # Grouper par rang
-    result = {
+    # Build detailed list with student and partner info
+    detailed_preferences = []
+    for pref in preferences:
+        student = db.query(Student).filter(Student.id == pref.student_id).first()
+        student_user = student.user if student else None
+        
+        partner = None
+        if pref.preferred_partner_id:
+            partner_student = db.query(Student).filter(Student.id == pref.preferred_partner_id).first()
+            if partner_student:
+                partner = {
+                    "id": partner_student.id,
+                    "name": f"{partner_student.user.first_name} {partner_student.user.last_name}" if partner_student.user else "Unknown",
+                    "email": partner_student.user.email if partner_student.user else None
+                }
+        
+        detailed_preferences.append({
+            "id": pref.id,
+            "student_id": pref.student_id,
+            "student_name": f"{student_user.first_name} {student_user.last_name}" if student_user else "Unknown",
+            "student_email": student_user.email if student_user else None,
+            "preferred_partner_id": pref.preferred_partner_id,
+            "preferred_partner": partner,
+            "rank": pref.rank,
+            "submitted_at": pref.created_at.isoformat() if pref.created_at else None
+        })
+    
+    # Calculate mutual matches
+    mutual_matches = []
+    for pref in detailed_preferences:
+        if pref["preferred_partner_id"]:
+            # Check if the partner also prefers this student
+            partner_pref = next(
+                (p for p in detailed_preferences if p["student_id"] == pref["preferred_partner_id"]),
+                None
+            )
+            if partner_pref and partner_pref["preferred_partner_id"] == pref["student_id"]:
+                # This is a mutual match - add if not already added
+                pair = tuple(sorted([pref["student_id"], pref["preferred_partner_id"]]))
+                if pair not in [(tuple(sorted([m["student1"]["id"], m["student2"]["id"]]))) for m in mutual_matches]:
+                    mutual_matches.append({
+                        "student1": {
+                            "id": pref["student_id"],
+                            "name": pref["student_name"]
+                        },
+                        "student2": {
+                            "id": partner_pref["student_id"],
+                            "name": partner_pref["student_name"]
+                        }
+                    })
+    
+    # Count students with and without preferences
+    total_students_in_project = db.query(Student).filter(
+        Student.projects.any(id=project_id)
+    ).count()
+    
+    return {
         "project_id": project_id,
         "project_title": project.title,
-        "total_preferences": len(preferences),
-        "by_rank": {}
+        "project_type": project.project_type.value if hasattr(project.project_type, 'value') else str(project.project_type),
+        "total_students": total_students_in_project,
+        "students_with_preferences": len(preferences),
+        "students_without_preferences": total_students_in_project - len(preferences),
+        "mutual_matches_count": len(mutual_matches),
+        "mutual_matches": mutual_matches,
+        "preferences": detailed_preferences
     }
     
     for pref in preferences:
