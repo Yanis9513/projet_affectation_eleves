@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CardSimple } from '../components/Card'
 import Button from '../components/Button'
-import { TextInput } from '../components/Input'
+import { TextInput, Select } from '../components/Input'
 import { Loading, Alert } from '../components/Loading'
 import { studentAPI, teacherAPI, authAPI } from '../services/api'
 
@@ -21,7 +21,12 @@ export default function ProfilePage() {
     department: '',
     office: '',
     phone: '',
-    bio: ''
+    bio: '',
+    // Student fields
+    student_number: '',
+    filiere: '',
+    english_level: '',
+    promotion: ''
   })
 
   useEffect(() => {
@@ -220,10 +225,11 @@ export default function ProfilePage() {
         }
       } else {
         // Update student profile
+        // Note: API expects 'language_level' not 'english_level'
         const studentData = cleanData({
           student_number: formData.student_number,
           filiere: formData.filiere,
-          english_level: formData.english_level,
+          language_level: formData.english_level,
           promotion: formData.promotion
         })
         if (Object.keys(studentData).length > 0) {
@@ -435,6 +441,50 @@ export default function ProfilePage() {
                   onChange={handleChange}
                   required
                 />
+
+                {user?.role === 'STUDENT' && (
+                  <>
+                    <TextInput
+                      label="Numéro d'étudiant"
+                      name="student_number"
+                      value={formData.student_number}
+                      onChange={handleChange}
+                      disabled
+                      helperText="Ce champ ne peut pas être modifié"
+                    />
+
+                    <TextInput
+                      label="Filière"
+                      name="filiere"
+                      value={formData.filiere}
+                      onChange={handleChange}
+                    />
+
+                    <Select
+                      label="Niveau d'anglais"
+                      name="english_level"
+                      value={formData.english_level || ''}
+                      onChange={handleChange}
+                      options={[
+                        { value: '', label: 'Sélectionnez votre niveau' },
+                        { value: 'A1', label: 'A1 - Débutant' },
+                        { value: 'A2', label: 'A2 - Élémentaire' },
+                        { value: 'B1', label: 'B1 - Intermédiaire' },
+                        { value: 'B2', label: 'B2 - Avancé' },
+                        { value: 'C1', label: 'C1 - Autonome' },
+                        { value: 'C2', label: 'C2 - Maîtrise' }
+                      ]}
+                    />
+
+                    <TextInput
+                      label="Promotion"
+                      name="promotion"
+                      value={formData.promotion}
+                      onChange={handleChange}
+                      placeholder="Ex: 2025"
+                    />
+                  </>
+                )}
 
                 {user?.role === 'TEACHER' && (
                   <>
