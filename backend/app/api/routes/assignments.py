@@ -6,6 +6,7 @@ from app.models.project import Project, ProjectType
 from app.models.preference import StudentPreference
 from app.services.group_algorithm import assign_students_to_groups
 from app.services.genetic_algorithm import GeneticAlgorithmService
+from app.services.english_leveling_service import EnglishLevelingService
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
@@ -159,6 +160,33 @@ async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = D
             groups_created=len(groups),
             stats=stats
         )
+    
+    elif project.project_type == ProjectType.ENGLISH_LEVELING:
+        # Use English Leveling Service to group students by English proficiency
+        try:
+            leveling_service = EnglishLevelingService(db, request.project_id)
+            result = leveling_service.execute(
+                allow_adjacent_levels=False,
+                max_group_size=project.group_size or 10
+            )
+            
+            if not result['success']:
+                raise HTTPException(status_code=400, detail=result.get('error', 'English leveling algorithm failed'))
+            
+            return RunAlgorithmResponse(
+                status="success",
+                message=f"Successfully grouped {result['total_students']} students into {result['groups_created']} English level groups",
+                assignments_created=result['total_students'],
+                groups_created=result['groups_created'],
+                stats={
+                    "total_students": result['total_students'],
+                    "groups_created": result['groups_created'],
+                    "students_per_level": result['students_per_level'],
+                    "average_group_size": result['average_group_size']
+                }
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"English leveling algorithm failed: {str(e)}")
     
     else:
         raise HTTPException(
