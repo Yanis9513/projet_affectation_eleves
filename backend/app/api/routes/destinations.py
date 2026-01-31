@@ -242,6 +242,6 @@ def get_my_destination_preferences(
     preferences = db.query(DestinationPreference).filter(
         DestinationPreference.student_id == student.id,
         DestinationPreference.project_id == project_id
-    ).order_by(DestinationPreference.rank).all()
+    ).all()
     
     return preferences
