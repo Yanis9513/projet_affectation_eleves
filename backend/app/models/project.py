@@ -54,3 +54,4 @@ class Project(Base):
     student_preferences = relationship("StudentPreference", back_populates="project", cascade="all, delete-orphan")
     assignments = relationship("Assignment", back_populates="project", cascade="all, delete-orphan")
     students = relationship("Student", secondary=project_students, back_populates="projects")
+    destinations = relationship("Destination", back_populates="project", cascade="all, delete-orphan")

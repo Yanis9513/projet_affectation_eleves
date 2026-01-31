@@ -32,6 +32,12 @@ class Student(Base):
     general_rank = Column(Integer, nullable=True)  # Rang général dans la filière
     gpa = Column(Float, nullable=True)  # Note moyenne générale
     promotion = Column(String, nullable=True)  # Ex: "2025", "2026"
+    
+    # Pour les programmes d'échange
+    toeic_score = Column(Integer, nullable=True)  # Score TOEIC (0-990)
+    classement = Column(String(2), nullable=True)  # C1, C2, C3 pour priorité mobilité
+    mobility_type = Column(String(50), nullable=True)  # Type de mobilité souhaité
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

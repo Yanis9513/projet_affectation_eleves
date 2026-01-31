@@ -6,7 +6,8 @@ Crée toutes les tables selon les modèles définis
 from app.database import engine, Base
 from app.models import (
     User, Student, Teacher, Project, Assignment,
-    StudentPreference, FormQuestion, StudentResponse
+    StudentPreference, FormQuestion, StudentResponse,
+    Destination, DestinationPreference
 )
 from app.config import settings
 import sqlite3
@@ -54,6 +55,8 @@ def init_db():
     print("  - student_responses (reponses des eleves)")
     print("  - student_preferences (preferences des eleves)")
     print("  - assignments (affectations finales)")
+    print("  - destinations (universites partenaires pour echanges)")
+    print("  - destination_preferences (choix des etudiants pour echanges)")
 
 if __name__ == "__main__":
     init_db()
