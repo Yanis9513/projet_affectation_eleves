@@ -261,8 +261,8 @@ export default function StudentExchangePreferences() {
           )}
         </CardSimple>
 
-        {/* Submit Button */}
-        {!hasSubmitted && (
+        {/* Submit Button or Already Submitted Message */}
+        {!hasSubmitted ? (
           <div className="flex justify-center">
             <Button 
               variant="primary" 
@@ -272,22 +272,28 @@ export default function StudentExchangePreferences() {
               Soumettre mes préférences
             </Button>
           </div>
-        )}
-
-        {hasSubmitted && (
+        ) : (
           <CardSimple className="bg-green-50 border-2 border-green-200 text-center">
             <h3 className="text-xl font-bold text-green-800 mb-2">
-              Préférences enregistrées !
+              ✓ Préférences déjà soumises
             </h3>
             <p className="text-green-700 mb-4">
-              Vos préférences ont été soumises avec succès. Vous serez redirigé vers votre tableau de bord.
+              Vous avez déjà soumis vos préférences pour ce projet. Vous pouvez les consulter dans "Mes Préférences".
             </p>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/student')}
-            >
-              Retour au tableau de bord
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/my-preferences')}
+              >
+                Voir mes préférences
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/student')}
+              >
+                Retour au tableau de bord
+              </Button>
+            </div>
           </CardSimple>
         )}
       </div>

@@ -20,6 +20,7 @@ import CreateProjectPage from './pages/CreateProjectPage'
 import EditProjectPage from './pages/EditProjectPage'
 import StudentFormPage from './pages/StudentFormPage'
 import StudentExchangePreferences from './pages/StudentExchangePreferences'
+import MyPreferences from './pages/MyPreferences'
 import ProfilePage from './pages/ProfilePage'
 import './App.css'
 
@@ -72,6 +73,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <PreferencesPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="my-preferences" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <MyPreferences />
                 </ProtectedRoute>
               } 
             />

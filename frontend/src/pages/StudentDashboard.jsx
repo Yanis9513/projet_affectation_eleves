@@ -29,10 +29,23 @@ export default function StudentDashboard() {
       
       // Get student's projects with pending preferences
       const projectsResponse = await projectAPI.getMyProjects();
-      const projects = projectsResponse.data || [];
+      let projects = projectsResponse.data || [];
+      
+      // Check preferences status for each exchange program
+      for (let project of projects) {
+        if (project.project_type === 'exchange_program') {
+          try {
+            const prefResponse = await destinationPreferenceAPI.getMyPreferences(project.id);
+            project.has_submitted_preferences = prefResponse.data && prefResponse.data.length > 0;
+          } catch (err) {
+            project.has_submitted_preferences = false;
+          }
+        }
+      }
+      
       setMyProjects(projects);
       
-      // Find projects with pending preferences (exchange programs that are open)
+      // Find projects with pending preferences (exchange programs that are open and not submitted)
       const pending = projects.filter(project => 
         project.project_type === 'exchange_program' && 
         project.is_open_for_preferences &&
@@ -161,9 +174,14 @@ export default function StudentDashboard() {
                       )}
                     </div>
                     
-                    {project.is_open_for_preferences && (
+                    {project.is_open_for_preferences && !project.has_submitted_preferences && (
                       <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
                         Préférences ouvertes
+                      </span>
+                    )}
+                    {project.has_submitted_preferences && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                        ✓ Préférences soumises
                       </span>
                     )}
                   </div>
