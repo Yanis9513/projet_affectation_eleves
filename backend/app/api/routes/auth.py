@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, validator
 from app.database import get_db
@@ -17,6 +19,9 @@ from datetime import datetime, timedelta
 import secrets
 
 router = APIRouter()
+
+# Initialize limiter - will be configured in main.py
+limiter = Limiter(key_func=get_remote_address)
 
 # Authorization helpers
 def require_teacher(current_user: User = Depends(get_current_user)):
@@ -70,7 +75,8 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 @router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def register(request: Request, user_data: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -126,7 +132,8 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     }
 
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, credentials: UserLogin, db: Session = Depends(get_db)):
     """Login user and return JWT token"""
     # Find user by email
     user = db.query(User).filter(User.email == credentials.email).first()
@@ -371,7 +378,8 @@ async def complete_password(data: CompleteSignupSimple, db: Session = Depends(ge
 
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
-async def forgot_password(data: SignupRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, data: SignupRequest, db: Session = Depends(get_db)):
     """Request password reset - verify user exists and send reset link via email"""
     # Find user by email
     user = db.query(User).filter(User.email == data.email).first()
