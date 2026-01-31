@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     SENDER_EMAIL: str = os.getenv("SENDER_EMAIL", "noreply@esiee.fr")
     SENDER_PASSWORD: str = os.getenv("SENDER_PASSWORD", "")
     
+    # Frontend
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

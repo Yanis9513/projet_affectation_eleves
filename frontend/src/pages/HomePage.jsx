@@ -36,6 +36,11 @@ function HomePage() {
                   Commencer
                 </Button>
               </Link>
+              <Link to="/signup">
+                <Button variant="outline" size="lg">
+                  S'inscrire
+                </Button>
+              </Link>
               <a href="#features">
                 <Button variant="outline" size="lg">
                   En savoir plus
