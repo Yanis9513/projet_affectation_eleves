@@ -170,7 +170,7 @@ function LoginPage() {
           <div className="text-center text-sm text-gray-600">
             Pas encore de compte ?{' '}
             <a 
-              href="#" 
+              href="/signup" 
               className="text-esiee-blue hover:text-blue-700 font-medium transition-colors duration-200"
             >
               S'inscrire ici
