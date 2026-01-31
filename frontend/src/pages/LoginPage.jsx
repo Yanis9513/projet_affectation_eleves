@@ -18,7 +18,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   // If already logged in, redirect to dashboard
-  if (isLoggedIn) {
+  if (isLoggedIn && userRole) {
     return <Navigate to={`/${userRole}`} replace />
   }
 
