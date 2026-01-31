@@ -68,7 +68,7 @@ export default function StudentFormPage() {
         rank: 1
       }
       
-      await preferenceAPI.submitPartnerPreference(studentId, preferenceData)
+      await preferenceAPI.submitPartnerPreference(currentUser.id, preferenceData)
       
       setSuccess(true)
 
