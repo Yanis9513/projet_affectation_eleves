@@ -8,6 +8,8 @@ from app.models import (
     User, Student, Teacher, Project, Assignment,
     StudentPreference, FormQuestion, StudentResponse
 )
+from app.config import settings
+import sqlite3
 
 def init_db():
     """Créer toutes les tables dans la base de données"""
@@ -16,7 +18,32 @@ def init_db():
     # Créer toutes les tables
     Base.metadata.create_all(bind=engine)
     
-    print("Base de donnees initialisee avec succes!")
+    # Ajouter les colonnes manquantes si la table existe déjà (migration)
+    print("Verification des migrations...")
+    try:
+        db_path = settings.DATABASE_URL.replace('sqlite:///', '').replace('sqlite:///', '')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Vérifier les colonnes de la table users
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'password_reset_token' not in columns:
+            print("  - Ajout de password_reset_token...")
+            cursor.execute("ALTER TABLE users ADD COLUMN password_reset_token VARCHAR NULL")
+        
+        if 'password_reset_expires' not in columns:
+            print("  - Ajout de password_reset_expires...")
+            cursor.execute("ALTER TABLE users ADD COLUMN password_reset_expires DATETIME NULL")
+        
+        conn.commit()
+        conn.close()
+        print("Migrations appliquees avec succes!")
+    except Exception as e:
+        print(f"  (Migrations non necessaires ou deja appliquees: {type(e).__name__})")
+    
+    print("\nBase de donnees initialisee avec succes!")
     print("\nTables creees:")
     print("  - users (utilisateurs: admin, professeurs, eleves)")
     print("  - teachers (profils professeurs)")

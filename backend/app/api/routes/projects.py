@@ -8,7 +8,9 @@ from app.schemas import (
 from app.models.project import Project, ProjectType
 from app.models.student import Student
 from app.models.user import User, UserRole
+from app.models.teacher import Teacher
 from app.auth_utils import get_current_user
+from app.services.email_service import email_service
 from typing import List
 
 router = APIRouter()
@@ -45,6 +47,44 @@ async def get_projects(
                     filiere=student.filiere.value if student.filiere else None,
                     rank=student.general_rank,
                     grade=student.gpa
+                ))
+        
+        projects_with_students.append({
+            **project.__dict__,
+            "students": students_data
+        })
+    
+    return projects_with_students
+
+@router.get("/me/my-projects", response_model=List[ProjectWithStudents])
+async def get_my_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all projects for the current authenticated student"""
+    
+    # Get student profile for current user
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student profile not found")
+    
+    # Get all projects the student is enrolled in
+    projects = student.projects
+    
+    # Format response
+    projects_with_students = []
+    for project in projects:
+        students_data = []
+        for proj_student in project.students:
+            if proj_student.user:
+                full_name = f"{proj_student.user.first_name} {proj_student.user.last_name}" if proj_student.user.first_name else proj_student.user.email
+                students_data.append(StudentInProject(
+                    id=proj_student.id,
+                    name=full_name,
+                    email=proj_student.user.email,
+                    filiere=proj_student.filiere.value if proj_student.filiere else None,
+                    rank=proj_student.general_rank,
+                    grade=proj_student.gpa
                 ))
         
         projects_with_students.append({
@@ -189,6 +229,10 @@ async def upload_students_to_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
+    # Get teacher name
+    teacher = project.teacher
+    teacher_name = f"{teacher.user.first_name} {teacher.user.last_name}".strip() if teacher.user else "Professeur"
+    
     created_count = 0
     existing_count = 0
     result_students = []
@@ -205,6 +249,14 @@ async def upload_students_to_project(
                 # Link student to project if not already linked
                 if project not in student.projects:
                     student.projects.append(project)
+                    # Send enrollment email
+                    student_name = f"{existing_user.first_name} {existing_user.last_name}".strip() or existing_user.email
+                    email_service.send_student_enrollment_email(
+                        student_email=existing_user.email,
+                        student_name=student_name,
+                        project_title=project.title,
+                        teacher_name=teacher_name
+                    )
                 
                 full_name = f"{existing_user.first_name} {existing_user.last_name}" if existing_user.first_name else existing_user.email
                 result_students.append(StudentInProject(
@@ -275,6 +327,15 @@ async def upload_students_to_project(
             
             # Link student to project
             new_student.projects.append(project)
+            
+            # Send enrollment email
+            student_name = f"{new_user.first_name} {new_user.last_name}".strip()
+            email_service.send_student_enrollment_email(
+                student_email=new_user.email,
+                student_name=student_name,
+                project_title=project.title,
+                teacher_name=teacher_name
+            )
             
             created_count += 1
             full_name = f"{new_user.first_name} {new_user.last_name}".strip()

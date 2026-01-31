@@ -4,6 +4,7 @@ import { CardSimple } from '../components/Card'
 import Button from '../components/Button'
 import { TextInput } from '../components/Input'
 import { Loading, Alert } from '../components/Loading'
+import { studentAPI, teacherAPI, authAPI } from '../services/api'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -29,85 +30,142 @@ export default function ProfilePage() {
 
   const loadProfile = async () => {
     try {
-      // Get current user from auth context or localStorage
+      setLoading(true)
       const storedRole = localStorage.getItem('userRole')
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
       
-      // Mock data based on role
       if (storedRole === 'teacher') {
-        // Use actual logged-in teacher data
-        const actualUser = storedUser.email ? storedUser : JSON.parse(localStorage.getItem('user') || '{}');
-        const emailName = actualUser.email?.split('@')[0] || 'teacher';
-        const nameParts = emailName.split('.');
-        
-        const mockUser = {
-          id: actualUser.id || 1,
-          email: actualUser.email || 'prof@esiee.fr',
-          username: actualUser.username || emailName,
-          first_name: actualUser.first_name || actualUser.name?.split(' ')[0] || (nameParts[1] ? nameParts[1] : nameParts[0]),
-          last_name: actualUser.last_name || actualUser.name?.split(' ')[1] || (nameParts[0] || ''),
-          role: 'TEACHER'
+        // Fetch teacher profile from API
+        try {
+          const response = await teacherAPI.getProfile()
+          const profileData = response.data
+          
+          setUser({
+            id: storedUser.id,
+            email: profileData.user.email,
+            username: profileData.user.username,
+            first_name: profileData.user.first_name,
+            last_name: profileData.user.last_name,
+            role: 'TEACHER'
+          })
+          
+          setProfile(profileData)
+          setFormData({
+            first_name: profileData.user.first_name,
+            last_name: profileData.user.last_name,
+            email: profileData.user.email,
+            department: profileData.department || '',
+            office: profileData.office || '',
+            phone: profileData.phone || '',
+            bio: profileData.bio || ''
+          })
+        } catch (apiErr) {
+          console.warn('Could not load teacher profile from API, using localStorage fallback', apiErr)
+          // Fallback to localStorage
+          const actualUser = storedUser.email ? storedUser : JSON.parse(localStorage.getItem('user') || '{}')
+          const emailName = actualUser.email?.split('@')[0] || 'teacher'
+          const nameParts = emailName.split('.')
+          
+          const mockUser = {
+            id: actualUser.id || 1,
+            email: actualUser.email || 'prof@esiee.fr',
+            username: actualUser.username || emailName,
+            first_name: actualUser.first_name || actualUser.name?.split(' ')[0] || (nameParts[1] ? nameParts[1] : nameParts[0]),
+            last_name: actualUser.last_name || actualUser.name?.split(' ')[1] || (nameParts[0] || ''),
+            role: 'TEACHER'
+          }
+          
+          const mockTeacher = {
+            id: 1,
+            user_id: mockUser.id,
+            department: actualUser.department || 'Informatique',
+            office: actualUser.office || 'Bureau 301',
+            phone: actualUser.phone || '+33 1 23 45 67 89',
+            bio: actualUser.bio || 'Enseignant à ESIEE Paris.'
+          }
+          
+          setUser(mockUser)
+          setProfile(mockTeacher)
+          setFormData({
+            first_name: mockUser.first_name,
+            last_name: mockUser.last_name,
+            email: mockUser.email,
+            department: mockTeacher.department,
+            office: mockTeacher.office,
+            phone: mockTeacher.phone || '',
+            bio: mockTeacher.bio || ''
+          })
         }
-        
-        const mockTeacher = {
-          id: 1,
-          user_id: mockUser.id,
-          department: actualUser.department || 'Informatique',
-          office: actualUser.office || 'Bureau 301',
-          phone: actualUser.phone || '+33 1 23 45 67 89',
-          bio: actualUser.bio || 'Enseignant à ESIEE Paris.',
-          projects_count: actualUser.projects_count || 0,
-          students_count: actualUser.students_count || 0
-        }
-
-        setUser(mockUser)
-        setProfile(mockTeacher)
-        setFormData({
-          first_name: mockUser.first_name,
-          last_name: mockUser.last_name,
-          email: mockUser.email,
-          department: mockTeacher.department,
-          office: mockTeacher.office,
-          phone: mockTeacher.phone || '',
-          bio: mockTeacher.bio || ''
-        })
       } else {
-        // Student profile - use actual logged-in user
-        const actualUser = storedUser.email ? storedUser : JSON.parse(localStorage.getItem('user') || '{}');
-        const emailName = actualUser.email?.split('@')[0] || 'student';
-        
-        const mockUser = {
-          id: actualUser.id || 2,
-          email: actualUser.email || 'student@edu.esiee.fr',
-          username: actualUser.username || emailName,
-          first_name: actualUser.first_name || actualUser.name?.split(' ')[0] || emailName,
-          last_name: actualUser.last_name || actualUser.name?.split(' ')[1] || '',
-          role: 'STUDENT'
+        // Fetch student profile from API
+        try {
+          const response = await studentAPI.getProfile()
+          const profileData = response.data
+          
+          setUser({
+            id: storedUser.id,
+            email: profileData.email,
+            username: storedUser.username,
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            role: 'STUDENT'
+          })
+          
+          setProfile({
+            id: profileData.id,
+            student_number: profileData.student_number,
+            filiere: profileData.filiere,
+            english_level: profileData.language_level,
+            general_rank: profileData.ranking,
+            promotion: profileData.promotion
+          })
+          
+          setFormData({
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            email: profileData.email,
+            student_number: profileData.student_number,
+            filiere: profileData.filiere,
+            english_level: profileData.language_level,
+            promotion: profileData.promotion
+          })
+        } catch (apiErr) {
+          console.warn('Could not load student profile from API, using localStorage fallback', apiErr)
+          // Fallback to localStorage
+          const actualUser = storedUser.email ? storedUser : JSON.parse(localStorage.getItem('user') || '{}')
+          const emailName = actualUser.email?.split('@')[0] || 'student'
+          
+          const mockUser = {
+            id: actualUser.id || 2,
+            email: actualUser.email || 'student@edu.esiee.fr',
+            username: actualUser.username || emailName,
+            first_name: actualUser.first_name || actualUser.name?.split(' ')[0] || emailName,
+            last_name: actualUser.last_name || actualUser.name?.split(' ')[1] || '',
+            role: 'STUDENT'
+          }
+          
+          const mockStudent = {
+            id: 1,
+            user_id: mockUser.id,
+            student_number: actualUser.student_number || 'STU000002',
+            filiere: actualUser.filiere || 'Informatique',
+            english_level: actualUser.english_level || 'B2',
+            general_rank: actualUser.rank || 42,
+            promotion: actualUser.promotion || '2025'
+          }
+          
+          setUser(mockUser)
+          setProfile(mockStudent)
+          setFormData({
+            first_name: mockUser.first_name,
+            last_name: mockUser.last_name,
+            email: mockUser.email,
+            student_number: mockStudent.student_number,
+            filiere: mockStudent.filiere,
+            english_level: mockStudent.english_level,
+            promotion: mockStudent.promotion
+          })
         }
-        
-        const mockStudent = {
-          id: 1,
-          user_id: mockUser.id,
-          student_number: actualUser.student_number || 'STU000002',
-          filiere: actualUser.filiere || 'Informatique',
-          english_level: actualUser.english_level || 'B2',
-          general_rank: actualUser.rank || 42,
-          gpa: actualUser.gpa || 14.5,
-          promotion: actualUser.promotion || '2025',
-          projects_count: actualUser.projects_count || 0
-        }
-
-        setUser(mockUser)
-        setProfile(mockStudent)
-        setFormData({
-          first_name: mockUser.first_name,
-          last_name: mockUser.last_name,
-          email: mockUser.email,
-          student_number: mockStudent.student_number,
-          filiere: mockStudent.filiere,
-          english_level: mockStudent.english_level,
-          promotion: mockStudent.promotion
-        })
       }
     } catch (err) {
       console.error('Error loading profile:', err)
@@ -127,14 +185,66 @@ export default function ProfilePage() {
   const handleSave = async () => {
     try {
       setError('')
-      // Profile update will be implemented when needed
+      const storedRole = localStorage.getItem('userRole')
+      
+      // Helper function to remove undefined and empty values
+      const cleanData = (obj) => {
+        const cleaned = {}
+        for (const [key, value] of Object.entries(obj)) {
+          if (value !== undefined && value !== null && value !== '') {
+            cleaned[key] = value
+          }
+        }
+        return cleaned
+      }
+      
+      if (storedRole === 'teacher') {
+        // Update teacher profile
+        const teacherData = cleanData({
+          department: formData.department,
+          office: formData.office,
+          phone: formData.phone,
+          bio: formData.bio
+        })
+        if (Object.keys(teacherData).length > 0) {
+          await teacherAPI.updateProfile(teacherData)
+        }
+        
+        // Update user info (first_name, last_name)
+        const userData = cleanData({
+          first_name: formData.first_name,
+          last_name: formData.last_name
+        })
+        if (Object.keys(userData).length > 0) {
+          await authAPI.updateProfile(userData)
+        }
+      } else {
+        // Update student profile
+        const studentData = cleanData({
+          student_number: formData.student_number,
+          filiere: formData.filiere,
+          english_level: formData.english_level,
+          promotion: formData.promotion
+        })
+        if (Object.keys(studentData).length > 0) {
+          await studentAPI.updateProfile(studentData)
+        }
+        
+        // Update user info (first_name, last_name)
+        const userData = cleanData({
+          first_name: formData.first_name,
+          last_name: formData.last_name
+        })
+        if (Object.keys(userData).length > 0) {
+          await authAPI.updateProfile(userData)
+        }
+      }
       
       setSuccess('Profil mis à jour avec succès')
       setEditing(false)
       
-      // Update local state
-      setUser({ ...user, ...formData })
-      setProfile({ ...profile, ...formData })
+      // Reload profile to ensure data is in sync
+      await loadProfile()
     } catch (err) {
       console.error('Error updating profile:', err)
       setError('Erreur lors de la mise à jour du profil')

@@ -48,12 +48,19 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   login: (credentials) => api.post('/auth/login', credentials),
   getCurrentUser: () => api.get('/auth/me'),
+  updateProfile: (userData) => api.put('/auth/me', userData),
+  signupRequest: (data) => api.post('/auth/signup-request', data),
+  completePassword: (data) => api.post('/auth/complete-password', data),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
 }
 
 // Student APIs
 export const studentAPI = {
   getAll: () => api.get('/students/'),
   getById: (id) => api.get(`/students/${id}`),
+  getProfile: () => api.get('/students/me/profile'),
+  updateProfile: (studentData) => api.put('/students/me/profile', studentData),
   create: (studentData) => api.post('/students/', studentData),
   update: (id, studentData) => api.put(`/students/${id}`, studentData),
   delete: (id) => api.delete(`/students/${id}`),
@@ -62,6 +69,7 @@ export const studentAPI = {
 // Project APIs
 export const projectAPI = {
   getAll: (params) => api.get('/projects/', { params }),
+  getMyProjects: () => api.get('/projects/me/my-projects'),
   getById: (id) => api.get(`/projects/${id}`),
   create: (projectData) => api.post('/projects/', projectData),
   update: (id, projectData) => api.put(`/projects/${id}`, projectData),
@@ -75,6 +83,14 @@ export const projectAPI = {
     api.post(`/projects/${projectId}/preferences/${studentId}`, {
       preference_order: preferenceOrder,
     }),
+}
+
+// Teacher APIs
+export const teacherAPI = {
+  getAll: () => api.get('/teachers/'),
+  getById: (id) => api.get(`/teachers/${id}`),
+  getProfile: () => api.get('/teachers/me/profile'),
+  updateProfile: (teacherData) => api.put('/teachers/me/profile', teacherData),
 }
 
 // Preference APIs

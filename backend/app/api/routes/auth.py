@@ -11,6 +11,10 @@ from app.auth_utils import (
     create_access_token,
     get_current_user
 )
+from app.services.email_service import email_service
+from app.config import settings
+from datetime import datetime, timedelta
+import secrets
 
 router = APIRouter()
 
@@ -62,7 +66,7 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="L'email est déjà enregistré"
         )
     
     # Parse name
@@ -164,3 +168,302 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
 async def get_me(current_user: User = Depends(get_current_user)):
     """Get current authenticated user"""
     return current_user
+class UserUpdate(BaseModel):
+    first_name: str = None
+    last_name: str = None
+    
+    class Config:
+        from_attributes = True
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    
+    @validator('email')
+    def validate_esiee_email(cls, v):
+        if not v.endswith('@edu.esiee.fr'):
+            raise ValueError('Email must be an ESIEE address (@edu.esiee.fr)')
+        return v
+
+class CompletePassword(BaseModel):
+    token: str
+    password: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError('Password must be at least 6 characters')
+        return v
+
+class CompleteSignupSimple(BaseModel):
+    token: str
+    password: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError('Password must be at least 6 characters')
+        return v
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(user_update: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Update current user profile"""
+    if user_update.first_name is not None:
+        current_user.first_name = user_update.first_name
+    if user_update.last_name is not None:
+        current_user.last_name = user_update.last_name
+    
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.post("/signup-request", status_code=status.HTTP_200_OK)
+async def signup_request(request: SignupRequest, db: Session = Depends(get_db)):
+    """Request signup with ESIEE email - sends confirmation link via email"""
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == request.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="L'email est déjà enregistré"
+        )
+    
+    # Generate token (valid for 24 hours)
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+    
+    # Create user record with token (password will be set later)
+    new_user = User(
+        email=request.email,
+        username=request.email.split('@')[0],
+        hashed_password="",  # Placeholder, will be set on completion
+        role=UserRole.STUDENT,
+        is_active=False,  # Not active until signup is completed
+        password_reset_token=token,
+        password_reset_expires=expires_at
+    )
+    
+    db.add(new_user)
+    db.commit()
+    
+    # Send email with signup link
+    signup_url = f"{settings.FRONTEND_URL}/complete-password?token={token}"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h1 style="color: #1e40af; text-align: center;">Bienvenue à ESIEE Paris</h1>
+                
+                <p>Bonjour,</p>
+                
+                <p>Vous avez demandé la création d'un compte sur le système d'affectation d'étudiants ESIEE.</p>
+                
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{signup_url}" style="background-color: #1e40af; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Créer mon mot de passe
+                    </a>
+                </p>
+                
+                <p>Ou copiez ce lien dans votre navigateur :</p>
+                <p style="word-break: break-all; background-color: #f0f9ff; padding: 10px; border-radius: 4px;">
+                    {signup_url}
+                </p>
+                
+                <p><strong>Ce lien expire dans 24 heures.</strong></p>
+                
+                <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+                    <small>
+                        Cet email a été envoyé automatiquement par le système d'affectation d'étudiants ESIEE.<br>
+                        Si vous n'avez pas demandé cette inscription, ignorez cet email.
+                    </small>
+                </p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    email_service.send_email_sync(request.email, "Complétez votre inscription ESIEE", html_content)
+    
+    return {
+        "message": "Check your email for the signup link",
+        "email": request.email
+    }
+
+
+@router.post("/complete-password", response_model=Token, status_code=status.HTTP_201_CREATED)
+async def complete_password(data: CompleteSignupSimple, db: Session = Depends(get_db)):
+    """Complete signup with only password (simplified version)"""
+    # Find user with valid token
+    user = db.query(User).filter(
+        User.password_reset_token == data.token,
+        User.password_reset_expires > datetime.utcnow()
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+    
+    # Extract name from email (before @)
+    email_part = user.email.split('@')[0]
+    # Try to split by common patterns, otherwise use email as is
+    name_parts = email_part.replace('.', ' ').replace('_', ' ').split()
+    first_name = name_parts[0].capitalize() if name_parts else email_part
+    last_name = name_parts[1].capitalize() if len(name_parts) > 1 else ""
+    
+    # Default role is student
+    role = UserRole.STUDENT
+    
+    # Set password and update user
+    user.hashed_password = hash_password(data.password)
+    user.first_name = first_name
+    user.last_name = last_name
+    user.role = role
+    user.is_active = True
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    
+    db.flush()
+    
+    # Create student profile (default)
+    student_profile = Student(
+        user_id=user.id,
+        student_number=f"STU{user.id:06d}",
+        filiere=Filiere.INFORMATIQUE,
+        english_level=EnglishLevel.B1
+    )
+    db.add(student_profile)
+    db.commit()
+    
+    # Create access token
+    access_token = create_access_token(
+        data={
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role.value
+        }
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role.value
+        }
+    }
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(data: SignupRequest, db: Session = Depends(get_db)):
+    """Request password reset - verify user exists and send reset link via email"""
+    # Find user by email
+    user = db.query(User).filter(User.email == data.email).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found with this email"
+        )
+    
+    # Generate token (valid for 24 hours)
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+    
+    # Store token in user
+    user.password_reset_token = token
+    user.password_reset_expires = expires_at
+    db.commit()
+    
+    # Send email with reset link
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h1 style="color: #1e40af; text-align: center;">Réinitialiser votre mot de passe</h1>
+                
+                <p>Bonjour,</p>
+                
+                <p>Vous avez demandé la réinitialisation de votre mot de passe pour le système d'affectation d'étudiants ESIEE.</p>
+                
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" style="background-color: #1e40af; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Réinitialiser mon mot de passe
+                    </a>
+                </p>
+                
+                <p>Ou copiez ce lien dans votre navigateur :</p>
+                <p style="word-break: break-all; background-color: #f0f9ff; padding: 10px; border-radius: 4px;">
+                    {reset_url}
+                </p>
+                
+                <p><strong>Ce lien expire dans 24 heures.</strong></p>
+                
+                <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+                    <small>
+                        Cet email a été envoyé automatiquement par le système d'affectation d'étudiants ESIEE.<br>
+                        Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+                    </small>
+                </p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    email_service.send_email_sync(data.email, "Réinitialiser votre mot de passe ESIEE", html_content)
+    
+    return {
+        "message": "Check your email for the password reset link",
+        "email": data.email
+    }
+
+
+@router.post("/reset-password", response_model=Token, status_code=status.HTTP_200_OK)
+async def reset_password(data: CompleteSignupSimple, db: Session = Depends(get_db)):
+    """Reset password with valid token"""
+    # Find user with valid token
+    user = db.query(User).filter(
+        User.password_reset_token == data.token,
+        User.password_reset_expires > datetime.utcnow()
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+    
+    # Update password
+    user.hashed_password = hash_password(data.password)
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    
+    db.commit()
+    
+    # Create access token
+    access_token = create_access_token(
+        data={
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role.value
+        }
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role.value
+        }
+    }

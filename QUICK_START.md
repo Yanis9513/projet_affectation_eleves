@@ -1,6 +1,40 @@
 # Quick Start Guide
 
-### Backend Setup
+## Prerequisites
+
+### MailHog (Email Service)
+You need MailHog to intercept and display emails locally. Choose one of these options:
+
+**Option 1: Download executable (easiest)**
+- Download from: https://github.com/mailhog/MailHog/releases
+- Download the `.exe` file for Windows
+- Double-click to run
+
+**Option 2: Using Docker**
+- Install Docker: https://www.docker.com/products/docker-desktop
+- Run: `docker run -d --name mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog`
+
+---
+
+## Start Services in Order
+
+### 1. Start MailHog (Email Service) - **FIRST**
+
+MailHog is a local email service that intercepts all emails sent by the backend and displays them in a web inbox.
+
+**If using .exe:**
+- Double-click the `MailHog.exe` file you downloaded
+
+**If using Docker:**
+```powershell
+docker run -d --name mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog
+```
+
+MailHog Inbox: `http://localhost:8025`
+
+---
+
+### 2. Backend Setup
 
 ```powershell
 cd backend
@@ -36,6 +70,6 @@ npm install
 npm run dev
 ```
 
-Frontend runs at: `http://localhost:5173`
+Frontend runs at: `http://localhost:3000`
 
 ---

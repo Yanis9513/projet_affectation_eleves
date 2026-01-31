@@ -161,7 +161,7 @@ function LoginPage() {
         <div className="mt-6 space-y-3">
           <div className="text-center">
             <a 
-              href="#" 
+              href="/forgot-password" 
               className="text-esiee-blue hover:text-blue-700 text-sm transition-colors duration-200"
             >
               Mot de passe oublié ?
@@ -170,7 +170,7 @@ function LoginPage() {
           <div className="text-center text-sm text-gray-600">
             Pas encore de compte ?{' '}
             <a 
-              href="#" 
+              href="/signup" 
               className="text-esiee-blue hover:text-blue-700 font-medium transition-colors duration-200"
             >
               S'inscrire ici
