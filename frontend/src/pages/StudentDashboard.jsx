@@ -1,23 +1,19 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CardSimple } from '../components/Card';
 import Button from '../components/Button';
 import { Loading } from '../components/Loading';
 import { useAuth } from '../context/AuthContext';
+import { studentAPI, projectAPI, destinationAPI, destinationPreferenceAPI } from '../services/api';
+import toast from 'react-hot-toast';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [student, setStudent] = useState({
-    name: '',
-    email: '',
-    filiere: '',
-    rank: null,
-    englishLevel: '',
-    hasSubmittedPreferences: false,
-    assignedProject: null
-  });
+  const [student, setStudent] = useState(null);
+  const [myProjects, setMyProjects] = useState([]);
+  const [pendingPreferences, setPendingPreferences] = useState([]);
 
   useEffect(() => {
     loadStudentData();
@@ -25,24 +21,36 @@ export default function StudentDashboard() {
 
   const loadStudentData = async () => {
     try {
-      // Load from auth context and localStorage
-      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      setLoading(true);
       
-      // Use actual logged-in user data
-      setStudent({
-        name: storedUser.name || storedUser.email?.split('@')[0] || 'Student',
-        email: storedUser.email || 'student@edu.esiee.fr',
-        filiere: storedUser.filiere || 'Informatique',
-        rank: storedUser.rank || null,
-        englishLevel: storedUser.englishLevel || 'B2',
-        hasSubmittedPreferences: false,
-        assignedProject: null // Will be populated when algorithm runs
-      });
+      // Get student profile
+      const profileResponse = await studentAPI.getProfile();
+      setStudent(profileResponse.data);
+      
+      // Get student's projects with pending preferences
+      const projectsResponse = await projectAPI.getMyProjects();
+      const projects = projectsResponse.data || [];
+      setMyProjects(projects);
+      
+      // Find projects with pending preferences (exchange programs that are open)
+      const pending = projects.filter(project => 
+        project.project_type === 'exchange_program' && 
+        project.is_open_for_preferences &&
+        !project.has_submitted_preferences
+      );
+      
+      setPendingPreferences(pending);
+      
     } catch (error) {
       console.error('Error loading student data:', error);
+      toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmitPreferences = (projectId) => {
+    navigate(`/student/exchange-preferences/${projectId}`);
   };
 
   if (loading) {
@@ -51,161 +59,152 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2 fade-in">
-          🎓 Tableau de Bord Étudiant
-        </h1>
-        <p className="text-gray-600 mb-8 fade-in-delay-1">Bienvenue {student.name}</p>
+      <div className="container mx-auto px-4 max-w-6xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Tableau de Bord Étudiant
+          </h1>
+          <p className="text-gray-600">
+            Bienvenue {student?.user?.first_name} {student?.user?.last_name}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 fade-in-delay-2">
-          <CardSimple className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 hover:shadow-lg transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Filière</p>
-            <p className="text-3xl font-bold text-esiee-blue">{student.filiere}</p>
+        {/* Notifications - Pending Preferences */}
+        {pendingPreferences.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              Notifications ({pendingPreferences.length})
+            </h2>
+            {pendingPreferences.map(project => (
+              <CardSimple 
+                key={project.id} 
+                className="mb-4 bg-orange-50 border-2 border-orange-300"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-semibold">
+                        Action requise
+                      </span>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                        Programme d'échange
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-1">
+                      {project.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-3">
+                      {project.description}
+                    </p>
+                    {project.deadline && (
+                      <p className="text-orange-600 text-sm font-medium">
+                        Date limite: {new Date(project.deadline).toLocaleDateString('fr-FR')}
+                      </p>
+                    )}
+                  </div>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => handleSubmitPreferences(project.id)}
+                  >
+                    Noter les universités
+                  </Button>
+                </div>
+              </CardSimple>
+            ))}
+          </div>
+        )}
+
+        {/* My Projects */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            Mes Projets ({myProjects.length})
+          </h2>
+          
+          {myProjects.length === 0 ? (
+            <CardSimple className="text-center py-8">
+              <p className="text-gray-600">
+                Vous n'êtes inscrit à aucun projet pour le moment.
+              </p>
+            </CardSimple>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {myProjects.map(project => (
+                <CardSimple 
+                  key={project.id}
+                  className="hover:shadow-lg transition-all cursor-pointer"
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-gray-800">{project.title}</h3>
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      project.project_type === 'exchange_program' 
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {project.project_type === 'exchange_program' 
+                        ? 'Échange'
+                        : 'Groupe'}
+                    </span>
+                  </div>
+                  
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    {project.description}
+                  </p>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-500">
+                      {project.project_type === 'exchange_program' && (
+                        <span>
+                          {project.destinations?.length || 0} universités
+                        </span>
+                      )}
+                    </div>
+                    
+                    {project.is_open_for_preferences && (
+                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                        Préférences ouvertes
+                      </span>
+                    )}
+                  </div>
+                </CardSimple>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardSimple 
+            className="text-center cursor-pointer hover:shadow-md transition-all"
+            onClick={() => navigate('/projects')}
+          >
+            <h3 className="font-bold text-gray-800 mb-2">Parcourir les Projets</h3>
+            <p className="text-sm text-gray-600">
+              Voir tous les projets disponibles
+            </p>
           </CardSimple>
-          <CardSimple className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 hover:shadow-lg transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Classement</p>
-            <p className="text-3xl font-bold text-purple-600">{student.rank || 'N/A'}</p>
+
+          <CardSimple 
+            className="text-center cursor-pointer hover:shadow-md transition-all"
+            onClick={() => navigate('/profile')}
+          >
+            <h3 className="font-bold text-gray-800 mb-2">Mon Profil</h3>
+            <p className="text-sm text-gray-600">
+              Modifier mes informations
+            </p>
           </CardSimple>
-          <CardSimple className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 hover:shadow-lg transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Niveau Anglais</p>
-            <p className="text-3xl font-bold text-green-600">{student.englishLevel}</p>
-          </CardSimple>
-          <CardSimple className={`bg-gradient-to-br ${student.hasSubmittedPreferences ? 'from-green-50 to-green-100 border-2 border-green-200' : 'from-orange-50 to-orange-100 border-2 border-orange-200'} hover:shadow-lg transition-all`}>
-            <p className="text-gray-700 text-sm font-medium mb-1">Préférences</p>
-            <p className={`text-2xl font-bold ${student.hasSubmittedPreferences ? 'text-green-600' : 'text-orange-600'}`}>
-              {student.hasSubmittedPreferences ? 'Envoyées' : 'À faire'}
+
+          <CardSimple 
+            className="text-center cursor-pointer hover:shadow-md transition-all"
+            onClick={() => navigate('/preferences')}
+          >
+            <h3 className="font-bold text-gray-800 mb-2">Mes Préférences</h3>
+            <p className="text-sm text-gray-600">
+              Voir mes préférences actuelles
             </p>
           </CardSimple>
         </div>
-
-        {/* Assignment Status */}
-        {student.assignedProject ? (
-          <CardSimple className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 fade-in-delay-3">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold text-green-800 mb-3">
-                  Projet Assigné !
-                </h3>
-                <h4 className="text-xl font-bold text-esiee-blue mb-2">
-                  {student.assignedProject.title}
-                </h4>
-                <p className="text-gray-700 mb-3">
-                  {student.assignedProject.description || 'Félicitations ! Vous avez été assigné à ce projet.'}
-                </p>
-                {student.assignedProject.groupMembers && (
-                  <div className="mb-3">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Membres de votre groupe:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {student.assignedProject.groupMembers.map((member, idx) => (
-                        <span key={idx} className="px-3 py-1 bg-white border border-green-300 rounded-full text-sm">
-                          {member}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <Button variant="primary" onClick={() => navigate(`/projects/${student.assignedProject.id}`)}>
-                Voir Détails
-              </Button>
-            </div>
-          </CardSimple>
-        ) : (
-          <CardSimple className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 fade-in-delay-3">
-            <div>
-              <h3 className="text-xl font-bold text-yellow-800 mb-2">
-                En attente d'affectation
-              </h3>
-              <p className="text-gray-700 mb-3">
-                Les affectations seront annoncées prochainement une fois que tous les étudiants auront soumis leurs préférences.
-              </p>
-              {!student.hasSubmittedPreferences && (
-                <div className="bg-orange-100 border-l-4 border-orange-500 p-3 rounded">
-                  <p className="text-orange-800 font-semibold text-sm">
-                    N'oubliez pas de soumettre vos préférences de projets !
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardSimple>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 fade-in-delay-4">
-          {/* Browse Projects Card */}
-          <CardSimple 
-            className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 hover:shadow-xl transition-all cursor-pointer"
-            onClick={() => navigate('/projects')}
-          >
-            <div className="text-center">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Parcourir les Projets</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Découvrez tous les projets disponibles et leurs détails
-              </p>
-              <Button variant="primary" fullWidth size="sm">
-                Voir les Projets
-              </Button>
-            </div>
-          </CardSimple>
-
-          {/* Submit Preferences Card */}
-          <CardSimple 
-            className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 hover:shadow-xl transition-all cursor-pointer"
-            onClick={() => navigate('/preferences')}
-          >
-            <div className="text-center">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Mes Préférences</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {student.hasSubmittedPreferences ? 'Modifiez vos préférences' : 'Soumettez vos préférences de projets'}
-              </p>
-              <Button 
-                variant={student.hasSubmittedPreferences ? 'outline' : 'primary'} 
-                fullWidth 
-                size="sm"
-              >
-                {student.hasSubmittedPreferences ? 'Modifier' : 'Soumettre'}
-              </Button>
-            </div>
-          </CardSimple>
-
-          {/* My Profile Card */}
-          <CardSimple 
-            className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 hover:shadow-xl transition-all cursor-pointer"
-            onClick={() => navigate('/profile')}
-          >
-            <div className="text-center">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Mon Profil</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Consultez et modifiez vos informations personnelles
-              </p>
-              <Button variant="outline" fullWidth size="sm">
-                Voir le Profil
-              </Button>
-            </div>
-          </CardSimple>
-        </div>
-
-        {/* Quick Info Card */}
-        <CardSimple className="mt-6 bg-gradient-to-r from-gray-50 to-white border-l-4 border-esiee-blue fade-in-delay-5">
-          <h3 className="text-lg font-bold text-gray-800 mb-3">Vos Informations</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-gray-600 mb-1">Email</p>
-              <p className="font-semibold text-gray-800 text-sm truncate">{student.email}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600 mb-1">Filière</p>
-              <p className="font-semibold text-gray-800 text-sm">{student.filiere}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600 mb-1">Classement</p>
-              <p className="font-semibold text-gray-800 text-sm">#{student.rank || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600 mb-1">Niveau Anglais</p>
-              <p className="font-semibold text-gray-800 text-sm">{student.englishLevel}</p>
-            </div>
-          </div>
-        </CardSimple>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import AssignmentsPage from './pages/AssignmentsPage'
 import CreateProjectPage from './pages/CreateProjectPage'
 import EditProjectPage from './pages/EditProjectPage'
 import StudentFormPage from './pages/StudentFormPage'
+import StudentExchangePreferences from './pages/StudentExchangePreferences'
 import ProfilePage from './pages/ProfilePage'
 import './App.css'
 
@@ -71,6 +72,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <PreferencesPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="student/exchange-preferences/:projectId" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentExchangePreferences />
                 </ProtectedRoute>
               } 
             />
