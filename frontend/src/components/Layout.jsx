@@ -57,9 +57,9 @@ function Layout() {
                   </Link>
                   {userRole === 'student' && (
                     <Link 
-                      to="/preferences" 
+                      to="/my-preferences" 
                       className={`px-3 py-2 rounded-md transition-all duration-200 ${
-                        isActive('/preferences') 
+                        isActive('/my-preferences') 
                           ? 'bg-esiee-blue text-white' 
                           : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
                       }`}

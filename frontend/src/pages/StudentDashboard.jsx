@@ -215,7 +215,7 @@ export default function StudentDashboard() {
 
           <CardSimple 
             className="text-center cursor-pointer hover:shadow-md transition-all"
-            onClick={() => navigate('/preferences')}
+            onClick={() => navigate('/my-preferences')}
           >
             <h3 className="font-bold text-gray-800 mb-2">Mes Préférences</h3>
             <p className="text-sm text-gray-600">
