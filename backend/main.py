@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import auth, students, projects, assignments, teachers, forms, preferences
+from app.api.routes import auth, students, projects, assignments, teachers, forms, preferences, destinations, exchange
 from app.database import engine, Base
 
 # Create database tables
@@ -8,7 +8,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Student Assignment API",
-    description="API for managing student project assignments",
+    description="API for managing student project assignments and exchange programs",
     version="1.0.0"
 )
 
@@ -29,6 +29,8 @@ app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(forms.router, prefix="/api/forms", tags=["Forms"])
 app.include_router(preferences.router, prefix="/api/preferences", tags=["Preferences"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
+app.include_router(destinations.router, prefix="/api", tags=["Destinations"])
+app.include_router(exchange.router, prefix="/api", tags=["Exchange Program"])
 
 @app.get("/")
 async def root():

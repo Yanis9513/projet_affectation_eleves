@@ -9,6 +9,7 @@ from app.models.project import Project, ProjectType
 from app.models.student import Student
 from app.models.user import User, UserRole
 from app.models.teacher import Teacher
+from app.models.destination import Destination, MobilityType
 from app.auth_utils import get_current_user
 from app.services.email_service import email_service
 from typing import List
@@ -49,10 +50,26 @@ async def get_projects(
                     grade=student.gpa
                 ))
         
-        projects_with_students.append({
-            **project.__dict__,
+        # Build project dict properly excluding SQLAlchemy internal state
+        project_dict = {
+            "id": project.id,
+            "teacher_id": project.teacher_id,
+            "title": project.title,
+            "description": project.description,
+            "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
+            "group_size": project.group_size,
+            "partner_preference_enabled": project.partner_preference_enabled,
+            "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
+            "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
+            "deadline": project.deadline.isoformat() if project.deadline else None,
+            "is_active": project.is_active,
+            "is_open_for_preferences": project.is_open_for_preferences,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+            "updated_at": project.updated_at.isoformat() if project.updated_at else None,
             "students": students_data
-        })
+        }
+        
+        projects_with_students.append(project_dict)
     
     return projects_with_students
 
@@ -87,10 +104,26 @@ async def get_my_projects(
                     grade=proj_student.gpa
                 ))
         
-        projects_with_students.append({
-            **project.__dict__,
+        # Build project dict properly excluding SQLAlchemy internal state
+        project_dict = {
+            "id": project.id,
+            "teacher_id": project.teacher_id,
+            "title": project.title,
+            "description": project.description,
+            "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
+            "group_size": project.group_size,
+            "partner_preference_enabled": project.partner_preference_enabled,
+            "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
+            "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
+            "deadline": project.deadline.isoformat() if project.deadline else None,
+            "is_active": project.is_active,
+            "is_open_for_preferences": project.is_open_for_preferences,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+            "updated_at": project.updated_at.isoformat() if project.updated_at else None,
             "students": students_data
-        })
+        }
+        
+        projects_with_students.append(project_dict)
     
     return projects_with_students
 
@@ -116,8 +149,22 @@ async def get_project(project_id: int, db: Session = Depends(get_db)):
                 grade=student.gpa
             ))
     
+    # Build project dict properly excluding SQLAlchemy internal state
     return {
-        **project.__dict__,
+        "id": project.id,
+        "teacher_id": project.teacher_id,
+        "title": project.title,
+        "description": project.description,
+        "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
+        "group_size": project.group_size,
+        "partner_preference_enabled": project.partner_preference_enabled,
+        "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
+        "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
+        "deadline": project.deadline.isoformat() if project.deadline else None,
+        "is_active": project.is_active,
+        "is_open_for_preferences": project.is_open_for_preferences,
+        "created_at": project.created_at.isoformat() if project.created_at else None,
+        "updated_at": project.updated_at.isoformat() if project.updated_at else None,
         "students": students_data
     }
 
@@ -166,7 +213,51 @@ async def create_project(
                 db
             )
         
-        return new_project
+        # Create destinations if provided (for exchange programs)
+        if project_data.destinations:
+            for dest_data in project_data.destinations:
+                try:
+                    # Map mobility type string to enum
+                    mobility_type = MobilityType.ECHANGE_ACADEMIQUE
+                    if hasattr(MobilityType, dest_data.mobility_type):
+                        mobility_type = getattr(MobilityType, dest_data.mobility_type)
+                    
+                    new_destination = Destination(
+                        project_id=new_project.id,
+                        university_name=dest_data.university_name,
+                        country=dest_data.country,
+                        city=dest_data.city,
+                        total_places=dest_data.total_places,
+                        available_places=dest_data.total_places,
+                        mobility_type=mobility_type,
+                        accepted_filieres=dest_data.accepted_filieres,
+                        min_english_level=dest_data.min_english_level,
+                        min_toeic_score=dest_data.min_toeic_score,
+                        min_gpa=dest_data.min_gpa
+                    )
+                    db.add(new_destination)
+                except Exception as dest_error:
+                    print(f"Error creating destination {dest_data.university_name}: {dest_error}")
+            
+            db.commit()
+        
+        # Return properly formatted project dict (convert datetime to strings)
+        return {
+            "id": new_project.id,
+            "teacher_id": new_project.teacher_id,
+            "title": new_project.title,
+            "description": new_project.description,
+            "project_type": new_project.project_type.value if hasattr(new_project.project_type, 'value') else new_project.project_type,
+            "group_size": new_project.group_size,
+            "partner_preference_enabled": new_project.partner_preference_enabled,
+            "required_english_level": new_project.required_english_level.value if hasattr(new_project.required_english_level, 'value') else new_project.required_english_level,
+            "target_filiere": new_project.target_filiere.value if hasattr(new_project.target_filiere, 'value') else new_project.target_filiere,
+            "deadline": new_project.deadline.isoformat() if new_project.deadline else None,
+            "is_active": new_project.is_active,
+            "is_open_for_preferences": new_project.is_open_for_preferences,
+            "created_at": new_project.created_at.isoformat() if new_project.created_at else None,
+            "updated_at": new_project.updated_at.isoformat() if new_project.updated_at else None
+        }
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -200,7 +291,24 @@ async def update_project(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating project: {str(e)}"
         )
-    return project
+    
+    # Return properly formatted project dict (convert datetime to strings)
+    return {
+        "id": project.id,
+        "teacher_id": project.teacher_id,
+        "title": project.title,
+        "description": project.description,
+        "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
+        "group_size": project.group_size,
+        "partner_preference_enabled": project.partner_preference_enabled,
+        "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
+        "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
+        "deadline": project.deadline.isoformat() if project.deadline else None,
+        "is_active": project.is_active,
+        "is_open_for_preferences": project.is_open_for_preferences,
+        "created_at": project.created_at.isoformat() if project.created_at else None,
+        "updated_at": project.updated_at.isoformat() if project.updated_at else None
+    }
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(project_id: int, db: Session = Depends(get_db)):
@@ -279,9 +387,17 @@ async def upload_students_to_project(
             # Generate secure random password
             temp_password = secrets.token_urlsafe(16)
             
+            # Generate unique username
+            base_username = student_data.email.split('@')[0]
+            username = base_username
+            counter = 1
+            while db.query(User).filter(User.username == username).first():
+                username = f"{base_username}{counter}"
+                counter += 1
+            
             new_user = User(
                 email=student_data.email,
-                username=student_data.email.split('@')[0],
+                username=username,
                 first_name=first_name,
                 last_name=last_name,
                 role=UserRole.STUDENT,

@@ -5,6 +5,7 @@ from app.models.assignment import Assignment
 from app.models.project import Project, ProjectType
 from app.models.preference import StudentPreference
 from app.services.group_algorithm import assign_students_to_groups
+from app.services.genetic_algorithm import GeneticAlgorithmService
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
@@ -32,6 +33,8 @@ class AssignmentStats(BaseModel):
 
 class RunAlgorithmRequest(BaseModel):
     project_id: int
+    population_size: Optional[int] = 40  # Pour l'algorithme génétique
+    generations: Optional[int] = 30  # Pour l'algorithme génétique
 
 class RunAlgorithmResponse(BaseModel):
     status: str
@@ -54,87 +57,114 @@ async def get_assignments(project_id: Optional[int] = None, db: Session = Depend
 @router.post("/run-algorithm", response_model=RunAlgorithmResponse)
 async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = Depends(get_db)):
     """
-    Run the group formation algorithm for a specific project
+    Run the assignment algorithm for a specific project
     
-    Steps:
-    1. Get project and validate it's a GROUP_PROJECT
-    2. Get all student preferences for this project
-    3. Run algorithm to form groups
-    4. Create Assignment records
-    5. Return statistics
+    For EXCHANGE_PROGRAM: Uses genetic algorithm to assign students to destinations
+    For GROUP_PROJECT: Uses preference-based group formation algorithm
     """
     # Get project
     project = db.query(Project).filter(Project.id == request.project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Only support GROUP_PROJECT for now
-    if project.project_type != ProjectType.GROUP_PROJECT:
-        raise HTTPException(
-            status_code=400, 
-            detail="Algorithm only supports GROUP_PROJECT type currently"
+    # Route to appropriate algorithm based on project type
+    if project.project_type == ProjectType.EXCHANGE_PROGRAM:
+        # Use Genetic Algorithm for exchange programs
+        try:
+            ga_service = GeneticAlgorithmService(db, request.project_id)
+            result = ga_service.execute(
+                population_size=request.population_size or 40,
+                generations=request.generations or 30
+            )
+            
+            if not result['success']:
+                raise HTTPException(status_code=400, detail=result.get('error', 'Algorithm failed'))
+            
+            return RunAlgorithmResponse(
+                status="success",
+                message=f"Successfully assigned {result['assigned_students']} students to destinations",
+                assignments_created=result['assigned_students'],
+                groups_created=0,  # Pas de groupes pour exchange_program
+                stats={
+                    "total_students": result['total_students'],
+                    "assigned_students": result['assigned_students'],
+                    "unassigned_students": result['unassigned_students'],
+                    "choice1_count": result['choice1_count'],
+                    "average_satisfaction": result['average_satisfaction'],
+                    "satisfaction_rate": (result['choice1_count'] / result['total_students'] * 100) if result['total_students'] > 0 else 0
+                }
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Genetic algorithm failed: {str(e)}")
+    
+    elif project.project_type == ProjectType.GROUP_PROJECT:
+        # Use existing group formation algorithm
+        # Get all student preferences for this project
+        preferences = db.query(StudentPreference).filter(
+            StudentPreference.project_id == request.project_id
+        ).all()
+        
+        if not preferences:
+            raise HTTPException(
+                status_code=400,
+                detail="No student preferences found for this project"
+            )
+        
+        # Build preference dict and get all student IDs
+        student_ids = list(set([p.student_id for p in preferences]))
+        preference_dict = {}
+        
+        for pref in preferences:
+            preference_dict[pref.student_id] = pref.preferred_partner_id
+        
+        # Run algorithm
+        groups, stats = assign_students_to_groups(
+            student_ids=student_ids,
+            preferences=preference_dict,
+            group_size=project.group_size or 3
+        )
+        
+        # Delete existing assignments for this project
+        db.query(Assignment).filter(Assignment.project_id == request.project_id).delete()
+        
+        # Create Assignment records
+        algorithm_run_id = str(uuid.uuid4())
+        assignments_created = 0
+        
+        for group_num, group in enumerate(groups, start=1):
+            for student_id in group:
+                # Check if student got their preference
+                preferred = preference_dict.get(student_id)
+                got_preference = preferred and preferred in group
+                
+                assignment = Assignment(
+                    student_id=student_id,
+                    project_id=request.project_id,
+                    group_number=group_num,
+                    preference_rank=1 if got_preference else None,
+                    satisfaction_score=10.0 if got_preference else 5.0,
+                    algorithm_score=stats['satisfaction_rate'],
+                    algorithm_run_id=algorithm_run_id,
+                    assigned_at=datetime.utcnow()
+                )
+                db.add(assignment)
+                assignments_created += 1
+        
+        db.commit()
+        
+        return RunAlgorithmResponse(
+            status="success",
+            message=f"Successfully created {len(groups)} groups for {assignments_created} students",
+            assignments_created=assignments_created,
+            groups_created=len(groups),
+            stats=stats
         )
     
-    # Get all student preferences for this project
-    preferences = db.query(StudentPreference).filter(
-        StudentPreference.project_id == request.project_id
-    ).all()
-    
-    if not preferences:
+    else:
         raise HTTPException(
             status_code=400,
-            detail="No student preferences found for this project"
+            detail=f"Algorithm not implemented for project type: {project.project_type}"
         )
-    
-    # Build preference dict and get all student IDs
-    student_ids = list(set([p.student_id for p in preferences]))
-    preference_dict = {}
-    
-    for pref in preferences:
-        preference_dict[pref.student_id] = pref.preferred_partner_id
-    
-    # Run algorithm
-    groups, stats = assign_students_to_groups(
-        student_ids=student_ids,
-        preferences=preference_dict,
-        group_size=project.group_size or 3
-    )
-    
-    # Delete existing assignments for this project
-    db.query(Assignment).filter(Assignment.project_id == request.project_id).delete()
-    
-    # Create Assignment records
-    algorithm_run_id = str(uuid.uuid4())
-    assignments_created = 0
-    
-    for group_num, group in enumerate(groups, start=1):
-        for student_id in group:
-            # Check if student got their preference
-            preferred = preference_dict.get(student_id)
-            got_preference = preferred and preferred in group
-            
-            assignment = Assignment(
-                student_id=student_id,
-                project_id=request.project_id,
-                group_number=group_num,
-                preference_rank=1 if got_preference else None,
-                satisfaction_score=10.0 if got_preference else 5.0,
-                algorithm_score=stats['satisfaction_rate'],
-                algorithm_run_id=algorithm_run_id,
-                assigned_at=datetime.utcnow()
-            )
-            db.add(assignment)
-            assignments_created += 1
-    
-    db.commit()
-    
-    return RunAlgorithmResponse(
-        status="success",
-        message=f"Successfully created {len(groups)} groups for {assignments_created} students",
-        assignments_created=assignments_created,
-        groups_created=len(groups),
-        stats=stats
-    )
 
 @router.get("/stats", response_model=AssignmentStats)
 async def get_assignment_stats(project_id: Optional[int] = None, db: Session = Depends(get_db)):

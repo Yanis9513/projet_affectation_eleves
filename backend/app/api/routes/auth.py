@@ -18,6 +18,17 @@ import secrets
 
 router = APIRouter()
 
+# Authorization helpers
+def require_teacher(current_user: User = Depends(get_current_user)):
+    """Require that the current user is a teacher"""
+    if current_user.role != UserRole.TEACHER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This operation requires teacher permissions"
+        )
+    return current_user
+
+
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
