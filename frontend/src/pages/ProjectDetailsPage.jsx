@@ -5,8 +5,9 @@ import Button from '../components/Button'
 import { Loading, Alert } from '../components/Loading'
 import ConfirmModal from '../components/ConfirmModal'
 import CSVUploader from '../components/CSVUploader'
-import { projectAPI, assignmentAPI } from '../services/api'
+import { projectAPI, assignmentAPI, destinationAPI, exchangeAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 const translateProjectType = (type) => {
   const translations = {
@@ -15,6 +16,17 @@ const translateProjectType = (type) => {
     'exchange_program': 'Programme d\'échange'
   }
   return translations[type] || type
+}
+
+const getProjectTypeColor = (type) => {
+  switch(type) {
+    case 'exchange_program':
+      return 'bg-purple-100 text-purple-800'
+    case 'english_leveling':
+      return 'bg-green-100 text-green-800'
+    default:
+      return 'bg-blue-100 text-blue-800'
+  }
 }
 
 export default function ProjectDetailsPage() {
@@ -31,6 +43,19 @@ export default function ProjectDetailsPage() {
   const [deleteModal, setDeleteModal] = useState(false)
   const [showUploadStudents, setShowUploadStudents] = useState(false)
   const [removeStudentModal, setRemoveStudentModal] = useState({ isOpen: false, studentId: null, studentName: '' })
+  
+  // Exchange program states
+  const [destinations, setDestinations] = useState([])
+  const [showAddDestination, setShowAddDestination] = useState(false)
+  const [exchangeStats, setExchangeStats] = useState(null)
+  const [studentsStatus, setStudentsStatus] = useState(null)
+  const [optimizationResult, setOptimizationResult] = useState(null)
+  const [isLaunching, setIsLaunching] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+
+  const isTeacher = userRole === 'teacher'
+  const isExchangeProgram = project?.project_type === 'exchange_program'
 
   useEffect(() => {
     loadProjectDetails()
@@ -38,6 +63,7 @@ export default function ProjectDetailsPage() {
 
   const loadProjectDetails = async () => {
     try {
+      setLoading(true)
       // Load project details
       const projectResponse = await projectAPI.getById(projectId)
       setProject(projectResponse.data)
@@ -46,24 +72,99 @@ export default function ProjectDetailsPage() {
       const studentsResponse = await projectAPI.getStudents(projectId)
       setStudents(studentsResponse.data || [])
 
-      // Try to load assignments/groups if they exist
-      try {
-        const assignmentsResponse = await assignmentAPI.getByProject(projectId)
-        if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
-          setAssignments(assignmentsResponse.data)
-
-          // Load stats
-          const statsResponse = await assignmentAPI.getStats(projectId)
-          setStats(statsResponse.data)
+      // If exchange program, load destinations and stats
+      if (projectResponse.data?.project_type === 'exchange_program') {
+        await loadExchangeData()
+      } else {
+        // Load assignments/groups for non-exchange projects
+        try {
+          const assignmentsResponse = await assignmentAPI.getByProject(projectId)
+          if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
+            setAssignments(assignmentsResponse.data)
+            const statsResponse = await assignmentAPI.getStats(projectId)
+            setStats(statsResponse.data)
+          }
+        } catch (err) {
+          // No assignments yet, that's okay
         }
-      } catch (err) {
-        // No assignments yet, that's okay - silently ignore
       }
     } catch (err) {
       console.error('Error loading project details:', err)
       setError('Erreur lors du chargement des détails du projet')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadExchangeData = async () => {
+    try {
+      // Load destinations
+      const destResponse = await destinationAPI.getByProject(projectId)
+      setDestinations(destResponse.data || [])
+      
+      // Load exchange stats
+      const statsResponse = await exchangeAPI.getStatistics(projectId)
+      setExchangeStats(statsResponse.data)
+      
+      // Load students status
+      const statusResponse = await exchangeAPI.getStudentsStatus(projectId)
+      setStudentsStatus(statusResponse.data)
+    } catch (err) {
+      console.error('Error loading exchange data:', err)
+    }
+  }
+
+  const handleLaunchExchange = async () => {
+    try {
+      setIsLaunching(true)
+      const response = await exchangeAPI.launch(projectId)
+      toast.success(response.data.message)
+      await loadProjectDetails()
+    } catch (err) {
+      console.error('Error launching exchange:', err)
+      toast.error(err.response?.data?.detail || 'Erreur lors du lancement')
+    } finally {
+      setIsLaunching(false)
+    }
+  }
+
+  const handleClosePreferences = async () => {
+    try {
+      setIsClosing(true)
+      const response = await exchangeAPI.closePreferences(projectId, true)
+      toast.success(response.data.message)
+      await loadExchangeData()
+    } catch (err) {
+      console.error('Error closing preferences:', err)
+      toast.error(err.response?.data?.detail || 'Erreur lors de la clôture')
+    } finally {
+      setIsClosing(false)
+    }
+  }
+
+  const handleRunOptimization = async (algorithm = 'greedy') => {
+    try {
+      setIsOptimizing(true)
+      const response = await exchangeAPI.runOptimization(projectId, algorithm)
+      setOptimizationResult(response.data)
+      toast.success('Optimisation terminée!')
+    } catch (err) {
+      console.error('Error running optimization:', err)
+      toast.error(err.response?.data?.detail || 'Erreur lors de l\'optimisation')
+    } finally {
+      setIsOptimizing(false)
+    }
+  }
+
+  const handleAddDestination = async (destinationData) => {
+    try {
+      await destinationAPI.create(projectId, destinationData)
+      toast.success('Destination ajoutée avec succès!')
+      await loadExchangeData()
+      setShowAddDestination(false)
+    } catch (err) {
+      console.error('Error adding destination:', err)
+      toast.error(err.response?.data?.detail || 'Erreur lors de l\'ajout')
     }
   }
 
@@ -95,8 +196,6 @@ export default function ProjectDetailsPage() {
     } catch (err) {
       console.error('Error updating students:', err)
       setError('Erreur lors de la mise à jour des étudiants')
-      const studentsResponse = await projectAPI.getStudents(projectId)
-      setStudents(studentsResponse.data || [])
     }
   }
 
@@ -112,12 +211,11 @@ export default function ProjectDetailsPage() {
     try {
       await projectAPI.removeStudent(projectId, removeStudentModal.studentId)
       setSuccess(`Étudiant "${removeStudentModal.studentName}" retiré avec succès`)
-      // Remove from local state
       setStudents(students.filter(s => s.id !== removeStudentModal.studentId))
       setRemoveStudentModal({ isOpen: false, studentId: null, studentName: '' })
     } catch (err) {
       console.error('Error removing student:', err)
-      setError('Erreur lors du retrait de l\'\u00e9tudiant')
+      setError('Erreur lors du retrait de l\'étudiant')
       setRemoveStudentModal({ isOpen: false, studentId: null, studentName: '' })
     }
   }
@@ -126,7 +224,7 @@ export default function ProjectDetailsPage() {
     setRemoveStudentModal({ isOpen: false, studentId: null, studentName: '' })
   }
 
-  // Group assignments by group_number
+  // Group assignments by group_number (for non-exchange projects)
   const groupedAssignments = {}
   assignments.forEach(assignment => {
     const groupNum = assignment.group_number || 0
@@ -135,8 +233,6 @@ export default function ProjectDetailsPage() {
     }
     groupedAssignments[groupNum].push(assignment)
   })
-
-  const isTeacher = userRole === 'teacher'
 
   if (loading) {
     return <Loading text="Chargement des détails du projet..." />
@@ -170,12 +266,12 @@ export default function ProjectDetailsPage() {
           </Button>
           
           {isTeacher && (
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <Button
                 variant="outline"
                 onClick={() => setShowUploadStudents(!showUploadStudents)}
               >
-                ➕ Ajouter des Étudiants
+                Ajouter des Étudiants
               </Button>
               <Button
                 variant="outline"
@@ -185,7 +281,7 @@ export default function ProjectDetailsPage() {
               </Button>
               <Button
                 variant="danger"
-                onClick={() => setShowDeleteModal(true)}
+                onClick={() => setDeleteModal(true)}
               >
                 Supprimer
               </Button>
@@ -211,28 +307,38 @@ export default function ProjectDetailsPage() {
 
         {/* Project Information */}
         <CardSimple className="mb-6 fade-in-delay-1">
-          <div className="flex items-start justify-between mb-4">
-            <div>
+          <div className="flex items-start justify-between mb-4 flex-wrap gap-4">
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
                 {project.title}
               </h1>
-              <p className="text-esiee-blue font-semibold">
-                👨‍🏫 Enseignant: {project.teacher?.first_name} {project.teacher?.last_name}
+              <p className="text-blue-600 font-semibold">
+                Enseignant: {project.teacher?.first_name} {project.teacher?.last_name}
               </p>
+              {project.deadline && (
+                <p className="text-orange-600 font-medium mt-1">
+                  Date limite: {new Date(project.deadline).toLocaleDateString('fr-FR')}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               {project.is_active ? (
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                  ✓ Actif
+                  Actif
                 </span>
               ) : (
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                  ✗ Inactif
+                  Inactif
                 </span>
               )}
               {project.project_type && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getProjectTypeColor(project.project_type)}`}>
                   {translateProjectType(project.project_type)}
+                </span>
+              )}
+              {isExchangeProgram && project.is_open_for_preferences !== undefined && (
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${project.is_open_for_preferences ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                  {project.is_open_for_preferences ? 'Préférences ouvertes' : 'Préférences fermées'}
                 </span>
               )}
             </div>
@@ -243,73 +349,408 @@ export default function ProjectDetailsPage() {
             <p className="text-gray-600">{project.description}</p>
           </div>
 
+          {/* Exchange Program Info Box */}
+          {isExchangeProgram && (
+            <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded mb-4">
+              <h3 className="font-bold text-purple-800 mb-2">Programme d'Échange</h3>
+              <p className="text-sm text-purple-700">
+                Les étudiants seront affectés individuellement aux universités partenaires selon leurs préférences (grades A-F).
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             <div>
               <p className="text-sm text-gray-600">Étudiants inscrits</p>
-              <p className="text-2xl font-bold text-esiee-blue">
-                {students.length} / {project.max_students}
+              <p className="text-2xl font-bold text-blue-600">
+                {students.length}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Taille min. groupe</p>
-              <p className="text-2xl font-bold text-gray-800">{project.min_students}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Taille max. groupe</p>
-              <p className="text-2xl font-bold text-gray-800">{project.max_students}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Groupes formés</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {Object.keys(groupedAssignments).length || 0}
-              </p>
-            </div>
+            {!isExchangeProgram && (
+              <>
+                <div>
+                  <p className="text-sm text-gray-600">Taille min. groupe</p>
+                  <p className="text-2xl font-bold text-gray-800">{project.min_students}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Taille max. groupe</p>
+                  <p className="text-2xl font-bold text-gray-800">{project.max_students}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Groupes formés</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {Object.keys(groupedAssignments).length || 0}
+                  </p>
+                </div>
+              </>
+            )}
+            {isExchangeProgram && (
+              <>
+                <div>
+                  <p className="text-sm text-gray-600">Universités</p>
+                  <p className="text-2xl font-bold text-purple-600">{destinations.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Places totales</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {destinations.reduce((sum, d) => sum + (d.total_places || 0), 0)}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </CardSimple>
 
-        {/* Statistics */}
-        {stats && (
+        {/* EXCHANGE PROGRAM CONTROLS */}
+        {isExchangeProgram && isTeacher && (
+          <div className="mb-6 fade-in-delay-2">
+            {/* Control Panel */}
+            <CardSimple className="mb-4 bg-gradient-to-r from-purple-50 to-blue-50">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Panneau de Contrôle du Programme d'Échange
+              </h2>
+              
+              <div className="flex flex-wrap gap-3">
+                {/* Launch Button */}
+                {!project.is_open_for_preferences && destinations.length > 0 && (
+                  <Button
+                    variant="primary"
+                    onClick={handleLaunchExchange}
+                    disabled={isLaunching}
+                  >
+                    {isLaunching ? 'Lancement...' : 'Lancer le Programme'}
+                  </Button>
+                )}
+                
+                {/* Close Preferences Button */}
+                {project.is_open_for_preferences && (
+                  <Button
+                    variant="warning"
+                    onClick={handleClosePreferences}
+                    disabled={isClosing}
+                  >
+                    {isClosing ? 'Clôture...' : 'Clôturer les Préférences'}
+                  </Button>
+                )}
+                
+                {/* Optimization Buttons */}
+                {!project.is_open_for_preferences && students.length > 0 && (
+                  <>
+                    <Button
+                      variant="success"
+                      onClick={() => handleRunOptimization('greedy')}
+                      disabled={isOptimizing}
+                    >
+                      {isOptimizing ? 'Optimisation...' : 'Algorithme Rapide'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleRunOptimization('genetic')}
+                      disabled={isOptimizing}
+                    >
+                      Algorithme Avancé
+                    </Button>
+                  </>
+                )}
+              </div>
+            </CardSimple>
+
+            {/* Exchange Statistics */}
+            {exchangeStats?.statistics && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <CardSimple className="text-center bg-white">
+                  <div className="text-3xl font-bold text-purple-600">
+                    {exchangeStats.statistics.students_completed_preferences}
+                  </div>
+                  <div className="text-sm text-gray-600">Préférences complétées</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {exchangeStats.statistics.completion_rate.toFixed(1)}% des étudiants
+                  </div>
+                </CardSimple>
+                
+                <CardSimple className="text-center bg-white">
+                  <div className="text-3xl font-bold text-blue-600">
+                    {exchangeStats.statistics.total_destinations}
+                  </div>
+                  <div className="text-sm text-gray-600">Universités partenaires</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {exchangeStats.statistics.total_available_places} places disponibles
+                  </div>
+                </CardSimple>
+                
+                <CardSimple className="text-center bg-white">
+                  <div className="text-3xl font-bold text-green-600">
+                    A: {exchangeStats.statistics.grade_distribution?.A || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Préférences "A" (meilleures)</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Distribution: A:{exchangeStats.statistics.grade_distribution?.A || 0} 
+                    B:{exchangeStats.statistics.grade_distribution?.B || 0}
+                    C:{exchangeStats.statistics.grade_distribution?.C || 0}...
+                  </div>
+                </CardSimple>
+              </div>
+            )}
+
+            {/* Students Preferences Status */}
+            {studentsStatus?.students && (
+              <CardSimple className="mb-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">
+                  Statut des Préférences des Étudiants
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 text-left">Étudiant</th>
+                        <th className="px-4 py-2 text-left">Filière</th>
+                        <th className="px-4 py-2 text-center">Préférences</th>
+                        <th className="px-4 py-2 text-center">Statut</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {studentsStatus.students.map((student) => (
+                        <tr key={student.student_id} className="border-b">
+                          <td className="px-4 py-2">
+                            <div className="font-medium">{student.student_name}</div>
+                            <div className="text-xs text-gray-500">{student.email}</div>
+                          </td>
+                          <td className="px-4 py-2">{student.filiere || '-'}</td>
+                          <td className="px-4 py-2 text-center">
+                            {student.filled_preferences}/{student.total_destinations}
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            {student.is_complete ? (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                                Complet
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                                Incomplet
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardSimple>
+            )}
+
+            {/* Optimization Results */}
+            {optimizationResult && optimizationResult.success && (
+              <CardSimple className="mb-4 bg-green-50 border-2 border-green-200">
+                <h3 className="text-lg font-bold text-green-800 mb-4">
+                  Résultats de l'Optimisation
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {optimizationResult.statistics.assignment_rate.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-600">Taux d'affectation</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {optimizationResult.statistics.satisfaction_rate.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-600">Taux de satisfaction</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {optimizationResult.statistics.average_preference_score.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-600">Score moyen</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {optimizationResult.statistics.efficiency}%
+                    </div>
+                    <div className="text-xs text-gray-600">Efficacité</div>
+                  </div>
+                </div>
+                
+                <h4 className="font-bold text-gray-800 mb-2">Répartition des Grades:</h4>
+                <div className="flex gap-2 mb-4">
+                  {Object.entries(optimizationResult.statistics.grade_distribution).map(([grade, count]) => (
+                    <div key={grade} className="flex-1 text-center p-2 bg-white rounded">
+                      <div className="text-xl font-bold">{grade}</div>
+                      <div className="text-sm text-gray-600">{count}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Assignments List */}
+                <h4 className="font-bold text-gray-800 mb-2">Affectations:</h4>
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {optimizationResult.assignments.map((assignment, idx) => (
+                    <div key={idx} className="p-3 bg-white rounded flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{assignment.student_name}</span>
+                        <span className="text-gray-500 text-sm ml-2">→</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-purple-700">{assignment.destination_name}</span>
+                        {assignment.grade && (
+                          <span className="ml-2 px-2 py-0.5 bg-gray-200 rounded text-xs">
+                            Grade {assignment.grade}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardSimple>
+            )}
+          </div>
+        )}
+
+        {/* DESTINATIONS SECTION - Always visible for exchange programs */}
+        {isExchangeProgram && (
+          <CardSimple className="mb-6 fade-in-delay-2">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Universités Partenaires ({destinations.length})
+              </h2>
+              {isTeacher && !showAddDestination && (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowAddDestination(true)}
+                >
+                  Ajouter une Destination
+                </Button>
+              )}
+            </div>
+
+            {destinations.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <p className="text-gray-600 mb-4">
+                  Aucune université n'a été ajoutée à ce programme d'échange.
+                </p>
+                {isTeacher && !showAddDestination && (
+                  <p className="text-sm text-gray-500">
+                    Cliquez sur "Ajouter une Destination" pour commencer.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {destinations.map((dest) => (
+                  <div key={dest.id} className="bg-white border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition-all">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-gray-800">{dest.university_name}</h3>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-semibold">
+                        {dest.mobility_type}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-3">
+                      {dest.city}, {dest.country}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-blue-50 p-2 rounded">
+                        <span className="text-gray-600">Places:</span>
+                        <span className="font-bold text-blue-700 ml-1">
+                          {dest.available_places}/{dest.total_places}
+                        </span>
+                      </div>
+                      <div className="bg-green-50 p-2 rounded">
+                        <span className="text-gray-600">Filères:</span>
+                        <span className="font-bold text-green-700 ml-1 truncate">
+                          {dest.accepted_filieres}
+                        </span>
+                      </div>
+                    </div>
+                    {dest.min_english_level && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        Anglais minimum: {dest.min_english_level}
+                      </p>
+                    )}
+                    {dest.min_gpa && (
+                      <p className="text-xs text-gray-500">
+                        GPA minimum: {dest.min_gpa}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* CSV Upload for Destinations */}
+            {isTeacher && showAddDestination && (
+              <div className="mt-6 p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">
+                  Ajouter des Destinations
+                </h3>
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded mb-4">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Format CSV:</strong> university_name, country, city, total_places, mobility_type, accepted_filieres, min_english_level, min_gpa
+                  </p>
+                </div>
+                <CSVUploader
+                  type="destinations"
+                  projectId={projectId}
+                  onUploadSuccess={async (destinations) => {
+                    toast.success(`${destinations.length} destination(s) ajoutée(s)`)
+                    await loadExchangeData()
+                    setShowAddDestination(false)
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddDestination(false)}
+                  className="mt-4"
+                >
+                  Annuler
+                </Button>
+              </div>
+            )}
+          </CardSimple>
+        )}
+
+        {/* Statistics (for non-exchange projects) */}
+        {!isExchangeProgram && stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 fade-in-delay-2">
             <CardSimple className="text-center">
-              <div className="text-3xl font-bold text-esiee-blue">{stats.total_groups}</div>
+              <div className="text-3xl font-bold text-blue-600">{stats.total_groups}</div>
               <div className="text-sm text-gray-600">Groupes créés</div>
             </CardSimple>
             
             <CardSimple className="text-center">
-              <div className="text-3xl font-bold text-esiee-blue">{stats.total_assignments}</div>
+              <div className="text-3xl font-bold text-blue-600">{stats.total_assignments}</div>
               <div className="text-sm text-gray-600">Étudiants assignés</div>
             </CardSimple>
             
             <CardSimple className="text-center">
-              <div className="text-3xl font-bold text-green-600">{stats.satisfaction_rate.toFixed(1)}%</div>
+              <div className="text-3xl font-bold text-green-600">{stats.satisfaction_rate?.toFixed(1)}%</div>
               <div className="text-sm text-gray-600">Taux de satisfaction</div>
             </CardSimple>
             
             <CardSimple className="text-center">
-              <div className="text-3xl font-bold text-purple-600">{stats.average_group_size.toFixed(1)}</div>
+              <div className="text-3xl font-bold text-purple-600">{stats.average_group_size?.toFixed(1)}</div>
               <div className="text-sm text-gray-600">Taille moyenne</div>
             </CardSimple>
           </div>
         )}
 
-        {/* Students List */}
+        {/* SINGLE Students List - Only one now */}
         {students.length > 0 && (
           <CardSimple className="mb-6 fade-in-delay-3">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              🎓 Étudiants Inscrits ({students.length})
+              Étudiants Inscrits ({students.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
               {students.map((student, idx) => (
                 <div
                   key={student.id || idx}
-                  className="bg-gradient-to-r from-blue-50 to-white border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all"
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-800 truncate">{student.name}</p>
                       <p className="text-sm text-gray-600 truncate">{student.email}</p>
                       {student.filiere && (
-                        <span className="inline-block mt-2 px-2 py-1 bg-esiee-blue text-white rounded text-xs">
+                        <span className="inline-block mt-2 px-2 py-1 bg-blue-600 text-white rounded text-xs">
                           {student.filiere}
                         </span>
                       )}
@@ -337,11 +778,11 @@ export default function ProjectDetailsPage() {
           </CardSimple>
         )}
 
-        {/* Groups Display */}
-        {assignments.length > 0 ? (
+        {/* Groups Display (for non-exchange projects) */}
+        {!isExchangeProgram && assignments.length > 0 && (
           <div className="space-y-4 fade-in-delay-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              👥 Groupes formés ({Object.keys(groupedAssignments).length})
+              Groupes formés ({Object.keys(groupedAssignments).length})
             </h2>
             
             {Object.keys(groupedAssignments)
@@ -349,7 +790,7 @@ export default function ProjectDetailsPage() {
               .map(groupNum => (
                 <CardSimple key={groupNum} className="bg-white">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-esiee-blue">
+                    <h3 className="text-xl font-bold text-blue-600">
                       Groupe {groupNum}
                     </h3>
                     <span className="text-sm text-gray-500">
@@ -359,7 +800,6 @@ export default function ProjectDetailsPage() {
                   
                   <div className="space-y-2">
                     {groupedAssignments[groupNum].map(assignment => {
-                      // Find student info
                       const student = students.find(s => s.id === assignment.student_id)
                       
                       return (
@@ -368,15 +808,15 @@ export default function ProjectDetailsPage() {
                           className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-esiee-blue text-white flex items-center justify-center font-bold">
-                              {student?.user?.first_name?.[0]}{student?.user?.last_name?.[0]}
+                            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                              {student?.name?.[0]}
                             </div>
                             <div>
                               <div className="font-medium text-gray-800">
-                                {student?.user?.first_name} {student?.user?.last_name}
+                                {student?.name}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {student?.user?.email}
+                                {student?.email}
                               </div>
                             </div>
                           </div>
@@ -389,7 +829,7 @@ export default function ProjectDetailsPage() {
                             )}
                             {assignment.preference_rank && (
                               <div className="text-sm text-green-600">
-                                ✓ Préférence #{assignment.preference_rank}
+                                Préférence #{assignment.preference_rank}
                               </div>
                             )}
                           </div>
@@ -400,60 +840,11 @@ export default function ProjectDetailsPage() {
                 </CardSimple>
               ))}
           </div>
-        ) : students.length > 0 ? (
-          <CardSimple>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Étudiants inscrits ({students.length})
-            </h2>
-            <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
-              {students.map(student => {
-                // Get initials from name
-                const nameParts = (student.name || '').split(' ')
-                const initials = nameParts.length >= 2 
-                  ? `${nameParts[0][0]}${nameParts[nameParts.length-1][0]}`
-                  : (student.name?.[0] || '?')
-                
-                return (
-                  <div 
-                    key={student.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-esiee-blue text-white flex items-center justify-center font-bold text-sm">
-                        {initials.toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-800">
-                          {student.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {student.email}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right text-sm">
-                      {student.filiere && (
-                        <div className="text-gray-600">
-                          {student.filiere}
-                        </div>
-                      )}
-                      {student.rank && (
-                        <div className="text-esiee-blue font-semibold">
-                          Rang: {student.rank}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="mt-6 text-center text-gray-600 pt-4 border-t">
-              <p>Les groupes n'ont pas encore été formés pour ce projet.</p>
-            </div>
-          </CardSimple>
-        ) : (
+        )}
+
+        {/* Empty State */}
+        {students.length === 0 && (
           <CardSimple className="text-center py-12 fade-in-delay-3">
-            <div className="text-6xl mb-4">📊</div>
             <h3 className="text-xl font-bold text-gray-700 mb-2">
               Aucun étudiant inscrit
             </h3>
