@@ -51,6 +51,8 @@ export const authAPI = {
   updateProfile: (userData) => api.put('/auth/me', userData),
   signupRequest: (data) => api.post('/auth/signup-request', data),
   completePassword: (data) => api.post('/auth/complete-password', data),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
 }
 
 // Student APIs

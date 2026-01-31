@@ -161,7 +161,7 @@ function LoginPage() {
         <div className="mt-6 space-y-3">
           <div className="text-center">
             <a 
-              href="#" 
+              href="/forgot-password" 
               className="text-esiee-blue hover:text-blue-700 text-sm transition-colors duration-200"
             >
               Mot de passe oublié ?

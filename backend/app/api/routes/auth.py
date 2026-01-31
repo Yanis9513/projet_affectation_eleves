@@ -357,3 +357,113 @@ async def complete_password(data: CompleteSignupSimple, db: Session = Depends(ge
             "role": user.role.value
         }
     }
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(data: SignupRequest, db: Session = Depends(get_db)):
+    """Request password reset - verify user exists and send reset link via email"""
+    # Find user by email
+    user = db.query(User).filter(User.email == data.email).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found with this email"
+        )
+    
+    # Generate token (valid for 24 hours)
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+    
+    # Store token in user
+    user.password_reset_token = token
+    user.password_reset_expires = expires_at
+    db.commit()
+    
+    # Send email with reset link
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h1 style="color: #1e40af; text-align: center;">Réinitialiser votre mot de passe</h1>
+                
+                <p>Bonjour,</p>
+                
+                <p>Vous avez demandé la réinitialisation de votre mot de passe pour le système d'affectation d'étudiants ESIEE.</p>
+                
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" style="background-color: #1e40af; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Réinitialiser mon mot de passe
+                    </a>
+                </p>
+                
+                <p>Ou copiez ce lien dans votre navigateur :</p>
+                <p style="word-break: break-all; background-color: #f0f9ff; padding: 10px; border-radius: 4px;">
+                    {reset_url}
+                </p>
+                
+                <p><strong>Ce lien expire dans 24 heures.</strong></p>
+                
+                <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+                    <small>
+                        Cet email a été envoyé automatiquement par le système d'affectation d'étudiants ESIEE.<br>
+                        Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+                    </small>
+                </p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    email_service.send_email_sync(data.email, "Réinitialiser votre mot de passe ESIEE", html_content)
+    
+    return {
+        "message": "Check your email for the password reset link",
+        "email": data.email
+    }
+
+
+@router.post("/reset-password", response_model=Token, status_code=status.HTTP_200_OK)
+async def reset_password(data: CompleteSignupSimple, db: Session = Depends(get_db)):
+    """Reset password with valid token"""
+    # Find user with valid token
+    user = db.query(User).filter(
+        User.password_reset_token == data.token,
+        User.password_reset_expires > datetime.utcnow()
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+    
+    # Update password
+    user.hashed_password = hash_password(data.password)
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    
+    db.commit()
+    
+    # Create access token
+    access_token = create_access_token(
+        data={
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role.value
+        }
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role.value
+        }
+    }
