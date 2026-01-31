@@ -5,7 +5,7 @@ import Button from '../components/Button'
 import { Loading, Alert } from '../components/Loading'
 import ConfirmModal from '../components/ConfirmModal'
 import CSVUploader from '../components/CSVUploader'
-import { projectAPI, assignmentAPI, destinationAPI, exchangeAPI } from '../services/api'
+import { projectAPI, assignmentAPI, destinationAPI, exchangeAPI, preferenceAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -56,6 +56,16 @@ export default function ProjectDetailsPage() {
 
   const isTeacher = userRole === 'teacher'
   const isExchangeProgram = project?.project_type === 'exchange_program'
+  const isGroupProject = project?.project_type === 'group_project'
+  const isEnglishLeveling = project?.project_type === 'english_leveling'
+  
+  // Group project states
+  const [groupPreferences, setGroupPreferences] = useState(null)
+  const [isLoadingGroupPrefs, setIsLoadingGroupPrefs] = useState(false)
+  
+  // English leveling states
+  const [englishLevelStats, setEnglishLevelStats] = useState(null)
+  const [isLoadingEnglishStats, setIsLoadingEnglishStats] = useState(false)
 
   useEffect(() => {
     loadProjectDetails()
@@ -75,8 +85,25 @@ export default function ProjectDetailsPage() {
       // If exchange program, load destinations and stats
       if (projectResponse.data?.project_type === 'exchange_program') {
         await loadExchangeData()
+      } else if (projectResponse.data?.project_type === 'group_project') {
+        // Load group project preferences
+        await loadGroupPreferences()
+        // Load assignments for group projects
+        try {
+          const assignmentsResponse = await assignmentAPI.getByProject(projectId)
+          if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
+            setAssignments(assignmentsResponse.data)
+            const statsResponse = await assignmentAPI.getStats(projectId)
+            setStats(statsResponse.data)
+          }
+        } catch (err) {
+          // No assignments yet, that's okay
+        }
+      } else if (projectResponse.data?.project_type === 'english_leveling') {
+        // Load English leveling statistics
+        await loadEnglishLevelingStats()
       } else {
-        // Load assignments/groups for non-exchange projects
+        // Load assignments/groups for other non-exchange projects
         try {
           const assignmentsResponse = await assignmentAPI.getByProject(projectId)
           if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
@@ -111,6 +138,50 @@ export default function ProjectDetailsPage() {
       setStudentsStatus(statusResponse.data)
     } catch (err) {
       console.error('Error loading exchange data:', err)
+    }
+  }
+
+  const loadGroupPreferences = async () => {
+    try {
+      setIsLoadingGroupPrefs(true)
+      const response = await preferenceAPI.getProjectPreferencesDetailed(projectId)
+      setGroupPreferences(response.data)
+    } catch (err) {
+      console.error('Error loading group preferences:', err)
+      toast.error('Erreur lors du chargement des préférences de groupe')
+    } finally {
+      setIsLoadingGroupPrefs(false)
+    }
+  }
+
+  const loadEnglishLevelingStats = async () => {
+    try {
+      setIsLoadingEnglishStats(true)
+      // Calculate English level statistics from students
+      const levelStats = {
+        A1: 0,
+        A2: 0,
+        B1: 0,
+        B2: 0,
+        C1: 0,
+        C2: 0,
+        unknown: 0
+      }
+      
+      students.forEach(student => {
+        const level = student.english_level || 'unknown'
+        if (levelStats.hasOwnProperty(level)) {
+          levelStats[level]++
+        } else {
+          levelStats.unknown++
+        }
+      })
+      
+      setEnglishLevelStats(levelStats)
+    } catch (err) {
+      console.error('Error loading English leveling stats:', err)
+    } finally {
+      setIsLoadingEnglishStats(false)
     }
   }
 
@@ -603,6 +674,273 @@ export default function ProjectDetailsPage() {
                 </div>
               </CardSimple>
             )}
+          </div>
+        )}
+
+        {/* GROUP PROJECT CONTROLS */}
+        {isGroupProject && isTeacher && (
+          <div className="mb-6 fade-in-delay-2">
+            {/* Control Panel */}
+            <CardSimple className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Panneau de Contrôle du Projet de Groupe
+              </h2>
+              
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    toast.info('Lancement de l\'algorithme de groupes...')
+                    // TODO: Call the group algorithm API
+                  }}
+                  disabled={isLoadingGroupPrefs || students.length === 0}
+                >
+                  {isLoadingGroupPrefs ? 'Chargement...' : 'Lancer l\'Algorithme de Groupes'}
+                </Button>
+              </div>
+            </CardSimple>
+
+            {/* Group Preferences Statistics */}
+            {groupPreferences && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <CardSimple className="text-center bg-white">
+                  <div className="text-3xl font-bold text-blue-600">
+                    {groupPreferences.total_preferences || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Préférences soumises</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {((groupPreferences.total_preferences / students.length) * 100).toFixed(1)}% des étudiants
+                  </div>
+                </CardSimple>
+                
+                <CardSimple className="text-center bg-white">
+                  <div className="text-3xl font-bold text-green-600">
+                    {groupPreferences.mutual_matches || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Matches mutuels</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Paires d\'étudiants s\'étant choisis
+                  </div>
+                </CardSimple>
+                
+                <CardSimple className="text-center bg-white">
+                  <div className="text-3xl font-bold text-orange-600">
+                    {students.length - (groupPreferences.students_with_preferences || 0)}
+                  </div>
+                  <div className="text-sm text-gray-600">Sans préférences</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Étudiants à assigner
+                  </div>
+                </CardSimple>
+              </div>
+            )}
+
+            {/* Partner Preferences Table */}
+            {groupPreferences?.preferences && groupPreferences.preferences.length > 0 && (
+              <CardSimple className="mb-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">
+                  Préférences des Partenaires
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 text-left">Étudiant</th>
+                        <th className="px-4 py-2 text-left">Partenaire choisi</th>
+                        <th className="px-4 py-2 text-center">Réciproque?</th>
+                        <th className="px-4 py-2 text-center">Statut</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupPreferences.preferences.map((pref, idx) => (
+                        <tr key={idx} className="border-b">
+                          <td className="px-4 py-2">
+                            <div className="font-medium">{pref.student_name}</div>
+                            <div className="text-xs text-gray-500">{pref.student_email}</div>
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="font-medium">{pref.partner_name}</div>
+                            <div className="text-xs text-gray-500">{pref.partner_email}</div>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            {pref.is_mutual ? (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                                ✓ Match mutuel
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                                En attente
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            {pref.is_assigned ? (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                Assigné
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                                En attente
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardSimple>
+            )}
+
+            {/* Students without preferences */}
+            {groupPreferences?.students_without_preferences && groupPreferences.students_without_preferences.length > 0 && (
+              <CardSimple className="mb-4 bg-orange-50 border-2 border-orange-200">
+                <h3 className="text-lg font-bold text-orange-800 mb-4">
+                  Étudiants sans Préférences ({groupPreferences.students_without_preferences.length})
+                </h3>
+                <div className="max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {groupPreferences.students_without_preferences.map((student, idx) => (
+                      <div key={idx} className="p-2 bg-white rounded flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-xs text-gray-500">{student.email}</div>
+                        </div>
+                        {student.filiere && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                            {student.filiere}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardSimple>
+            )}
+          </div>
+        )}
+
+        {/* ENGLISH LEVELING CONTROLS */}
+        {isEnglishLeveling && isTeacher && (
+          <div className="mb-6 fade-in-delay-2">
+            {/* Control Panel */}
+            <CardSimple className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Panneau de Contrôle du Niveau d'Anglais
+              </h2>
+              
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    toast.info('Lancement de l\'algorithme de niveau d\'anglais...')
+                    // TODO: Call the English leveling algorithm API
+                  }}
+                  disabled={isLoadingEnglishStats || students.length === 0}
+                >
+                  {isLoadingEnglishStats ? 'Chargement...' : 'Lancer l\'Algorithme de Niveau'}
+                </Button>
+              </div>
+            </CardSimple>
+
+            {/* English Level Distribution */}
+            {englishLevelStats && (
+              <CardSimple className="mb-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">
+                  Distribution des Niveaux d'Anglais
+                </h3>
+                <div className="grid grid-cols-3 md:grid-cols-7 gap-3 mb-4">
+                  {['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'unknown'].map((level) => (
+                    <div key={level} className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className={`text-2xl font-bold ${
+                        level === 'unknown' ? 'text-gray-500' :
+                        level.startsWith('A') ? 'text-red-600' :
+                        level.startsWith('B') ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
+                        {englishLevelStats[level]}
+                      </div>
+                      <div className="text-xs text-gray-600">{level === 'unknown' ? 'Inconnu' : level}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {((englishLevelStats[level] / students.length) * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Visual bar chart */}
+                <div className="mt-4">
+                  <h4 className="font-medium text-gray-700 mb-2">Répartition visuelle:</h4>
+                  <div className="space-y-2">
+                    {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((level) => {
+                      const count = englishLevelStats[level]
+                      const percentage = students.length > 0 ? (count / students.length) * 100 : 0
+                      return (
+                        <div key={level} className="flex items-center gap-2">
+                          <div className="w-12 text-sm font-medium text-gray-700">{level}</div>
+                          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${
+                                level.startsWith('A') ? 'bg-red-500' :
+                                level.startsWith('B') ? 'bg-yellow-500' :
+                                'bg-green-500'
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <div className="w-16 text-sm text-gray-600 text-right">{count} élèves</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </CardSimple>
+            )}
+
+            {/* Students by English Level */}
+            <CardSimple className="mb-4">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">
+                Étudiants par Niveau d'Anglais
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Étudiant</th>
+                      <th className="px-4 py-2 text-left">Email</th>
+                      <th className="px-4 py-2 text-center">Filière</th>
+                      <th className="px-4 py-2 text-center">Niveau d'anglais</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.map((student) => (
+                      <tr key={student.id} className="border-b">
+                        <td className="px-4 py-2">
+                          <div className="font-medium">{student.name}</div>
+                        </td>
+                        <td className="px-4 py-2 text-gray-600">{student.email}</td>
+                        <td className="px-4 py-2 text-center">{student.filiere || '-'}</td>
+                        <td className="px-4 py-2 text-center">
+                          {student.english_level ? (
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              student.english_level.startsWith('A') ? 'bg-red-100 text-red-800' :
+                              student.english_level.startsWith('B') ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {student.english_level}
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                              Non défini
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardSimple>
           </div>
         )}
 
