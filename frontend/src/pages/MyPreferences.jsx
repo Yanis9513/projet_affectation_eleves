@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CardSimple } from '../components/Card';
 import Button from '../components/Button';
 import { Loading } from '../components/Loading';
-import { projectAPI, destinationPreferenceAPI } from '../services/api';
+import { projectAPI, destinationPreferenceAPI, preferenceAPI, studentAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -11,7 +11,13 @@ export default function MyPreferences() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [preferences, setPreferences] = useState([]);
+  const [preferences, setPreferences] = useState({
+    exchange: [],
+    group: [],
+    english: []
+  });
+
+  const [studentProfile, setStudentProfile] = useState(null);
 
   useEffect(() => {
     loadAllPreferences();
@@ -21,12 +27,25 @@ export default function MyPreferences() {
     try {
       setLoading(true);
       
+      // Load student profile to get English level
+      let englishLevel = 'Non défini';
+      try {
+        const profileResponse = await studentAPI.getProfile();
+        console.log('Profile API response:', profileResponse.data);
+        setStudentProfile(profileResponse.data);
+        englishLevel = profileResponse.data?.language_level || profileResponse.data?.english_level || 'Non défini';
+        console.log('English level loaded:', englishLevel);
+      } catch (err) {
+        console.error('Error loading student profile:', err);
+      }
+      
       // Get all my projects
       const projectsResponse = await projectAPI.getMyProjects();
       const projects = projectsResponse.data || [];
       
-      // For each exchange program project, get preferences
-      const allPreferences = [];
+      const exchangePrefs = [];
+      const groupPrefs = [];
+      const englishPrefs = [];
       
       for (const project of projects) {
         if (project.project_type === 'exchange_program') {
@@ -35,7 +54,7 @@ export default function MyPreferences() {
             const projectPrefs = prefResponse.data || [];
             
             if (projectPrefs.length > 0) {
-              allPreferences.push({
+              exchangePrefs.push({
                 project: project,
                 preferences: projectPrefs,
                 submittedAt: projectPrefs[0]?.created_at
@@ -44,10 +63,37 @@ export default function MyPreferences() {
           } catch (err) {
             // No preferences for this project yet
           }
+        } else if (project.project_type === 'group_project') {
+          try {
+            const currentUser = JSON.parse(localStorage.getItem('user'));
+            const prefResponse = await preferenceAPI.getStudentPreferences(currentUser.id);
+            const projectPrefs = prefResponse.data?.filter(p => p.project_id === project.id) || [];
+            
+            if (projectPrefs.length > 0) {
+              groupPrefs.push({
+                project: project,
+                preferences: projectPrefs,
+                submittedAt: projectPrefs[0]?.created_at
+              });
+            }
+          } catch (err) {
+            // No preferences for this project yet
+          }
+        } else if (project.project_type === 'english_leveling') {
+          // English leveling - show confirmation that student is included
+          englishPrefs.push({
+            project: project,
+            englishLevel: englishLevel,
+            submittedAt: null // Auto-confirmed from profile
+          });
         }
       }
       
-      setPreferences(allPreferences);
+      setPreferences({
+        exchange: exchangePrefs,
+        group: groupPrefs,
+        english: englishPrefs
+      });
     } catch (error) {
       console.error('Error loading preferences:', error);
       toast.error('Erreur lors du chargement des préférences');
@@ -80,6 +126,24 @@ export default function MyPreferences() {
     }
   };
 
+  const getEnglishLevelColor = (level) => {
+    switch(level) {
+      case 'C2': return 'bg-purple-600 text-white';
+      case 'C1': return 'bg-purple-500 text-white';
+      case 'B2': return 'bg-blue-500 text-white';
+      case 'B1': return 'bg-blue-400 text-white';
+      case 'A2': return 'bg-green-500 text-white';
+      case 'A1': return 'bg-green-400 text-white';
+      default: return 'bg-gray-200 text-gray-700';
+    }
+  };
+
+  const hasAnyPreferences = () => {
+    return preferences.exchange.length > 0 || 
+           preferences.group.length > 0 || 
+           preferences.english.length > 0;
+  };
+
   if (loading) {
     return <Loading text="Chargement de vos préférences..." />;
   }
@@ -100,18 +164,18 @@ export default function MyPreferences() {
             Mes Préférences
           </h1>
           <p className="text-gray-600">
-            Consultez les préférences que vous avez soumises pour vos programmes d'échange
+            Consultez les préférences que vous avez soumises pour vos projets
           </p>
         </div>
 
-        {preferences.length === 0 ? (
+        {!hasAnyPreferences() ? (
           <CardSimple className="text-center py-12">
             <div className="text-6xl mb-4">📋</div>
             <h3 className="text-xl font-bold text-gray-700 mb-2">
-              Aucune préference soumise
+              Aucune préférence soumise
             </h3>
             <p className="text-gray-600 mb-6">
-              Vous n'avez pas encore soumis de préférences pour vos programmes d'échange.
+              Vous n'avez pas encore soumis de préférences pour vos projets.
             </p>
             <Button 
               variant="primary" 
@@ -121,86 +185,261 @@ export default function MyPreferences() {
             </Button>
           </CardSimple>
         ) : (
-          <div className="space-y-6">
-            {preferences.map((item) => (
-              <CardSimple key={item.project.id} className="bg-white">
-                {/* Project Header */}
-                <div className="border-b pb-4 mb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-bold text-gray-800">
-                      {item.project.title}
-                    </h2>
-                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-                      Préférences soumises
-                    </span>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-2">
-                    {item.project.description}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Soumis le: {new Date(item.submittedAt).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
-                </div>
-
-                {/* Preferences List */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-700 mb-3">
-                    Vos choix ({item.preferences.length} universités)
-                  </h3>
-                  
-                  {/* Sort by grade (A first) */}
-                  {[...item.preferences]
-                    .sort((a, b) => a.grade.localeCompare(b.grade))
-                    .map((pref) => (
-                    <div 
-                      key={pref.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg ${getGradeColor(pref.grade)}`}>
-                          {pref.grade}
+          <div className="space-y-8">
+            {/* Exchange Program Preferences */}
+            {preferences.exchange.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                  Programmes d'Échange
+                </h2>
+                <div className="space-y-6">
+                  {preferences.exchange.map((item) => (
+                    <CardSimple key={item.project.id} className="bg-white">
+                      {/* Project Header */}
+                      <div className="border-b pb-4 mb-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-bold text-gray-800">
+                            {item.project.title}
+                          </h3>
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                            Préférences soumises
+                          </span>
                         </div>
-                        <div>
-                          <div className="font-semibold text-gray-800">
-                            {pref.destination?.university_name || 'Université'}
+                        <p className="text-gray-600 text-sm mb-2">
+                          {item.project.description}
+                        </p>
+                        {item.submittedAt && (
+                          <p className="text-sm text-gray-500">
+                            Soumis le: {new Date(item.submittedAt).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Preferences List */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-700 mb-3">
+                          Vos choix ({item.preferences.length} universités)
+                        </h4>
+                        
+                        {/* Sort by grade (A first) */}
+                        {[...item.preferences]
+                          .sort((a, b) => a.grade.localeCompare(b.grade))
+                          .map((pref) => (
+                          <div 
+                            key={pref.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg ${getGradeColor(pref.grade)}`}>
+                                {pref.grade}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-gray-800">
+                                  {pref.destination?.university_name || 'Université'}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {pref.destination?.city}, {pref.destination?.country}
+                                </div>
+                                <div className={`text-xs font-medium mt-1 ${getGradeColor(pref.grade).replace('bg-', 'text-').replace(' text-white', '')}`}>
+                                  {getGradeDescription(pref.grade)}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {pref.destination?.city}, {pref.destination?.country}
+                        ))}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="mt-6 pt-4 border-t flex gap-3">
+                        {item.project.is_open_for_preferences && (
+                          <Button 
+                            variant="outline"
+                            onClick={() => navigate(`/student/exchange-preferences/${item.project.id}`)}
+                          >
+                            Modifier mes préférences
+                          </Button>
+                        )}
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigate(`/projects/${item.project.id}`)}
+                        >
+                          Voir le projet
+                        </Button>
+                      </div>
+                    </CardSimple>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Group Project Preferences */}
+            {preferences.group.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                  Projets de Groupe
+                </h2>
+                <div className="space-y-6">
+                  {preferences.group.map((item) => (
+                    <CardSimple key={item.project.id} className="bg-white">
+                      {/* Project Header */}
+                      <div className="border-b pb-4 mb-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-bold text-gray-800">
+                            {item.project.title}
+                          </h3>
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                            Préférences soumises
+                          </span>
+                        </div>
+                        <p className="text-gray-600 text-sm mb-2">
+                          {item.project.description}
+                        </p>
+                        {item.submittedAt && (
+                          <p className="text-sm text-gray-500">
+                            Soumis le: {new Date(item.submittedAt).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Partner Preferences */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-700 mb-3">
+                          Vos préférences de partenaire
+                        </h4>
+                        {item.preferences.map((pref) => (
+                          <div key={pref.id} className="p-3 bg-gray-50 rounded-lg">
+                            {pref.preferred_partner_id ? (
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                                  👤
+                                </div>
+                                <div>
+                                  <div className="font-medium text-gray-800">
+                                    Partenaire préféré ID: {pref.preferred_partner_id}
+                                  </div>
+                                  <div className="text-sm text-blue-600">
+                                    Vous avez choisi de travailler avec ce partenaire
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-gray-600">
+                                Aucune préférence de partenaire spécifiée
+                              </div>
+                            )}
                           </div>
-                          <div className={`text-xs font-medium mt-1 ${getGradeColor(pref.grade).replace('bg-', 'text-').replace(' text-white', '')}`}>
-                            {getGradeDescription(pref.grade)}
+                        ))}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="mt-6 pt-4 border-t flex gap-3">
+                        {item.project.is_open_for_preferences && (
+                          <Button 
+                            variant="outline"
+                            onClick={() => navigate(`/student/form/${item.project.id}`)}
+                          >
+                            Modifier mes préférences
+                          </Button>
+                        )}
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigate(`/projects/${item.project.id}`)}
+                        >
+                          Voir le projet
+                        </Button>
+                      </div>
+                    </CardSimple>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* English Leveling Projects */}
+            {preferences.english.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                  Niveaux d'Anglais
+                </h2>
+                <div className="space-y-6">
+                  {preferences.english.map((item, index) => {
+                    // Debug logging
+                    console.log('English leveling project:', item);
+                    console.log('Project title:', item.project?.title, 'Type:', typeof item.project?.title);
+                    console.log('English level:', item.englishLevel);
+                    
+                    // Ensure project data is valid
+                    const projectTitle = typeof item.project?.title === 'string' ? item.project.title : 'Projet sans titre';
+                    const projectDescription = typeof item.project?.description === 'string' ? item.project.description : '';
+                    
+                    return (
+                    <CardSimple key={item.project?.id || index} className="bg-white">
+                      {/* Project Header */}
+                      <div className="border-b pb-4 mb-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-bold text-gray-800">
+                            {projectTitle}
+                          </h3>
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                            Confirmé
+                          </span>
+                        </div>
+                        <p className="text-gray-600 text-sm mb-2">
+                          {projectDescription}
+                        </p>
+                      </div>
+
+                      {/* English Level Info */}
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-16 h-16 rounded-lg flex items-center justify-center font-bold text-xl ${getEnglishLevelColor(item.englishLevel)}`}>
+                            {item.englishLevel}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-800">
+                              Votre niveau d'anglais
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Vous serez groupé avec des étudiants du même niveau
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
 
-                {/* Actions */}
-                <div className="mt-6 pt-4 border-t flex gap-3">
-                  {item.project.is_open_for_preferences && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => navigate(`/student/exchange-preferences/${item.project.id}`)}
-                    >
-                      Modifier mes préférences
-                    </Button>
-                  )}
-                  <Button 
-                    variant="outline"
-                    onClick={() => navigate(`/projects/${item.project.id}`)}
-                  >
-                    Voir le projet
-                  </Button>
+                      {/* Note */}
+                      <div className="mt-4 text-sm text-gray-600 bg-yellow-50 p-3 rounded">
+                        <strong>Note:</strong> Votre niveau d'anglais est automatiquement déterminé à partir de votre profil. Pour le modifier, allez dans la section "Mon Profil".
+                      </div>
+
+                      {/* Actions */}
+                      <div className="mt-6 pt-4 border-t flex gap-3">
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigate(`/projects/${item.project?.id}`)}
+                        >
+                          Voir le projet
+                        </Button>
+                      </div>
+                    </CardSimple>
+                    );
+                  })}
                 </div>
-              </CardSimple>
-            ))}
+              </div>
+            )}
           </div>
         )}
       </div>
