@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text, Enum,
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
-from ..database import Base
+from app.database import Base
 
 class QuestionType(str, enum.Enum):
     TEXT = "text"  # Réponse texte libre
