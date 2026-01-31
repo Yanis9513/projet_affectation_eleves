@@ -161,23 +161,24 @@ export const preferenceAPI = {
 
 // Assignment APIs
 export const assignmentAPI = {
-  getByProject: (projectId) => api.get(`/assignments/project/${projectId}`),
-  runAlgorithm: (projectId) => api.post(`/assignments/project/${projectId}/run`),
-  getStats: (projectId) => api.get(`/assignments/project/${projectId}/stats`),
+  getByProject: (projectId) => api.get(`/assignments/?project_id=${projectId}`),
+  runAlgorithm: (projectId) => api.post('/assignments/run-algorithm', { project_id: projectId }),
+  getStats: (projectId) => api.get(`/assignments/?project_id=${projectId}`),  // TODO: Add dedicated stats endpoint
   validate: (assignmentId) => api.post(`/assignments/${assignmentId}/validate`),
 }
 
 // Form APIs
 export const formAPI = {
-  getQuestions: (projectId) => api.get(`/forms/projects/${projectId}/questions`),
+  getQuestions: (projectId) => api.get(`/forms/projects/${projectId}/forms`),
   createQuestion: (projectId, questionData) =>
-    api.post(`/forms/projects/${projectId}/questions`, questionData),
-  updateQuestion: (questionId, questionData) =>
-    api.put(`/forms/questions/${questionId}`, questionData),
-  deleteQuestion: (questionId) => api.delete(`/forms/questions/${questionId}`),
-  submitResponse: (questionId, responseData) =>
-    api.post(`/forms/questions/${questionId}/responses`, responseData),
-  getStudentResponses: (projectId) => api.get(`/forms/projects/${projectId}/my-responses`),
+    api.post(`/forms/projects/${projectId}/forms`, questionData),
+  updateQuestion: (projectId, questionId, questionData) =>
+    api.put(`/forms/projects/${projectId}/forms/${questionId}`, questionData),
+  deleteQuestion: (projectId, questionId) => api.delete(`/forms/projects/${projectId}/forms/${questionId}`),
+  submitResponse: (studentId, responseData) =>
+    api.post(`/forms/students/${studentId}/responses`, responseData),
+  getStudentResponses: (studentId) => api.get(`/forms/students/${studentId}/responses`),
+  getProjectResponses: (projectId) => api.get(`/forms/projects/${projectId}/responses`),
 }
 
 export default api
