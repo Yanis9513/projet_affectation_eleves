@@ -157,6 +157,9 @@ export const preferenceAPI = {
     api.get(`/preferences/projects/${projectId}/preferences`),
   getPreferencesStats: () =>
     api.get('/preferences/preferences/stats'),
+  // Teacher endpoint to get all preferences for a project (includes partner info)
+  getProjectPreferencesDetailed: (projectId) =>
+    api.get(`/preferences/projects/${projectId}/preferences`),
 }
 
 // Assignment APIs
@@ -165,6 +168,7 @@ export const assignmentAPI = {
   runAlgorithm: (projectId) => api.post('/assignments/run-algorithm', { project_id: projectId }),
   getStats: (projectId) => api.get(`/assignments/?project_id=${projectId}`),  // TODO: Add dedicated stats endpoint
   validate: (assignmentId) => api.post(`/assignments/${assignmentId}/validate`),
+  deleteByProject: (projectId) => api.delete(`/assignments/?project_id=${projectId}`),
 }
 
 // Form APIs

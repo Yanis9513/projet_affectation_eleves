@@ -82,7 +82,7 @@ function AssignmentsPage() {
     }
 
     try {
-      await axios.delete(`${API_BASE_URL}/api/assignments/?project_id=${projectId}`)
+      await assignmentAPI.deleteByProject(projectId)
       setSuccess('Affectations supprimées')
       setAssignments([])
       setStats(null)
