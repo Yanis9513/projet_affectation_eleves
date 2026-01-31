@@ -2,61 +2,64 @@ import { useState, useEffect } from 'react'
 import Button from './Button'
 import { Alert } from './Loading'
 
-export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) {
-  const [previewStudents, setPreviewStudents] = useState([])
-  const [deletedEmails, setDeletedEmails] = useState(new Set())
+export default function CSVUploader({ 
+  onUploadSuccess, 
+  existingStudents = [],
+  type = 'students', // 'students' or 'destinations'
+  projectId = null
+}) {
+  const [previewData, setPreviewData] = useState([])
+  const [deletedItems, setDeletedItems] = useState(new Set())
   const [error, setError] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [editingIndex, setEditingIndex] = useState(null)
   const [showManualForm, setShowManualForm] = useState(false)
-  const [manualStudent, setManualStudent] = useState({
-    name: '',
-    email: '',
-    filiere: '',
-    rank: '',
-    grade: ''
-  })
+  const [manualData, setManualData] = useState({})
+
+  const isDestinations = type === 'destinations'
 
   useEffect(() => {
-    if (existingStudents.length > 0 && previewStudents.length === 0) {
-      setPreviewStudents(existingStudents)
+    if (existingStudents.length > 0 && previewData.length === 0) {
+      setPreviewData(existingStudents)
     }
   }, [existingStudents])
 
   // Generate name from email if name is missing
   const generateNameFromEmail = (email) => {
     if (!email || !email.includes('@')) return ''
-    
-    // Extract name part before @
     const namePart = email.split('@')[0]
-    
-    // Split by dots or underscores
     const parts = namePart.split(/[._]/)
-    
-    // Capitalize each part
     const capitalizedParts = parts.map(part => 
       part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
     )
-    
     return capitalizedParts.join(' ')
   }
 
   const parseCSV = (text) => {
     const lines = text.trim().split('\n')
     if (lines.length < 2) {
-      throw new Error(' Le fichier CSV doit contenir au moins une ligne d\'en-tête et une ligne de données')
+      throw new Error(`Le fichier CSV doit contenir au moins une ligne d'en-tête et une ligne de données`)
     }
 
     // Parse header
     const header = lines[0].split(',').map(h => h.trim().toLowerCase())
     
-    // Validate required column (only email is mandatory now)
-    if (!header.includes('email')) {
-      throw new Error(' Colonne requise manquante: "email" - Votre CSV doit avoir une colonne email')
+    if (isDestinations) {
+      // Validate destination columns
+      const requiredCols = ['university_name', 'country']
+      const missingCols = requiredCols.filter(col => !header.includes(col))
+      if (missingCols.length > 0) {
+        throw new Error(`Colonnes requises manquantes: ${missingCols.join(', ')}`)
+      }
+    } else {
+      // Validate student columns
+      if (!header.includes('email')) {
+        throw new Error(`Colonne requise manquante: "email" - Votre CSV doit avoir une colonne email`)
+      }
     }
 
     // Parse data rows
-    const parsedStudents = []
+    const parsedData = []
     const errors = []
     const warnings = []
     
@@ -65,86 +68,120 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
       if (!line) continue
 
       const values = line.split(',').map(v => v.trim())
-      const student = {}
+      const item = {}
 
       header.forEach((col, index) => {
-        student[col] = values[index] || ''
+        item[col] = values[index] || ''
       })
 
-      // Validate email format
-      if (!student.email || !student.email.includes('@')) {
-        errors.push(`Ligne ${i + 1}: Email invalide "${student.email || 'vide'}"`);
-        continue;
-      }
-
-      // Check for duplicate emails in current batch
-      if (parsedStudents.some(s => s.email === student.email)) {
-        warnings.push(`Ligne ${i + 1}: Email en double "${student.email}" - ignoré`);
-        continue;
-      }
-
-      // Auto-generate name from email if missing
-      if (!student.name) {
-        student.name = generateNameFromEmail(student.email)
-        warnings.push(`Ligne ${i + 1}: Nom généré automatiquement depuis l'email`);
-      }
-
-      // Convert numeric fields with validation
-      student.id = Date.now() + i
-      
-      if (student.rank) {
-        const rank = parseInt(student.rank)
-        student.rank = isNaN(rank) ? null : rank
-        if (isNaN(rank)) warnings.push(`Ligne ${i + 1}: Rang invalide "${student.rank}"`);
+      if (isDestinations) {
+        // Validate destination data
+        if (!item.university_name) {
+          errors.push(`Ligne ${i + 1}: Nom d'université manquant`)
+          continue
+        }
+        if (!item.country) {
+          errors.push(`Ligne ${i + 1}: Pays manquant`)
+          continue
+        }
+        
+        // Parse numeric fields
+        if (item.total_places) {
+          const places = parseInt(item.total_places)
+          item.total_places = isNaN(places) ? 1 : places
+        } else {
+          item.total_places = 1
+        }
+        
+        if (item.min_gpa) {
+          const gpa = parseFloat(item.min_gpa)
+          item.min_gpa = isNaN(gpa) ? null : gpa
+        }
+        
+        if (item.min_toeic_score) {
+          const score = parseInt(item.min_toeic_score)
+          item.min_toeic_score = isNaN(score) ? null : score
+        }
       } else {
-        student.rank = null
-      }
-      
-      if (student.grade) {
-        const grade = parseFloat(student.grade)
-        student.grade = isNaN(grade) ? null : grade
-        if (isNaN(grade)) warnings.push(`Ligne ${i + 1}: Note invalide "${student.grade}"`);
-      } else {
-        student.grade = null
+        // Validate student data
+        if (!item.email || !item.email.includes('@')) {
+          errors.push(`Ligne ${i + 1}: Email invalide "${item.email || 'vide'}"`)
+          continue
+        }
+
+        // Check for duplicate emails in current batch
+        if (parsedData.some(s => s.email === item.email)) {
+          warnings.push(`Ligne ${i + 1}: Email en double "${item.email}" - ignoré`)
+          continue
+        }
+
+        // Auto-generate name from email if missing
+        if (!item.name) {
+          item.name = generateNameFromEmail(item.email)
+          warnings.push(`Ligne ${i + 1}: Nom généré automatiquement depuis l'email`)
+        }
+
+        // Convert numeric fields
+        if (item.rank) {
+          const rank = parseInt(item.rank)
+          item.rank = isNaN(rank) ? null : rank
+        } else {
+          item.rank = null
+        }
+        
+        if (item.grade) {
+          const grade = parseFloat(item.grade)
+          item.grade = isNaN(grade) ? null : grade
+        } else {
+          item.grade = null
+        }
       }
 
-      parsedStudents.push(student)
+      item.id = Date.now() + i
+      parsedData.push(item)
     }
 
     // Throw error if any critical errors
     if (errors.length > 0) {
-      throw new Error(` Erreurs trouvées:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n... et ${errors.length - 5} autres erreurs` : ''}`)
+      throw new Error(`Erreurs trouvées:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n... et ${errors.length - 5} autres erreurs` : ''}`)
     }
 
     // Show warnings but continue
     if (warnings.length > 0) {
-      console.warn('Avertissements CSV:', warnings);
+      console.warn('Avertissements CSV:', warnings)
     }
 
-    if (parsedStudents.length === 0) {
-      throw new Error(' Aucun étudiant valide trouvé dans le fichier CSV')
+    if (parsedData.length === 0) {
+      throw new Error(`Aucune donnée valide trouvée dans le fichier CSV`)
     }
 
-    return parsedStudents
+    return parsedData
   }
 
   const downloadTemplate = () => {
-    const template = 'email,name,filiere,rank,grade\netudiant@edu.esiee.fr,Jean Dupont,E5FI,42,14.5'
+    let template
+    if (isDestinations) {
+      template = `university_name,country,city,total_places,mobility_type,accepted_filieres,min_english_level,min_toeic_score,min_gpa
+MIT,USA,Boston,5,ECHANGE_ACADEMIQUE,"INFORMATIQUE,ELECTRONIQUE",B2,800,14.0
+Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
+    } else {
+      template = 'email,name,filiere,rank,grade\netudiant@edu.esiee.fr,Jean Dupont,E5FI,42,14.5'
+    }
     const blob = new Blob([template], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'template_etudiants.csv'
+    link.download = isDestinations ? 'template_destinations.csv' : 'template_etudiants.csv'
     link.click()
     URL.revokeObjectURL(url)
   }
 
-  const handleEditStudent = (index, field, value) => {
-    const updatedStudents = [...previewStudents]
-    updatedStudents[index][field] = value
-    setPreviewStudents(updatedStudents)
+  const handleEditItem = (index, field, value) => {
+    const updatedData = [...previewData]
+    updatedData[index][field] = value
+    setPreviewData(updatedData)
     if (onUploadSuccess) {
-      onUploadSuccess(updatedStudents)
+      onUploadSuccess(updatedData)
     }
   }
 
@@ -161,24 +198,32 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
     reader.onload = async (e) => {
       try {
         const text = e.target.result
-        const parsedStudents = parseCSV(text)
+        const parsedData = parseCSV(text)
         
-        const existingEmails = new Set([...existingStudents.map(s => s.email), ...deletedEmails])
-        const newStudents = parsedStudents.filter(s => !existingEmails.has(s.email))
-        const duplicateCount = parsedStudents.length - newStudents.length
+        let newItems
+        if (isDestinations) {
+          // For destinations, just merge (no deduplication by name)
+          const existingNames = new Set([...previewData.map(d => d.university_name?.toLowerCase()), ...deletedItems])
+          newItems = parsedData.filter(d => !existingNames.has(d.university_name?.toLowerCase()))
+        } else {
+          // For students, deduplicate by email
+          const existingEmails = new Set([...previewData.map(s => s.email), ...deletedItems])
+          newItems = parsedData.filter(s => !existingEmails.has(s.email))
+        }
         
-        if (newStudents.length > 0) {
-          setPreviewStudents(prev => [...prev, ...newStudents])
-          
+        const duplicateCount = parsedData.length - newItems.length
+        
+        if (newItems.length > 0) {
+          setPreviewData(prev => [...prev, ...newItems])
           setError('')
           
           if (duplicateCount > 0) {
-            setError(` ${newStudents.length} étudiants ajoutés à la prévisualisation. ${duplicateCount} doublons ignorés.`)
+            setError(`${newItems.length} ${isDestinations ? 'destinations' : 'étudiants'} ajoutés. ${duplicateCount} doublons ignorés.`)
           } else {
-            setError(` ${newStudents.length} étudiants ajoutés à la prévisualisation!`)
+            setError(`${newItems.length} ${isDestinations ? 'destinations' : 'étudiants'} ajoutés!`)
           }
         } else if (duplicateCount > 0) {
-          setError('Tous les étudiants de ce fichier existent déjà dans la liste.')
+          setError(`Tous les ${isDestinations ? 'éléments' : 'étudiants'} de ce fichier existent déjà.`)
         }
       } catch (err) {
         setError(err.message)
@@ -186,7 +231,6 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
     }
     reader.readAsText(file)
     
-    // Reset file input to allow re-uploading same file
     event.target.value = ''
   }
 
@@ -211,11 +255,11 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
       reader.onload = (event) => {
         try {
           const text = event.target.result
-          const parsedStudents = parseCSV(text)
+          const parsedData = parseCSV(text)
           
-          const mergedStudents = [...previewStudents, ...parsedStudents]
-          setPreviewStudents(mergedStudents)
-          onUploadSuccess(mergedStudents)
+          const mergedData = [...previewData, ...parsedData]
+          setPreviewData(mergedData)
+          onUploadSuccess(mergedData)
           setError('')
         } catch (err) {
           setError(err.message)
@@ -226,57 +270,423 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
       setError('Veuillez déposer un fichier CSV')
     }
   }
-  const handleDeleteStudent = async (index) => {
-    const studentToDelete = previewStudents[index]
-    const updatedStudents = previewStudents.filter((_, i) => i !== index)
-    
-    const newDeletedEmails = new Set([...deletedEmails, studentToDelete.email])
-    setDeletedEmails(newDeletedEmails)
-    
-    setPreviewStudents(updatedStudents)
-    
-    setError(`L'étudiant ${studentToDelete.name} a été retiré de la prévisualisation.`)
-    
 
+  const handleDeleteItem = (index) => {
+    const itemToDelete = previewData[index]
+    const updatedData = previewData.filter((_, i) => i !== index)
+    
+    const newDeletedItems = new Set(deletedItems)
+    if (isDestinations) {
+      newDeletedItems.add(itemToDelete.university_name?.toLowerCase())
+    } else {
+      newDeletedItems.add(itemToDelete.email)
+    }
+    setDeletedItems(newDeletedItems)
+    
+    setPreviewData(updatedData)
+    
+    const itemName = isDestinations ? itemToDelete.university_name : itemToDelete.name
+    setError(`${isDestinations ? 'La destination' : 'L\'étudiant'} ${itemName} a été retiré.`)
   }
-  
 
-  const handleAddManualStudent = () => {
-    if (!manualStudent.email || !manualStudent.email.includes('@')) {
-      setError('Email valide requis')
-      return
+  const handleAddManualItem = () => {
+    if (isDestinations) {
+      if (!manualData.university_name || !manualData.country) {
+        setError('Nom de l\'université et pays sont requis')
+        return
+      }
+      
+      // Check for duplicate university name
+      if (previewData.some(d => d.university_name?.toLowerCase() === manualData.university_name?.toLowerCase())) {
+        setError('Une université avec ce nom existe déjà')
+        return
+      }
+      
+      const newDestination = {
+        id: Date.now(),
+        university_name: manualData.university_name,
+        country: manualData.country,
+        city: manualData.city || '',
+        total_places: parseInt(manualData.total_places) || 1,
+        mobility_type: manualData.mobility_type || 'ECHANGE_ACADEMIQUE',
+        accepted_filieres: manualData.accepted_filieres || 'ALL',
+        min_english_level: manualData.min_english_level || '',
+        min_toeic_score: manualData.min_toeic_score ? parseInt(manualData.min_toeic_score) : null,
+        min_gpa: manualData.min_gpa ? parseFloat(manualData.min_gpa) : null
+      }
+      
+      const updatedData = [...previewData, newDestination]
+      setPreviewData(updatedData)
+    } else {
+      // Student validation
+      if (!manualData.email || !manualData.email.includes('@')) {
+        setError('Email valide requis')
+        return
+      }
+      
+      if (previewData.some(s => s.email === manualData.email)) {
+        setError('Un étudiant avec cet email existe déjà')
+        return
+      }
+      
+      const studentName = manualData.name?.trim() || generateNameFromEmail(manualData.email)
+      
+      const newStudent = {
+        id: Date.now(),
+        name: studentName,
+        email: manualData.email,
+        filiere: manualData.filiere || '',
+        rank: manualData.rank ? parseInt(manualData.rank) : null,
+        grade: manualData.grade ? parseFloat(manualData.grade) : null
+      }
+      
+      const updatedData = [...previewData, newStudent]
+      setPreviewData(updatedData)
     }
-    
-    if (!manualStudent.email.endsWith('@edu.esiee.fr')) {
-      setError('Veuillez utiliser une adresse email @edu.esiee.fr')
-      return
-    }
-
-    // Check for duplicate email
-    if (previewStudents.some(s => s.email === manualStudent.email)) {
-      setError('Un étudiant avec cet email existe déjà')
-      return
-    }
-
-    // Auto-generate name from email if not provided
-    const studentName = manualStudent.name.trim() || generateNameFromEmail(manualStudent.email)
-
-    const newStudent = {
-      id: Date.now(),
-      name: studentName,
-      email: manualStudent.email,
-      filiere: manualStudent.filiere || '',
-      rank: manualStudent.rank ? parseInt(manualStudent.rank) : null,
-      grade: manualStudent.grade ? parseFloat(manualStudent.grade) : null
-    }
-
-    const updatedStudents = [...previewStudents, newStudent]
-    setPreviewStudents(updatedStudents)
     
     // Reset form
-    setManualStudent({ name: '', email: '', filiere: '', rank: '', grade: '' })
+    setManualData({})
     setShowManualForm(false)
     setError('')
+  }
+
+  const renderManualForm = () => {
+    if (isDestinations) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nom de l'université <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={manualData.university_name || ''}
+              onChange={(e) => setManualData({...manualData, university_name: e.target.value})}
+              placeholder="Ex: MIT"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Pays <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={manualData.country || ''}
+              onChange={(e) => setManualData({...manualData, country: e.target.value})}
+              placeholder="Ex: USA"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ville
+            </label>
+            <input
+              type="text"
+              value={manualData.city || ''}
+              onChange={(e) => setManualData({...manualData, city: e.target.value})}
+              placeholder="Ex: Boston"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Places disponibles
+            </label>
+            <input
+              type="number"
+              value={manualData.total_places || ''}
+              onChange={(e) => setManualData({...manualData, total_places: e.target.value})}
+              placeholder="Ex: 5"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type de mobilité
+            </label>
+            <select
+              value={manualData.mobility_type || 'ECHANGE_ACADEMIQUE'}
+              onChange={(e) => setManualData({...manualData, mobility_type: e.target.value})}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            >
+              <option value="ECHANGE_ACADEMIQUE">Échange Académique</option>
+              <option value="STAGE_INTERNATIONAL">Stage International</option>
+              <option value="DOUBLE_DIPLOME">Double Diplôme</option>
+              <option value="SEMESTRE_RECHERCHE">Semestre Recherche</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filières acceptées
+            </label>
+            <input
+              type="text"
+              value={manualData.accepted_filieres || ''}
+              onChange={(e) => setManualData({...manualData, accepted_filieres: e.target.value})}
+              placeholder="Ex: INFORMATIQUE,ELECTRONIQUE ou ALL"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Niveau d'anglais min.
+            </label>
+            <select
+              value={manualData.min_english_level || ''}
+              onChange={(e) => setManualData({...manualData, min_english_level: e.target.value})}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            >
+              <option value="">Aucun</option>
+              <option value="A1">A1</option>
+              <option value="A2">A2</option>
+              <option value="B1">B1</option>
+              <option value="B2">B2</option>
+              <option value="C1">C1</option>
+              <option value="C2">C2</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Score TOEIC min.
+            </label>
+            <input
+              type="number"
+              value={manualData.min_toeic_score || ''}
+              onChange={(e) => setManualData({...manualData, min_toeic_score: e.target.value})}
+              placeholder="Ex: 800"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              GPA minimum
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={manualData.min_gpa || ''}
+              onChange={(e) => setManualData({...manualData, min_gpa: e.target.value})}
+              placeholder="Ex: 14.0"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+        </div>
+      )
+    } else {
+      // Student form (original)
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              value={manualData.email || ''}
+              onChange={(e) => setManualData({...manualData, email: e.target.value})}
+              placeholder="etudiant@edu.esiee.fr"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+            <p className="text-xs text-gray-500 mt-1">Le nom sera généré automatiquement si non fourni</p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nom complet (optionnel)
+            </label>
+            <input
+              type="text"
+              value={manualData.name || ''}
+              onChange={(e) => setManualData({...manualData, name: e.target.value})}
+              placeholder="Jean Dupont"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filière (optionnel)
+            </label>
+            <input
+              type="text"
+              value={manualData.filiere || ''}
+              onChange={(e) => setManualData({...manualData, filiere: e.target.value})}
+              placeholder="Ex: E5FI"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Rang (optionnel)
+            </label>
+            <input
+              type="number"
+              value={manualData.rank || ''}
+              onChange={(e) => setManualData({...manualData, rank: e.target.value})}
+              placeholder="Ex: 42"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Note moyenne (optionnel)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={manualData.grade || ''}
+              onChange={(e) => setManualData({...manualData, grade: e.target.value})}
+              placeholder="Ex: 14.5"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+            />
+          </div>
+        </div>
+      )
+    }
+  }
+
+  const renderTable = () => {
+    if (isDestinations) {
+      return (
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Université</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Pays</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Ville</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Places</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Filères</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {previewData.map((item, index) => (
+              <tr key={item.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium">{item.university_name}</td>
+                <td className="px-4 py-3">{item.country}</td>
+                <td className="px-4 py-3">{item.city}</td>
+                <td className="px-4 py-3">
+                  <input
+                    type="number"
+                    value={item.total_places}
+                    onChange={(e) => handleEditItem(index, 'total_places', parseInt(e.target.value) || 1)}
+                    className="border rounded px-2 py-1 w-16 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3">{item.mobility_type}</td>
+                <td className="px-4 py-3 text-sm">{item.accepted_filieres}</td>
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => handleDeleteItem(index)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Retirer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    } else {
+      // Student table (original)
+      return (
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Nom</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Filière</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rang</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Note</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {existingStudents.length > 0 && (
+              <tr className="bg-gray-50">
+                <td colSpan="6" className="px-6 py-2 text-sm font-medium text-gray-700">
+                  {existingStudents.length} étudiant(s) déjà inscrit(s) • {previewData.length} en attente d'import
+                </td>
+              </tr>
+            )}
+            {previewData.map((student, index) => (
+              <tr key={student.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  {editingIndex === index ? (
+                    <input
+                      type="text"
+                      value={student.name}
+                      onChange={(e) => handleEditItem(index, 'name', e.target.value)}
+                      className="border rounded px-2 py-1 w-full"
+                      onBlur={() => setEditingIndex(null)}
+                      autoFocus
+                    />
+                  ) : (
+                    <span 
+                      className="cursor-pointer hover:text-esiee-blue"
+                      onClick={() => setEditingIndex(index)}
+                    >
+                      {student.name}
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-600">{student.email}</td>
+                <td className="px-4 py-3">
+                  <input
+                    type="text"
+                    value={student.filiere || ''}
+                    onChange={(e) => handleEditItem(index, 'filiere', e.target.value)}
+                    placeholder="Ex: E5FI"
+                    className="border rounded px-2 py-1 w-20 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    type="number"
+                    value={student.rank || ''}
+                    onChange={(e) => handleEditItem(index, 'rank', e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="Ex: 42"
+                    className="border rounded px-2 py-1 w-20 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={student.grade || ''}
+                    onChange={(e) => handleEditItem(index, 'grade', e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="Ex: 14.5"
+                    className="border rounded px-2 py-1 w-20 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => handleDeleteItem(index)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Retirer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
   }
 
   return (
@@ -285,7 +695,6 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
       {error && (
         <Alert type="error" message={error} onClose={() => setError('')} />
       )}
-
 
       {/* CSV Upload Area */}
       <div
@@ -338,7 +747,9 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
       {showManualForm && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-gray-800">Ajouter un étudiant</h3>
+            <h3 className="text-lg font-bold text-gray-800">
+              Ajouter {isDestinations ? 'une destination' : 'un étudiant'}
+            </h3>
             <button 
               onClick={() => setShowManualForm(false)}
               className="text-gray-500 hover:text-gray-700"
@@ -347,202 +758,46 @@ export default function CSVUploader({ onUploadSuccess, existingStudents = [] }) 
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                value={manualStudent.email}
-                onChange={(e) => setManualStudent({...manualStudent, email: e.target.value})}
-                placeholder="etudiant@edu.esiee.fr"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
-              />
-              <p className="text-xs text-gray-500 mt-1">Le nom sera généré automatiquement si non fourni</p>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nom complet (optionnel)
-              </label>
-              <input
-                type="text"
-                value={manualStudent.name}
-                onChange={(e) => setManualStudent({...manualStudent, name: e.target.value})}
-                placeholder="Jean Dupont"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Filière (optionnel)
-              </label>
-              <input
-                type="text"
-                value={manualStudent.filiere}
-                onChange={(e) => setManualStudent({...manualStudent, filiere: e.target.value})}
-                placeholder="Ex: E5FI"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rang (optionnel)
-              </label>
-              <input
-                type="number"
-                value={manualStudent.rank}
-                onChange={(e) => setManualStudent({...manualStudent, rank: e.target.value})}
-                placeholder="Ex: 42"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Note moyenne (optionnel)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={manualStudent.grade}
-                onChange={(e) => setManualStudent({...manualStudent, grade: e.target.value})}
-                placeholder="Ex: 14.5"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
-              />
-            </div>
-          </div>
+          {renderManualForm()}
           
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowManualForm(false)}>
               Annuler
             </Button>
-            <Button variant="primary" onClick={handleAddManualStudent}>
-              ➕ Ajouter l'étudiant
+            <Button variant="primary" onClick={handleAddManualItem}>
+              ➕ Ajouter
             </Button>
           </div>
         </div>
       )}
 
-      {/* Students Table */}
-      {(previewStudents.length > 0 || existingStudents.length > 0) && (
+      {/* Data Table */}
+      {previewData.length > 0 && (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-4 bg-esiee-blue text-white">
             <h3 className="text-lg font-bold">
-              Étudiants Importés ({previewStudents.length})
+              {isDestinations ? 'Destinations' : 'Étudiants'} Importés ({previewData.length})
             </h3>
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Nom</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Filière</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rang</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Note</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {existingStudents.length > 0 && (
-                  <tr className="bg-gray-50">
-                    <td colSpan="6" className="px-6 py-2 text-sm font-medium text-gray-700">
-                      {existingStudents.length} étudiant(s) déjà inscrit(s) • {previewStudents.length} en attente d'import
-                    </td>
-                  </tr>
-                )}
-              
-              {previewStudents.map((student, index) => (
-                  <tr key={student.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      {editingIndex === index ? (
-                        <input
-                          type="text"
-                          value={student.name}
-                          onChange={(e) => handleEditStudent(index, 'name', e.target.value)}
-                          className="border rounded px-2 py-1 w-full"
-                          onBlur={() => setEditingIndex(null)}
-                          autoFocus
-                        />
-                      ) : (
-                        <span 
-                          className="cursor-pointer hover:text-esiee-blue"
-                          onClick={() => setEditingIndex(index)}
-                        >
-                          {student.name}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{student.email}</td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="text"
-                        value={student.filiere || ''}
-                        onChange={(e) => handleEditStudent(index, 'filiere', e.target.value)}
-                        placeholder="Ex: E5FI"
-                        className="border rounded px-2 py-1 w-20 text-sm"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        value={student.rank || ''}
-                        onChange={(e) => handleEditStudent(index, 'rank', e.target.value ? parseInt(e.target.value) : null)}
-                        placeholder="Ex: 42"
-                        className="border rounded px-2 py-1 w-20 text-sm"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={student.grade || ''}
-                        onChange={(e) => handleEditStudent(index, 'grade', e.target.value ? parseFloat(e.target.value) : null)}
-                        placeholder="Ex: 14.5"
-                        className="border rounded px-2 py-1 w-20 text-sm"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleDeleteStudent(index)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-3"
-                      >
-                        Retirer de l'import
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {renderTable()}
           </div>
         </div>
       )}
 
-      {previewStudents.length > 0 && onUploadSuccess && (
+      {previewData.length > 0 && onUploadSuccess && (
         <div className="mt-6 flex justify-end">
           <Button 
             variant="primary" 
             onClick={async () => {
               try {
-                const existingEmails = new Set(existingStudents.map(s => s.email));
-                const newStudents = previewStudents.filter(s => !existingEmails.has(s.email));
-                
-                if (newStudents.length > 0) {
-                  await onUploadSuccess(newStudents);
-                  setPreviewStudents([]);
-                } else {
-                  setError('Aucun nouvel étudiant à importer.');
-                  return;
-                }
-                setError('');
+                await onUploadSuccess(previewData)
+                setPreviewData([])
+                setError('')
               } catch (err) {
-                setError('Erreur lors de l\'importation des étudiants');
-                console.error('Erreur lors de l\'importation:', err);
+                setError(`Erreur lors de l'importation`)
+                console.error('Erreur:', err)
               }
             }}
             className="px-6 py-2 text-lg"

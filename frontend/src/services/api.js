@@ -93,21 +93,91 @@ export const teacherAPI = {
   updateProfile: (teacherData) => api.put('/teachers/me/profile', teacherData),
 }
 
+// Destination APIs (for exchange programs)
+export const destinationAPI = {
+  getByProject: (projectId) => api.get(`/destinations/${projectId}`),
+  create: (projectId, data) => api.post(`/destinations/${projectId}`, data),
+  update: (destinationId, data) => api.put(`/destinations/${destinationId}`, data),
+  delete: (destinationId) => api.delete(`/destinations/${destinationId}`),
+  uploadDestinations: (projectId, destinations) =>
+    api.post(`/destinations/${projectId}/bulk`, { destinations }),
+}
+
+// Exchange Program APIs
+export const exchangeAPI = {
+  // Launch exchange program
+  launch: (projectId) => api.post(`/exchange/projects/${projectId}/launch`),
+  
+  // Close preferences period (auto-fill missing with F)
+  closePreferences: (projectId, autoFillMissing = true) => 
+    api.post(`/exchange/projects/${projectId}/close-preferences?auto_fill_missing=${autoFillMissing}`),
+  
+  // Preview students with missing preferences
+  previewMissingPreferences: (projectId) => 
+    api.post(`/exchange/projects/${projectId}/preview-missing-preferences`),
+  
+  // Get students preferences status
+  getStudentsStatus: (projectId) => 
+    api.get(`/exchange/projects/${projectId}/students-status`),
+  
+  // Run optimization algorithm
+  runOptimization: (projectId, algorithm = 'greedy', respectConstraints = true) => 
+    api.post(`/exchange/projects/${projectId}/run-optimization?algorithm=${algorithm}&respect_constraints=${respectConstraints}`),
+  
+  // Get project statistics
+  getStatistics: (projectId) => 
+    api.get(`/exchange/projects/${projectId}/statistics`),
+}
+
+// Student Destination Preferences APIs
+export const destinationPreferenceAPI = {
+  // Submit preferences (A-F grades)
+  submit: (data) => api.post('/destinations/preferences', data),
+  
+  // Get my preferences for a project
+  getMyPreferences: (projectId) => api.get(`/destinations/preferences/${projectId}`),
+  
+  // Get all preferences for a project (teacher only)
+  getProjectPreferences: (projectId) => api.get(`/destinations/${projectId}/preferences`),
+}
+
 // Preference APIs
 export const preferenceAPI = {
   submitPartnerPreference: (studentId, preferenceData) =>
     api.post(`/preferences/students/${studentId}/partner-preference`, preferenceData),
   getStudentPreferences: (studentId) =>
     api.get(`/preferences/students/${studentId}/preferences`),
+  submitPreferences: (studentId, preferencesData) =>
+    api.post(`/preferences/students/${studentId}/preferences`, preferencesData),
+  updatePreferences: (studentId, preferencesData) =>
+    api.put(`/preferences/students/${studentId}/preferences`, preferencesData),
+  deletePreferences: (studentId) =>
+    api.delete(`/preferences/students/${studentId}/preferences`),
+  getProjectPreferences: (projectId) =>
+    api.get(`/preferences/projects/${projectId}/preferences`),
+  getPreferencesStats: () =>
+    api.get('/preferences/preferences/stats'),
 }
 
 // Assignment APIs
 export const assignmentAPI = {
-  getAll: (projectId) => api.get('/assignments/', { params: projectId ? { project_id: projectId } : {} }),
-  getByProject: (projectId) => api.get('/assignments/', { params: { project_id: projectId } }),
-  runAlgorithm: (projectId) => api.post('/assignments/run-algorithm', { project_id: projectId }),
-  getStats: (projectId) => api.get('/assignments/stats', { params: projectId ? { project_id: projectId } : {} }),
-  clearAll: (projectId) => api.delete('/assignments/', { params: projectId ? { project_id: projectId } : {} }),
+  getByProject: (projectId) => api.get(`/assignments/project/${projectId}`),
+  runAlgorithm: (projectId) => api.post(`/assignments/project/${projectId}/run`),
+  getStats: (projectId) => api.get(`/assignments/project/${projectId}/stats`),
+  validate: (assignmentId) => api.post(`/assignments/${assignmentId}/validate`),
+}
+
+// Form APIs
+export const formAPI = {
+  getQuestions: (projectId) => api.get(`/forms/projects/${projectId}/questions`),
+  createQuestion: (projectId, questionData) =>
+    api.post(`/forms/projects/${projectId}/questions`, questionData),
+  updateQuestion: (questionId, questionData) =>
+    api.put(`/forms/questions/${questionId}`, questionData),
+  deleteQuestion: (questionId) => api.delete(`/forms/questions/${questionId}`),
+  submitResponse: (questionId, responseData) =>
+    api.post(`/forms/questions/${questionId}/responses`, responseData),
+  getStudentResponses: (projectId) => api.get(`/forms/projects/${projectId}/my-responses`),
 }
 
 export default api
