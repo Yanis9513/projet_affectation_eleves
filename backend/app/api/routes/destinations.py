@@ -21,6 +21,193 @@ from app.api.routes.auth import get_current_user, require_teacher
 router = APIRouter(prefix="/destinations", tags=["destinations"])
 
 
+# =============================================================================
+# STATIC ROUTES - Must be defined BEFORE dynamic routes
+# =============================================================================
+
+@router.post("/preferences", response_model=List[DestinationPreferenceResponse], status_code=status.HTTP_201_CREATED)
+def submit_destination_preferences(
+    preferences_data: DestinationPreferencesSubmit,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Soumettre les préférences de destination pour un étudiant
+    L'étudiant attribue une note de A (plus préférable) à F (moins préférable) à chaque destination
+    """
+    # DEBUG: Print current user info
+    print(f"DEBUG - submit_destination_preferences called")
+    print(f"DEBUG - current_user type: {type(current_user)}" )
+    print(f"DEBUG - current_user id: {getattr(current_user, 'id', 'NO ID')}")
+    print(f"DEBUG - current_user email: {getattr(current_user, 'email', 'NO EMAIL')}")
+    print(f"DEBUG - current_user role: {getattr(current_user, 'role', 'NO ROLE')}")
+    print(f"DEBUG - preferences_data: {preferences_data}")
+    
+    # Vérifier que l'utilisateur est un étudiant
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    print(f"DEBUG - Student query result: {student}")
+    
+    if not student:
+        # Log pour debugging
+        print(f"ERROR - User {current_user.id} ({current_user.email}, role: {current_user.role}) attempted to submit preferences but has no student profile")
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Vous devez être un étudiant pour soumettre des préférences. User ID: {current_user.id}, Role: {current_user.role}"
+        )
+    
+    # Vérifier que le projet existe et est de type exchange_program
+    project = db.query(Project).filter(Project.id == preferences_data.project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    if project.project_type != ProjectType.EXCHANGE_PROGRAM:
+        raise HTTPException(
+            status_code=400,
+            detail="Ce type de projet ne supporte pas les préférences de destination"
+        )
+    
+    # Vérifier que le projet est ouvert pour les préférences
+    if not project.is_open_for_preferences:
+        raise HTTPException(status_code=400, detail="Ce projet n'accepte plus de préférences")
+    
+    # Vérifier que la deadline n'est pas dépassée
+    if project.deadline and project.deadline < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="La deadline pour soumettre les préférences est dépassée")
+    
+    # Vérifier que toutes les destinations existent et appartiennent au bon projet
+    destination_ids = [pref.destination_id for pref in preferences_data.preferences]
+    destinations = db.query(Destination).filter(
+        Destination.id.in_(destination_ids),
+        Destination.project_id == preferences_data.project_id
+    ).all()
+    
+    if len(destinations) != len(destination_ids):
+        raise HTTPException(status_code=400, detail="Une ou plusieurs destinations sont invalides")
+    
+    # Vérifier que chaque destination est unique
+    if len(destination_ids) != len(set(destination_ids)):
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas sélectionner la même destination plusieurs fois")
+    
+    # Supprimer les préférences existantes de cet étudiant pour ce projet
+    db.query(DestinationPreference).filter(
+        DestinationPreference.student_id == student.id,
+        DestinationPreference.project_id == preferences_data.project_id
+    ).delete()
+    
+    # Créer les nouvelles préférences avec le système de notes A-F
+    created_preferences = []
+    for pref in preferences_data.preferences:
+        db_pref = DestinationPreference(
+            student_id=student.id,
+            destination_id=pref.destination_id,
+            project_id=preferences_data.project_id,
+            grade=pref.grade.upper()
+        )
+        db.add(db_pref)
+        created_preferences.append(db_pref)
+    
+    db.commit()
+    
+    # Recharger avec les relations
+    for pref in created_preferences:
+        db.refresh(pref)
+    
+    # Construire la réponse avec les dates converties en strings
+    result = []
+    for pref in created_preferences:
+        pref_dict = {
+            "id": pref.id,
+            "student_id": pref.student_id,
+            "destination_id": pref.destination_id,
+            "project_id": pref.project_id,
+            "grade": pref.grade,
+            "created_at": pref.created_at.isoformat() if pref.created_at else None,
+            "updated_at": pref.updated_at.isoformat() if pref.updated_at else None,
+        }
+        # Ajouter les infos de destination si disponibles
+        if pref.destination:
+            pref_dict["destination"] = {
+                "id": pref.destination.id,
+                "project_id": pref.destination.project_id,
+                "university_name": pref.destination.university_name,
+                "country": pref.destination.country,
+                "city": pref.destination.city,
+                "total_places": pref.destination.total_places,
+                "available_places": pref.destination.available_places,
+                "mobility_type": pref.destination.mobility_type.value if hasattr(pref.destination.mobility_type, 'value') else pref.destination.mobility_type,
+                "accepted_filieres": pref.destination.accepted_filieres,
+                "min_english_level": pref.destination.min_english_level,
+                "min_toeic_score": pref.destination.min_toeic_score,
+                "min_gpa": pref.destination.min_gpa,
+                "description": pref.destination.description,
+                "website_url": pref.destination.website_url,
+                "is_active": pref.destination.is_active,
+                "created_at": pref.destination.created_at.isoformat() if pref.destination.created_at else None,
+                "updated_at": pref.destination.updated_at.isoformat() if pref.destination.updated_at else None,
+            }
+        result.append(pref_dict)
+    
+    return result
+
+
+@router.get("/preferences/{project_id}", response_model=List[DestinationPreferenceResponse])
+def get_my_destination_preferences(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Récupérer mes préférences de destination pour un projet"""
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    if not student:
+        raise HTTPException(status_code=403, detail="Seuls les étudiants peuvent consulter leurs préférences")
+    
+    preferences = db.query(DestinationPreference).filter(
+        DestinationPreference.student_id == student.id,
+        DestinationPreference.project_id == project_id
+    ).all()
+    
+    # Convertir les dates en strings pour la réponse
+    result = []
+    for pref in preferences:
+        pref_dict = {
+            "id": pref.id,
+            "student_id": pref.student_id,
+            "destination_id": pref.destination_id,
+            "project_id": pref.project_id,
+            "grade": pref.grade,
+            "created_at": pref.created_at.isoformat() if pref.created_at else None,
+            "updated_at": pref.updated_at.isoformat() if pref.updated_at else None,
+        }
+        # Ajouter les infos de destination si disponibles
+        if pref.destination:
+            pref_dict["destination"] = {
+                "id": pref.destination.id,
+                "project_id": pref.destination.project_id,
+                "university_name": pref.destination.university_name,
+                "country": pref.destination.country,
+                "city": pref.destination.city,
+                "total_places": pref.destination.total_places,
+                "available_places": pref.destination.available_places,
+                "mobility_type": pref.destination.mobility_type.value if hasattr(pref.destination.mobility_type, 'value') else pref.destination.mobility_type,
+                "accepted_filieres": pref.destination.accepted_filieres,
+                "min_english_level": pref.destination.min_english_level,
+                "min_toeic_score": pref.destination.min_toeic_score,
+                "min_gpa": pref.destination.min_gpa,
+                "description": pref.destination.description,
+                "website_url": pref.destination.website_url,
+                "is_active": pref.destination.is_active,
+                "created_at": pref.destination.created_at.isoformat() if pref.destination.created_at else None,
+                "updated_at": pref.destination.updated_at.isoformat() if pref.destination.updated_at else None,
+            }
+        result.append(pref_dict)
+    
+    return result
+
+
+# =============================================================================
+# DYNAMIC ROUTES - Must be defined AFTER static routes
+# =============================================================================
+
 @router.post("/{project_id}", response_model=DestinationResponse, status_code=status.HTTP_201_CREATED)
 def create_destination(
     project_id: int,
@@ -146,102 +333,3 @@ def delete_destination(
     db.commit()
     
     return None
-
-
-@router.post("/preferences", response_model=List[DestinationPreferenceResponse], status_code=status.HTTP_201_CREATED)
-def submit_destination_preferences(
-    preferences_data: DestinationPreferencesSubmit,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """
-    Soumettre les préférences de destination pour un étudiant
-    L'étudiant attribue une note de A (plus préférable) à F (moins préférable) à chaque destination
-    """
-    # Vérifier que l'utilisateur est un étudiant
-    student = db.query(Student).filter(Student.user_id == current_user.id).first()
-    if not student:
-        # Log pour debugging
-        print(f"User {current_user.id} ({current_user.email}, role: {current_user.role}) attempted to submit preferences but has no student profile")
-        raise HTTPException(
-            status_code=403, 
-            detail=f"Vous devez être un étudiant pour soumettre des préférences. User ID: {current_user.id}, Role: {current_user.role}"
-        )
-    
-    # Vérifier que le projet existe et est de type exchange_program
-    project = db.query(Project).filter(Project.id == preferences_data.project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet non trouvé")
-    
-    if project.project_type != ProjectType.EXCHANGE_PROGRAM:
-        raise HTTPException(
-            status_code=400,
-            detail="Ce type de projet ne supporte pas les préférences de destination"
-        )
-    
-    # Vérifier que le projet est ouvert pour les préférences
-    if not project.is_open_for_preferences:
-        raise HTTPException(status_code=400, detail="Ce projet n'accepte plus de préférences")
-    
-    # Vérifier que la deadline n'est pas dépassée
-    if project.deadline and project.deadline < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="La deadline pour soumettre les préférences est dépassée")
-    
-    # Vérifier que toutes les destinations existent et appartiennent au bon projet
-    destination_ids = [pref.destination_id for pref in preferences_data.preferences]
-    destinations = db.query(Destination).filter(
-        Destination.id.in_(destination_ids),
-        Destination.project_id == preferences_data.project_id
-    ).all()
-    
-    if len(destinations) != len(destination_ids):
-        raise HTTPException(status_code=400, detail="Une ou plusieurs destinations sont invalides")
-    
-    # Vérifier que chaque destination est unique
-    if len(destination_ids) != len(set(destination_ids)):
-        raise HTTPException(status_code=400, detail="Vous ne pouvez pas sélectionner la même destination plusieurs fois")
-    
-    # Supprimer les préférences existantes de cet étudiant pour ce projet
-    db.query(DestinationPreference).filter(
-        DestinationPreference.student_id == student.id,
-        DestinationPreference.project_id == preferences_data.project_id
-    ).delete()
-    
-    # Créer les nouvelles préférences avec le système de notes A-F
-    created_preferences = []
-    for pref in preferences_data.preferences:
-        db_pref = DestinationPreference(
-            student_id=student.id,
-            destination_id=pref.destination_id,
-            project_id=preferences_data.project_id,
-            grade=pref.grade.upper()
-        )
-        db.add(db_pref)
-        created_preferences.append(db_pref)
-    
-    db.commit()
-    
-    # Recharger avec les relations
-    for pref in created_preferences:
-        db.refresh(pref)
-    
-    return created_preferences
-
-
-@router.get("/preferences/{project_id}", response_model=List[DestinationPreferenceResponse])
-def get_my_destination_preferences(
-    project_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Récupérer mes préférences de destination pour un projet"""
-    student = db.query(Student).filter(Student.user_id == current_user.id).first()
-    if not student:
-        raise HTTPException(status_code=403, detail="Seuls les étudiants peuvent consulter leurs préférences")
-    
-    preferences = db.query(DestinationPreference).filter(
-        DestinationPreference.student_id == student.id,
-        DestinationPreference.project_id == project_id
-    ).all()
-    
-    return preferences
