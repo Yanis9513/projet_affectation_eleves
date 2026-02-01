@@ -614,8 +614,8 @@ export default function ProjectDetailsPage() {
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
                   Statut des Préférences des Étudiants
                 </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                  <table className="w-full text-sm min-w-[600px] md:min-w-0">
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-4 py-2 text-left">Étudiant</th>
@@ -851,8 +851,8 @@ export default function ProjectDetailsPage() {
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
                   Préférences des Partenaires
                 </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                  <table className="w-full text-sm min-w-[600px] md:min-w-0">
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-4 py-2 text-left">Étudiant</th>
@@ -1026,8 +1026,8 @@ export default function ProjectDetailsPage() {
               <h3 className="text-lg font-bold text-gray-800 mb-4">
                 Étudiants par Niveau d'Anglais
               </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <table className="w-full text-sm min-w-[600px] md:min-w-0">
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="px-4 py-2 text-left">Étudiant</th>
