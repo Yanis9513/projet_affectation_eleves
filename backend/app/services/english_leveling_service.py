@@ -241,9 +241,6 @@ class EnglishLevelingService:
         base_group_size = total_students // num_groups
         extra_students = total_students % num_groups
         
-        print(f"[BALANCED] Total students: {total_students}, Target groups: {num_groups}")
-        print(f"[BALANCED] Base group size: {base_group_size}, Extra students: {extra_students}")
-        
         # Create groups level by level, then fill gaps with next level
         groups: List[List[Student]] = [[] for _ in range(num_groups)]
         current_group_idx = 0
@@ -292,8 +289,6 @@ class EnglishLevelingService:
         final_groups = []
         for i, group in enumerate(groups):
             if group:  # Only include non-empty groups
-                target_size = base_group_size + (1 if i < extra_students else 0)
-                print(f"[BALANCED] Group {i+1}: {len(group)} students (target: {target_size})")
                 final_groups.append([s.id for s in group])
         
         return final_groups
@@ -363,22 +358,16 @@ class EnglishLevelingService:
         """
         try:
             # 1. Load data
-            print(f"[EnglishLeveling] Loading data for project {self.project_id}")
             self.load_data()
-            print(f"[EnglishLeveling] Loaded {len(self.students)} students")
             
             # 2. Group students
-            print(f"[EnglishLeveling] Grouping students...")
             groups, stats = self.group_by_english_level(
                 allow_adjacent_levels=allow_adjacent_levels,
                 max_group_size=max_group_size
             )
-            print(f"[EnglishLeveling] Created {len(groups)} groups")
             
             # 3. Save assignments
-            print(f"[EnglishLeveling] Saving assignments...")
             assignments = self.save_assignments(groups)
-            print(f"[EnglishLeveling] Saved {len(assignments)} assignments")
             
             return {
                 "success": True,
@@ -393,7 +382,6 @@ class EnglishLevelingService:
         except Exception as e:
             import traceback
             error_msg = f"{str(e)}\n{traceback.format_exc()}"
-            print(f"[EnglishLeveling] ERROR: {error_msg}")
             return {
                 "success": False,
                 "error": error_msg

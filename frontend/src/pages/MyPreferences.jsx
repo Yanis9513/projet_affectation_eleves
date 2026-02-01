@@ -96,7 +96,7 @@ export default function MyPreferences() {
       });
     } catch (error) {
       console.error('Error loading preferences:', error);
-      toast.error('Erreur lors du chargement des préférences');
+      toast.error('Impossible de charger vos préférences.');
     } finally {
       setLoading(false);
     }

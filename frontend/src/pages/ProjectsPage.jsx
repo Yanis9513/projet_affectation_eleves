@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Card, { CardGrid } from '../components/Card';
@@ -51,7 +51,7 @@ export default function ProjectsPage() {
       setProjects(filtered);
     } catch (error) {
       console.error('Error loading projects:', error);
-      toast.error('Erreur lors du chargement des projets');
+      toast.error('Impossible de charger la liste des projets.');
     } finally {
       setLoading(false);
     }

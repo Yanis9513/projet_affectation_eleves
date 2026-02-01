@@ -166,22 +166,15 @@ async def get_my_assignments(current_user: User = Depends(get_current_user), db:
     from app.models.destination import Destination
     from app.models.destination_preference import DestinationPreference
     
-    print(f"[DEBUG] Getting assignments for user {current_user.id} ({current_user.email})")
-    
     # Get student record
     student = db.query(Student).filter(Student.user_id == current_user.id).first()
     if not student:
-        print(f"[DEBUG] Student profile not found for user {current_user.id}")
         raise HTTPException(status_code=404, detail="Student profile not found")
-    
-    print(f"[DEBUG] Found student {student.id}")
     
     # Get all assignments for this student
     assignments = db.query(Assignment).filter(
         Assignment.student_id == student.id
     ).all()
-    
-    print(f"[DEBUG] Found {len(assignments)} raw assignments for student {student.id}")
     
     # Build detailed response
     result = []
@@ -271,10 +264,6 @@ async def get_my_assignments(current_user: User = Depends(get_current_user), db:
             assignment_data["group_size"] = len(members) + 1
         
         result.append(assignment_data)
-    
-    print(f"[DEBUG] Returning {len(result)} processed assignments")
-    for r in result[:2]:  # Print first 2
-        print(f"[DEBUG]   Result: project={r.get('project_title')}, type={r.get('project_type')}, has_dest={bool(r.get('destination'))}")
     
     return {
         "student_id": student.id,

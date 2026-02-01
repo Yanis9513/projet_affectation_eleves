@@ -243,16 +243,10 @@ class GeneticAlgorithmService:
     
     def save_assignments(self, solution: List[Optional[int]]):
         """Sauvegarde les affectations dans la base de données"""
-        print(f"[GA SAVE] Starting save_assignments with solution length: {len(solution)}")
-        print(f"[GA SAVE] Number of students: {len(self.students)}")
-        print(f"[GA SAVE] Number of destinations: {len(self.destinations)}")
-        print(f"[GA SAVE] Capacities: {[(d.university_name, d.available_places) for d in self.destinations[:3]]}")
-        
         # Supprimer les anciennes affectations pour ce projet
-        deleted = self.db.query(Assignment).filter(
+        self.db.query(Assignment).filter(
             Assignment.project_id == self.project_id
         ).delete()
-        print(f"[GA SAVE] Deleted {deleted} old assignments")
         
         # Créer les nouvelles affectations
         assignments_created = []
@@ -264,18 +258,15 @@ class GeneticAlgorithmService:
             dest_id = solution[i]
             
             if not dest_id:
-                print(f"[GA SAVE] Student {student.id}: No dest_id (solution[{i}]={dest_id})")
                 skipped_count += 1
                 continue
             
             if capacities.get(dest_id, 0) <= 0:
-                print(f"[GA SAVE] Student {student.id}: No capacity for dest {dest_id}")
                 skipped_count += 1
                 continue
             
             dest = next((d for d in self.destinations if d.id == dest_id), None)
             if not dest:
-                print(f"[GA SAVE] Student {student.id}: Dest {dest_id} not found")
                 skipped_count += 1
                 continue
             
@@ -306,22 +297,16 @@ class GeneticAlgorithmService:
                 "satisfaction": satisfaction_score
             })
         
-        print(f"[GA SAVE] Created {created_count} assignments, skipped {skipped_count}")
-        print(f"[GA SAVE] About to commit {len(assignments_created)} assignments")
-        
         # Mettre à jour les capacités des destinations
         for dest in self.destinations:
             dest.available_places = capacities.get(dest.id, dest.available_places)
         
         try:
             self.db.commit()
-            print(f"[GA SAVE] Commit successful!")
         except Exception as e:
-            print(f"[GA SAVE] COMMIT FAILED: {e}")
             self.db.rollback()
             raise
         
-        print(f"[GA SAVE] Returning {len(assignments_created)} created assignments")
         return assignments_created
     
     def execute(self, population_size: int = 40, generations: int = 30) -> Dict:

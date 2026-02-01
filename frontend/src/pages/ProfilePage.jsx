@@ -174,7 +174,7 @@ export default function ProfilePage() {
       }
     } catch (err) {
       console.error('Error loading profile:', err)
-      setError('Erreur lors du chargement du profil')
+      setError('Impossible de charger votre profil.')
     } finally {
       setLoading(false)
     }
@@ -253,7 +253,7 @@ export default function ProfilePage() {
       await loadProfile()
     } catch (err) {
       console.error('Error updating profile:', err)
-      setError('Erreur lors de la mise à jour du profil')
+      setError('La mise à jour de votre profil a échoué.')
     }
   }
 

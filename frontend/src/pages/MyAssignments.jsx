@@ -28,7 +28,7 @@ export default function MyAssignments() {
       });
     } catch (error) {
       console.error('Error loading assignments:', error);
-      toast.error('Erreur lors du chargement des affectations');
+      toast.error('Impossible de charger vos affectations.');
     } finally {
       setLoading(false);
     }

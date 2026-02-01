@@ -40,20 +40,20 @@ function Layout() {
                     className={`px-3 py-2 rounded-md transition-all duration-200 ${
                       isActive(`/${userRole}`) 
                         ? 'bg-esiee-blue text-white' 
-                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-100 bg-gray-50'
                     }`}
                   >
-                    📊 Tableau de bord
+                    Tableau de bord
                   </Link>
                   <Link 
                     to="/projects" 
                     className={`px-3 py-2 rounded-md transition-all duration-200 ${
                       isActive('/projects') 
                         ? 'bg-esiee-blue text-white' 
-                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-100 bg-gray-50'
                     }`}
                   >
-                    📁 Projets
+                    Projets
                   </Link>
                   {userRole === 'student' && (
                     <>
@@ -62,20 +62,20 @@ function Layout() {
                         className={`px-3 py-2 rounded-md transition-all duration-200 ${
                           isActive('/my-preferences') 
                             ? 'bg-esiee-blue text-white' 
-                            : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                            : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-100 bg-gray-50'
                         }`}
                       >
-                        ⭐ Mes Préférences
+                        Mes Préférences
                       </Link>
                       <Link 
                         to="/my-assignments" 
                         className={`px-3 py-2 rounded-md transition-all duration-200 ${
                           isActive('/my-assignments') 
                             ? 'bg-esiee-blue text-white' 
-                            : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                            : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-100 bg-gray-50'
                         }`}
                       >
-                        🎯 Mes Affectations
+                        Mes Affectations
                       </Link>
                     </>
                   )}
@@ -84,16 +84,16 @@ function Layout() {
                     className={`px-3 py-2 rounded-md transition-all duration-200 ${
                       isActive('/profile') 
                         ? 'bg-esiee-blue text-white' 
-                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                        : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-100 bg-gray-50'
                     }`}
                   >
-                    👤 Mon Profil
+                    Mon Profil
                   </Link>
                   <button 
                     onClick={handleLogout}
                     className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-all duration-200 font-medium"
                   >
-                    🚪 Déconnexion
+                    Déconnexion
                   </button>
                 </>
               ) : (
@@ -101,7 +101,7 @@ function Layout() {
                   to="/login" 
                   className="bg-esiee-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
                 >
-                  🔐 Connexion
+                  Connexion
                 </Link>
               )}
             </div>

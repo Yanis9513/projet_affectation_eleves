@@ -45,7 +45,7 @@ export default function StudentFormPage() {
 
     } catch (err) {
       console.error('Error loading project:', err)
-      setError('Erreur lors du chargement du projet')
+      setError('Impossible de charger les détails du projet.')
     } finally {
       setLoading(false)
     }

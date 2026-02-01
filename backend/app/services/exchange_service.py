@@ -216,15 +216,12 @@ def run_exchange_optimization(
     else:
         assignments = _greedy_algorithm(student_list, dest_list, preferences, respect_constraints)
     
-    print(f"[EXCHANGE] Algorithm generated {len(assignments)} assignments")
-    
     # SAUVEGARDER les affectations dans la base de données
     from app.models.assignment import Assignment
     from datetime import datetime
     
     # Supprimer les anciennes affectations
-    deleted = db.query(Assignment).filter(Assignment.project_id == project_id).delete()
-    print(f"[EXCHANGE] Deleted {deleted} old assignments")
+    db.query(Assignment).filter(Assignment.project_id == project_id).delete()
     
     # Créer les nouvelles affectations
     for assignment_data in assignments:
@@ -239,7 +236,6 @@ def run_exchange_optimization(
         db.add(assignment)
     
     db.commit()
-    print(f"[EXCHANGE] Saved {len(assignments)} assignments to database")
     
     # Calculer les statistiques
     stats = _calculate_statistics(assignments, preferences)

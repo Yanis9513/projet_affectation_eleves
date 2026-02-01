@@ -50,7 +50,7 @@ function AssignmentsPage() {
       }
     } catch (err) {
       console.error('Error loading data:', err)
-      setError(err.response?.data?.detail || 'Erreur lors du chargement des données')
+      setError(err.response?.data?.detail || 'Impossible de charger les affectations.')
     } finally {
       setLoading(false)
     }
@@ -70,7 +70,7 @@ function AssignmentsPage() {
       await loadData()
     } catch (err) {
       console.error('Error running algorithm:', err)
-      setError(err.response?.data?.detail || 'Erreur lors de l\'exécution de l\'algorithme')
+      setError(err.response?.data?.detail || 'L\'algorithme a échoué. Vérifiez que tous les étudiants ont soumis leurs préférences.')
     } finally {
       setRunning(false)
     }
@@ -87,7 +87,7 @@ function AssignmentsPage() {
       setAssignments([])
       setStats(null)
     } catch (err) {
-      setError('Erreur lors de la suppression')
+      setError('La suppression des affectations a échoué.')
     }
   }
 

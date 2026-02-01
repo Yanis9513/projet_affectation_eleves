@@ -87,19 +87,14 @@ export default function ProjectDetailsPage() {
         await loadExchangeData()
         // Also load assignments for exchange programs
         try {
-          console.log('[FRONTEND] Loading assignments for exchange project', projectId)
           const assignmentsResponse = await assignmentAPI.getByProject(projectId)
-          console.log('[FRONTEND] Assignments response:', assignmentsResponse.data)
           if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
-            console.log('[FRONTEND] Setting', assignmentsResponse.data.length, 'assignments')
             setAssignments(assignmentsResponse.data)
             const statsResponse = await assignmentAPI.getStats(projectId)
             setStats(statsResponse.data)
-          } else {
-            console.log('[FRONTEND] No assignments found')
           }
         } catch (err) {
-          console.log('[FRONTEND] Error loading assignments:', err)
+          // No assignments yet, that's okay
         }
       } else if (projectResponse.data?.project_type === 'group_project') {
         // Load group project preferences
@@ -144,7 +139,7 @@ export default function ProjectDetailsPage() {
       }
     } catch (err) {
       console.error('Error loading project details:', err)
-      setError('Erreur lors du chargement des détails du projet')
+      setError('Impossible de charger les détails du projet. Veuillez réessayer.')
     } finally {
       setLoading(false)
     }
@@ -175,7 +170,7 @@ export default function ProjectDetailsPage() {
       setGroupPreferences(response.data)
     } catch (err) {
       console.error('Error loading group preferences:', err)
-      toast.error('Erreur lors du chargement des préférences de groupe')
+      toast.error('Impossible de charger les préférences des étudiants.')
     } finally {
       setIsLoadingGroupPrefs(false)
     }
@@ -241,19 +236,14 @@ export default function ProjectDetailsPage() {
   }
 
   const handleRunOptimization = async (algorithm = 'greedy') => {
-    console.log('[FRONTEND] Running optimization algorithm:', algorithm)
     try {
       setIsOptimizing(true)
       const response = await exchangeAPI.runOptimization(projectId, algorithm)
-      console.log('[FRONTEND] Algorithm response:', response.data)
       setOptimizationResult(response.data)
       toast.success('Optimisation terminée!')
       // Reload assignments after running algorithm
-      console.log('[FRONTEND] Reloading project details...')
       await loadProjectDetails()
-      console.log('[FRONTEND] Reload complete, assignments count:', assignments.length)
     } catch (err) {
-      console.error('[FRONTEND] Error running optimization:', err)
       toast.error(err.response?.data?.detail || 'Erreur lors de l\'optimisation')
     } finally {
       setIsOptimizing(false)
@@ -296,7 +286,7 @@ export default function ProjectDetailsPage() {
       }, 1500)
     } catch (err) {
       console.error('Error deleting project:', err)
-      setError('Erreur lors de la suppression du projet')
+      setError('La suppression du projet a échoué. Veuillez réessayer.')
       setDeleteModal(false)
     }
   }
@@ -314,7 +304,7 @@ export default function ProjectDetailsPage() {
       }
     } catch (err) {
       console.error('Error updating students:', err)
-      setError('Erreur lors de la mise à jour des étudiants')
+      setError('La mise à jour des étudiants a échoué.')
     }
   }
 
@@ -334,7 +324,7 @@ export default function ProjectDetailsPage() {
       setRemoveStudentModal({ isOpen: false, studentId: null, studentName: '' })
     } catch (err) {
       console.error('Error removing student:', err)
-      setError('Erreur lors du retrait de l\'étudiant')
+      setError('Impossible de retirer l\'étudiant du projet.')
       setRemoveStudentModal({ isOpen: false, studentId: null, studentName: '' })
     }
   }
@@ -553,7 +543,6 @@ export default function ProjectDetailsPage() {
                 )}
                 
                 {/* Optimization Buttons - only show if no assignments yet */}
-                {console.log('[FRONTEND] Button check:', {is_open: project.is_open_for_preferences, students: students.length, assignments: assignments.length})}
                 {!project.is_open_for_preferences && students.length > 0 && assignments.length === 0 && (
                   <>
                     <Button
@@ -740,10 +729,8 @@ export default function ProjectDetailsPage() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">
                 Affectations des Étudiants ({assignments.length})
               </h2>
-              {console.log('[FRONTEND] Rendering exchange assignments:', assignments)}
               <div className="space-y-2">
                 {assignments.map((assignment, idx) => {
-                  console.log('[FRONTEND] Assignment', idx, ':', assignment)
                   const student = students.find(s => s.id === assignment.student_id)
                   return (
                     <div 
@@ -813,7 +800,7 @@ export default function ProjectDetailsPage() {
                             toast.success('Affectations supprimées')
                             loadProjectDetails()
                           })
-                          .catch(err => toast.error('Erreur lors de la suppression'))
+                          .catch(err => toast.error('La suppression des affectations a échoué.'))
                       }
                     }}
                   >
@@ -970,7 +957,7 @@ export default function ProjectDetailsPage() {
                             toast.success('Affectations supprimées')
                             loadProjectDetails()
                           })
-                          .catch(err => toast.error('Erreur lors de la suppression'))
+                          .catch(err => toast.error('La suppression des affectations a échoué.'))
                       }
                     }}
                   >

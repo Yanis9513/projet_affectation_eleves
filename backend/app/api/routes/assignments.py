@@ -55,14 +55,12 @@ class RunAlgorithmResponse(BaseModel):
 @router.get("/", response_model=List[AssignmentResponse])
 async def get_assignments(project_id: Optional[int] = None, db: Session = Depends(get_db)):
     """Get all assignments, optionally filtered by project"""
-    print(f"[DEBUG] Getting assignments for project_id={project_id}")
     query = db.query(Assignment)
     
     if project_id:
         query = query.filter(Assignment.project_id == project_id)
     
     assignments = query.all()
-    print(f"[DEBUG] Found {len(assignments)} assignments")
     
     # Enhance assignments with destination info for exchange programs
     result = []
@@ -101,18 +99,13 @@ async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = D
     For EXCHANGE_PROGRAM: Uses genetic algorithm to assign students to destinations
     For GROUP_PROJECT: Uses preference-based group formation algorithm
     """
-    print(f"[DEBUG] Algorithm requested for project {request.project_id}")
-    
     # Get project
     project = db.query(Project).filter(Project.id == request.project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    print(f"[DEBUG] Project type: {project.project_type}")
-    
     # Route to appropriate algorithm based on project type
     if project.project_type == ProjectType.EXCHANGE_PROGRAM:
-        print(f"[DEBUG] Running exchange program algorithm for project {request.project_id}")
         # Use Genetic Algorithm for exchange programs
         try:
             ga_service = GeneticAlgorithmService(db, request.project_id)
@@ -121,14 +114,11 @@ async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = D
                 generations=request.generations or 30
             )
             
-            print(f"[DEBUG] Algorithm result: success={result.get('success')}, assigned={result.get('assigned_students')}")
-            
             if not result['success']:
                 raise HTTPException(status_code=400, detail=result.get('error', 'Algorithm failed'))
             
             # Verify assignments were saved
             verify_assignments = db.query(Assignment).filter(Assignment.project_id == request.project_id).all()
-            print(f"[DEBUG] Verified {len(verify_assignments)} assignments in database after algorithm")
             
             return RunAlgorithmResponse(
                 status="success",

@@ -90,7 +90,7 @@ export default function StudentDashboard() {
       
     } catch (error) {
       console.error('Error loading student data:', error);
-      toast.error('Erreur lors du chargement des données');
+      toast.error('Impossible de charger vos projets. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
