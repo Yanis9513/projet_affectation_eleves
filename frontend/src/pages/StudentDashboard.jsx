@@ -100,7 +100,7 @@ export default function StudentDashboard() {
     if (project.actionType === 'exchange_preferences') {
       navigate(`/student/exchange-preferences/${project.id}`);
     } else if (project.actionType === 'partner_preferences') {
-      navigate(`/student/form/${project.id}`);
+      navigate(`/form/${project.id}`);
     }
   };
 
