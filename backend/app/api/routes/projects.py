@@ -41,14 +41,15 @@ async def get_projects(
         for student in project.students:
             if student.user:
                 full_name = f"{student.user.first_name} {student.user.last_name}" if student.user.first_name else student.user.email
-                students_data.append(StudentInProject(
-                    id=student.id,
-                    name=full_name,
-                    email=student.user.email,
-                    filiere=student.filiere.value if student.filiere else None,
-                    rank=student.general_rank,
-                    grade=student.gpa
-                ))
+            students_data.append(StudentInProject(
+                id=student.id,
+                name=full_name,
+                email=student.user.email,
+                filiere=student.filiere.value if student.filiere else None,
+                english_level=student.english_level.value if student.english_level else None,
+                rank=student.general_rank,
+                grade=student.gpa
+            ))
         
         # Build project dict properly excluding SQLAlchemy internal state
         project_dict = {
@@ -145,6 +146,7 @@ async def get_project(project_id: int, db: Session = Depends(get_db)):
                 name=full_name,
                 email=student.user.email,
                 filiere=student.filiere.value if student.filiere else None,
+                english_level=student.english_level.value if student.english_level else None,
                 rank=student.general_rank,
                 grade=student.gpa
             ))
@@ -493,6 +495,7 @@ async def get_project_students(project_id: int, db: Session = Depends(get_db)):
                 name=full_name,
                 email=student.user.email,
                 filiere=student.filiere.value if student.filiere else None,
+                english_level=student.english_level.value if student.english_level else None,
                 rank=student.general_rank,
                 grade=student.gpa
             ))

@@ -68,6 +68,7 @@ class StudentInProject(BaseModel):
     name: str
     email: str
     filiere: Optional[str] = None
+    english_level: Optional[str] = None
     rank: Optional[int] = None
     grade: Optional[float] = None
 
