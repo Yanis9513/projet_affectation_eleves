@@ -21,6 +21,7 @@ import EditProjectPage from './pages/EditProjectPage'
 import StudentFormPage from './pages/StudentFormPage'
 import StudentExchangePreferences from './pages/StudentExchangePreferences'
 import MyPreferences from './pages/MyPreferences'
+import MyAssignments from './pages/MyAssignments'
 import ProfilePage from './pages/ProfilePage'
 import './App.css'
 
@@ -85,7 +86,15 @@ function App() {
               } 
             />
             <Route 
-              path="student/exchange-preferences/:projectId" 
+              path="my-assignments" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <MyAssignments />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="student/exchange-preferences/:projectId"
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <StudentExchangePreferences />
