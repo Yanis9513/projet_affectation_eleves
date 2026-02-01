@@ -61,6 +61,7 @@ export const studentAPI = {
   getById: (id) => api.get(`/students/${id}`),
   getProfile: () => api.get('/students/me/profile'),
   updateProfile: (studentData) => api.put('/students/me/profile', studentData),
+  getMyAssignments: () => api.get('/students/me/assignments'),
   create: (studentData) => api.post('/students/', studentData),
   update: (id, studentData) => api.put(`/students/${id}`, studentData),
   delete: (id) => api.delete(`/students/${id}`),
