@@ -73,11 +73,18 @@ class EnglishLevelingService:
         level_groups: Dict[EnglishLevel, List[Student]] = defaultdict(list)
         
         for student in self.students:
-            if student.english_level:
-                level_groups[student.english_level].append(student)
-            else:
-                # Students without English level go to a special group
-                level_groups[EnglishLevel.UNKNOWN].append(student)
+            try:
+                # Get the actual enum value from the SQLAlchemy column
+                level = student.english_level
+                if level is not None:
+                    level_groups[level].append(student)
+                else:
+                    # Students without English level go to B1 (default level)
+                    level_groups[EnglishLevel.B1].append(student)
+            except Exception as e:
+                print(f"Error processing student {student.id}: {e}")
+                # Default to B1 if there's any issue
+                level_groups[EnglishLevel.B1].append(student)
         
         # Sort levels from lowest to highest
         level_order = [
@@ -91,16 +98,10 @@ class EnglishLevelingService:
         
         final_groups: List[List[int]] = []
         
-        if allow_adjacent_levels:
-            # Strategy: Merge adjacent levels if they have small numbers
-            final_groups = self._group_with_adjacent_mixing(
-                level_groups, level_order, group_size
-            )
-        else:
-            # Strategy: Strict separation by level
-            final_groups = self._group_strict_by_level(
-                level_groups, level_order, group_size
-            )
+        # Strategy: Balanced groups - same size, prefer same level but allow mixing
+        final_groups = self._group_balanced(
+            level_groups, level_order, group_size
+        )
         
         # Calculate statistics
         stats = self._calculate_stats(final_groups, level_groups)
@@ -122,19 +123,11 @@ class EnglishLevelingService:
                 continue
             
             # Sort students by name for consistent grouping
-            students.sort(key=lambda s: f"{s.last_name or ''} {s.first_name or ''}")
+            students.sort(key=lambda s: f"{s.user.last_name or ''} {s.user.first_name or ''}" if s.user else "")
             
             # Create groups of specified size
             for i in range(0, len(students), group_size):
                 group = students[i:i + group_size]
-                final_groups.append([s.id for s in group])
-        
-        # Handle students with unknown level
-        unknown_students = level_groups.get(EnglishLevel.UNKNOWN, [])
-        if unknown_students:
-            unknown_students.sort(key=lambda s: f"{s.last_name or ''} {s.first_name or ''}")
-            for i in range(0, len(unknown_students), group_size):
-                group = unknown_students[i:i + group_size]
                 final_groups.append([s.id for s in group])
         
         return final_groups
@@ -163,7 +156,7 @@ class EnglishLevelingService:
                 remaining_students = []
             
             # Sort students
-            students.sort(key=lambda s: f"{s.last_name or ''} {s.first_name or ''}")
+            students.sort(key=lambda s: f"{s.user.last_name or ''} {s.user.first_name or ''}" if s.user else "")
             
             # Create full groups
             num_full_groups = len(students) // group_size
@@ -186,14 +179,6 @@ class EnglishLevelingService:
                     final_groups[-1].extend([s.id for s in remaining_students])
                 else:
                     final_groups.append([s.id for s in remaining_students])
-        
-        # Handle unknown level students - put them in separate groups
-        unknown_students = level_groups.get(EnglishLevel.UNKNOWN, [])
-        if unknown_students:
-            unknown_students.sort(key=lambda s: f"{s.last_name or ''} {s.first_name or ''}")
-            for i in range(0, len(unknown_students), group_size):
-                group = unknown_students[i:i + group_size]
-                final_groups.append([s.id for s in group])
         
         return final_groups
     
@@ -226,8 +211,92 @@ class EnglishLevelingService:
             "max_group_size": max_group_size,
             "min_group_size": min_group_size,
             "students_per_level": level_counts,
-            "grouping_strategy": "strict" if not groups else "mixed"
+            "grouping_strategy": "balanced"
         }
+    
+    def _group_balanced(
+        self,
+        level_groups: Dict[EnglishLevel, List[Student]],
+        level_order: List[EnglishLevel],
+        group_size: int
+    ) -> List[List[int]]:
+        """
+        Create balanced groups with equal sizes.
+        Prefer same English level, but mix adjacent levels when needed for balance.
+        """
+        # Get all students sorted by level
+        all_students = []
+        for level in level_order:
+            students = level_groups.get(level, [])
+            for student in students:
+                all_students.append((student, level))
+        
+        total_students = len(all_students)
+        if total_students == 0:
+            return []
+        
+        # Calculate optimal number of groups
+        num_groups = max(1, round(total_students / group_size))
+        # Recalculate group size to ensure balance
+        base_group_size = total_students // num_groups
+        extra_students = total_students % num_groups
+        
+        print(f"[BALANCED] Total students: {total_students}, Target groups: {num_groups}")
+        print(f"[BALANCED] Base group size: {base_group_size}, Extra students: {extra_students}")
+        
+        # Create groups level by level, then fill gaps with next level
+        groups: List[List[Student]] = [[] for _ in range(num_groups)]
+        current_group_idx = 0
+        
+        # First pass: fill groups by level (prefer same level)
+        for level in level_order:
+            level_students = level_groups.get(level, [])
+            for student in level_students:
+                # Find the group with the most room that already has students of this level
+                best_group = None
+                min_diff = float('inf')
+                
+                for i, group in enumerate(groups):
+                    # Calculate target size for this group
+                    target_size = base_group_size + (1 if i < extra_students else 0)
+                    current_size = len(group)
+                    
+                    if current_size < target_size:
+                        # Check if this group already has students of the same level
+                        same_level_count = sum(1 for s in group if s.english_level == level)
+                        diff = target_size - current_size
+                        
+                        # Prefer groups with same level students and more room
+                        if same_level_count > 0 and diff < min_diff:
+                            min_diff = diff
+                            best_group = i
+                
+                # If no group with same level found, pick the one with most room
+                if best_group is None:
+                    max_room = -1
+                    for i, group in enumerate(groups):
+                        target_size = base_group_size + (1 if i < extra_students else 0)
+                        room = target_size - len(group)
+                        if room > max_room and room > 0:
+                            max_room = room
+                            best_group = i
+                
+                # Add student to best group
+                if best_group is not None:
+                    groups[best_group].append(student)
+                else:
+                    # All groups full, add to first one (shouldn't happen)
+                    groups[0].append(student)
+        
+        # Convert to final format (list of student IDs)
+        final_groups = []
+        for i, group in enumerate(groups):
+            if group:  # Only include non-empty groups
+                target_size = base_group_size + (1 if i < extra_students else 0)
+                print(f"[BALANCED] Group {i+1}: {len(group)} students (target: {target_size})")
+                final_groups.append([s.id for s in group])
+        
+        return final_groups
     
     def save_assignments(self, groups: List[List[int]]) -> List[Dict]:
         """
@@ -294,16 +363,22 @@ class EnglishLevelingService:
         """
         try:
             # 1. Load data
+            print(f"[EnglishLeveling] Loading data for project {self.project_id}")
             self.load_data()
+            print(f"[EnglishLeveling] Loaded {len(self.students)} students")
             
             # 2. Group students
+            print(f"[EnglishLeveling] Grouping students...")
             groups, stats = self.group_by_english_level(
                 allow_adjacent_levels=allow_adjacent_levels,
                 max_group_size=max_group_size
             )
+            print(f"[EnglishLeveling] Created {len(groups)} groups")
             
             # 3. Save assignments
+            print(f"[EnglishLeveling] Saving assignments...")
             assignments = self.save_assignments(groups)
+            print(f"[EnglishLeveling] Saved {len(assignments)} assignments")
             
             return {
                 "success": True,
@@ -316,9 +391,12 @@ class EnglishLevelingService:
             }
             
         except Exception as e:
+            import traceback
+            error_msg = f"{str(e)}\n{traceback.format_exc()}"
+            print(f"[EnglishLeveling] ERROR: {error_msg}")
             return {
                 "success": False,
-                "error": str(e)
+                "error": error_msg
             }
 
 
