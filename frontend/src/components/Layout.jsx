@@ -56,16 +56,28 @@ function Layout() {
                     📁 Projets
                   </Link>
                   {userRole === 'student' && (
-                    <Link 
-                      to="/my-preferences" 
-                      className={`px-3 py-2 rounded-md transition-all duration-200 ${
-                        isActive('/my-preferences') 
-                          ? 'bg-esiee-blue text-white' 
-                          : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
-                      }`}
-                    >
-                      ⭐ Mes Préférences
-                    </Link>
+                    <>
+                      <Link 
+                        to="/my-preferences" 
+                        className={`px-3 py-2 rounded-md transition-all duration-200 ${
+                          isActive('/my-preferences') 
+                            ? 'bg-esiee-blue text-white' 
+                            : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                        }`}
+                      >
+                        ⭐ Mes Préférences
+                      </Link>
+                      <Link 
+                        to="/my-assignments" 
+                        className={`px-3 py-2 rounded-md transition-all duration-200 ${
+                          isActive('/my-assignments') 
+                            ? 'bg-esiee-blue text-white' 
+                            : 'text-gray-700 hover:text-esiee-blue hover:bg-blue-50'
+                        }`}
+                      >
+                        🎯 Mes Affectations
+                      </Link>
+                    </>
                   )}
                   <Link 
                     to="/profile" 
