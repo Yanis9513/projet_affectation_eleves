@@ -53,6 +53,7 @@ class Destination(Base):
     # Relationships
     project = relationship("Project", back_populates="destinations")
     student_preferences = relationship("DestinationPreference", back_populates="destination", cascade="all, delete-orphan")
+    assignments = relationship("Assignment", back_populates="destination")
     
     def has_available_places(self) -> bool:
         """Vérifie s'il reste des places disponibles"""

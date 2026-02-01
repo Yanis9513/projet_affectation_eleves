@@ -9,6 +9,7 @@ class Assignment(Base):
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    destination_id = Column(Integer, ForeignKey("destinations.id", ondelete="SET NULL"), nullable=True)  # For exchange programs
     group_number = Column(Integer, nullable=True)  # Group number within the project
     
     # Scores et satisfaction
@@ -32,8 +33,9 @@ class Assignment(Base):
     # Relationships
     student = relationship("Student", back_populates="assignments")
     project = relationship("Project", back_populates="assignments")
+    destination = relationship("Destination", back_populates="assignments")
     
-    # Contrainte: un étudiant ne peut être affecté qu'à un seul projet
+    # Contrainte: un étudiant ne peut être affecté qu'une fois par projet
     __table_args__ = (
-        UniqueConstraint('student_id', name='unique_student_assignment'),
+        UniqueConstraint('student_id', 'project_id', name='unique_student_project_assignment'),
     )
