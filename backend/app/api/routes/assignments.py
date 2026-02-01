@@ -14,10 +14,18 @@ import uuid
 
 router = APIRouter()
 
+class DestinationInfo(BaseModel):
+    id: int
+    university_name: str
+    country: str
+    city: Optional[str] = None
+
 class AssignmentResponse(BaseModel):
     id: int
     student_id: int
     project_id: int
+    destination_id: Optional[int] = None  # For exchange programs
+    destination: Optional[DestinationInfo] = None  # Full destination details
     group_number: Optional[int] = None
     preference_rank: Optional[int] = None
     satisfaction_score: Optional[float] = None
@@ -47,13 +55,43 @@ class RunAlgorithmResponse(BaseModel):
 @router.get("/", response_model=List[AssignmentResponse])
 async def get_assignments(project_id: Optional[int] = None, db: Session = Depends(get_db)):
     """Get all assignments, optionally filtered by project"""
+    print(f"[DEBUG] Getting assignments for project_id={project_id}")
     query = db.query(Assignment)
     
     if project_id:
         query = query.filter(Assignment.project_id == project_id)
     
     assignments = query.all()
-    return assignments
+    print(f"[DEBUG] Found {len(assignments)} assignments")
+    
+    # Enhance assignments with destination info for exchange programs
+    result = []
+    for assignment in assignments:
+        assignment_dict = {
+            "id": assignment.id,
+            "student_id": assignment.student_id,
+            "project_id": assignment.project_id,
+            "destination_id": assignment.destination_id,
+            "group_number": assignment.group_number,
+            "preference_rank": assignment.preference_rank,
+            "satisfaction_score": assignment.satisfaction_score,
+        }
+        
+        # Add destination details if it's an exchange program assignment
+        if assignment.destination_id:
+            from app.models.destination import Destination
+            destination = db.query(Destination).filter(Destination.id == assignment.destination_id).first()
+            if destination:
+                assignment_dict["destination"] = {
+                    "id": destination.id,
+                    "university_name": destination.university_name,
+                    "country": destination.country,
+                    "city": destination.city
+                }
+        
+        result.append(assignment_dict)
+    
+    return result
 
 @router.post("/run-algorithm", response_model=RunAlgorithmResponse)
 async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = Depends(get_db)):
@@ -63,13 +101,18 @@ async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = D
     For EXCHANGE_PROGRAM: Uses genetic algorithm to assign students to destinations
     For GROUP_PROJECT: Uses preference-based group formation algorithm
     """
+    print(f"[DEBUG] Algorithm requested for project {request.project_id}")
+    
     # Get project
     project = db.query(Project).filter(Project.id == request.project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
+    print(f"[DEBUG] Project type: {project.project_type}")
+    
     # Route to appropriate algorithm based on project type
     if project.project_type == ProjectType.EXCHANGE_PROGRAM:
+        print(f"[DEBUG] Running exchange program algorithm for project {request.project_id}")
         # Use Genetic Algorithm for exchange programs
         try:
             ga_service = GeneticAlgorithmService(db, request.project_id)
@@ -78,8 +121,14 @@ async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = D
                 generations=request.generations or 30
             )
             
+            print(f"[DEBUG] Algorithm result: success={result.get('success')}, assigned={result.get('assigned_students')}")
+            
             if not result['success']:
                 raise HTTPException(status_code=400, detail=result.get('error', 'Algorithm failed'))
+            
+            # Verify assignments were saved
+            verify_assignments = db.query(Assignment).filter(Assignment.project_id == request.project_id).all()
+            print(f"[DEBUG] Verified {len(verify_assignments)} assignments in database after algorithm")
             
             return RunAlgorithmResponse(
                 status="success",
@@ -100,21 +149,28 @@ async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = D
     
     elif project.project_type == ProjectType.GROUP_PROJECT:
         # Use existing group formation algorithm
-        # Get all student preferences for this project
+        # Get ALL students in the project (not just those with preferences)
+        from app.models.student import Student
+        students_in_project = db.query(Student).filter(
+            Student.projects.any(id=request.project_id)
+        ).all()
+        
+        if not students_in_project:
+            raise HTTPException(
+                status_code=400,
+                detail="No students enrolled in this project"
+            )
+        
+        # Get all student IDs
+        student_ids = [s.id for s in students_in_project]
+        
+        # Get preferences (if any) - students can be assigned without preferences
         preferences = db.query(StudentPreference).filter(
             StudentPreference.project_id == request.project_id
         ).all()
         
-        if not preferences:
-            raise HTTPException(
-                status_code=400,
-                detail="No student preferences found for this project"
-            )
-        
-        # Build preference dict and get all student IDs
-        student_ids = list(set([p.student_id for p in preferences]))
+        # Build preference dict
         preference_dict = {}
-        
         for pref in preferences:
             preference_dict[pref.student_id] = pref.preferred_partner_id
         

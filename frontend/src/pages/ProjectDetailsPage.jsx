@@ -85,6 +85,22 @@ export default function ProjectDetailsPage() {
       // If exchange program, load destinations and stats
       if (projectResponse.data?.project_type === 'exchange_program') {
         await loadExchangeData()
+        // Also load assignments for exchange programs
+        try {
+          console.log('[FRONTEND] Loading assignments for exchange project', projectId)
+          const assignmentsResponse = await assignmentAPI.getByProject(projectId)
+          console.log('[FRONTEND] Assignments response:', assignmentsResponse.data)
+          if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
+            console.log('[FRONTEND] Setting', assignmentsResponse.data.length, 'assignments')
+            setAssignments(assignmentsResponse.data)
+            const statsResponse = await assignmentAPI.getStats(projectId)
+            setStats(statsResponse.data)
+          } else {
+            console.log('[FRONTEND] No assignments found')
+          }
+        } catch (err) {
+          console.log('[FRONTEND] Error loading assignments:', err)
+        }
       } else if (projectResponse.data?.project_type === 'group_project') {
         // Load group project preferences
         await loadGroupPreferences()
@@ -102,6 +118,17 @@ export default function ProjectDetailsPage() {
       } else if (projectResponse.data?.project_type === 'english_leveling') {
         // Load English leveling statistics
         await loadEnglishLevelingStats()
+        // Also load assignments for English leveling
+        try {
+          const assignmentsResponse = await assignmentAPI.getByProject(projectId)
+          if (assignmentsResponse.data && assignmentsResponse.data.length > 0) {
+            setAssignments(assignmentsResponse.data)
+            const statsResponse = await assignmentAPI.getStats(projectId)
+            setStats(statsResponse.data)
+          }
+        } catch (err) {
+          // No assignments yet, that's okay
+        }
       } else {
         // Load assignments/groups for other non-exchange projects
         try {
@@ -204,7 +231,7 @@ export default function ProjectDetailsPage() {
       setIsClosing(true)
       const response = await exchangeAPI.closePreferences(projectId, true)
       toast.success(response.data.message)
-      await loadExchangeData()
+      await loadProjectDetails()  // Reload full project to update is_open_for_preferences
     } catch (err) {
       console.error('Error closing preferences:', err)
       toast.error(err.response?.data?.detail || 'Erreur lors de la clôture')
@@ -214,14 +241,35 @@ export default function ProjectDetailsPage() {
   }
 
   const handleRunOptimization = async (algorithm = 'greedy') => {
+    console.log('[FRONTEND] Running optimization algorithm:', algorithm)
     try {
       setIsOptimizing(true)
       const response = await exchangeAPI.runOptimization(projectId, algorithm)
+      console.log('[FRONTEND] Algorithm response:', response.data)
       setOptimizationResult(response.data)
       toast.success('Optimisation terminée!')
+      // Reload assignments after running algorithm
+      console.log('[FRONTEND] Reloading project details...')
+      await loadProjectDetails()
+      console.log('[FRONTEND] Reload complete, assignments count:', assignments.length)
     } catch (err) {
-      console.error('Error running optimization:', err)
+      console.error('[FRONTEND] Error running optimization:', err)
       toast.error(err.response?.data?.detail || 'Erreur lors de l\'optimisation')
+    } finally {
+      setIsOptimizing(false)
+    }
+  }
+
+  const handleRunAlgorithm = async () => {
+    try {
+      setIsOptimizing(true)
+      const response = await assignmentAPI.runAlgorithm(projectId)
+      toast.success(response.data?.message || 'Algorithme exécuté avec succès!')
+      // Reload project details to show new assignments
+      await loadProjectDetails()
+    } catch (err) {
+      console.error('Error running algorithm:', err)
+      toast.error(err.response?.data?.detail || 'Erreur lors de l\'exécution de l\'algorithme')
     } finally {
       setIsOptimizing(false)
     }
@@ -504,8 +552,9 @@ export default function ProjectDetailsPage() {
                   </Button>
                 )}
                 
-                {/* Optimization Buttons */}
-                {!project.is_open_for_preferences && students.length > 0 && (
+                {/* Optimization Buttons - only show if no assignments yet */}
+                {console.log('[FRONTEND] Button check:', {is_open: project.is_open_for_preferences, students: students.length, assignments: assignments.length})}
+                {!project.is_open_for_preferences && students.length > 0 && assignments.length === 0 && (
                   <>
                     <Button
                       variant="success"
@@ -522,6 +571,13 @@ export default function ProjectDetailsPage() {
                       Algorithme Avancé
                     </Button>
                   </>
+                )}
+                
+                {/* Show message if assignments already exist */}
+                {assignments.length > 0 && (
+                  <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg">
+                    ✓ Affectations créées ({assignments.length} étudiants)
+                  </div>
                 )}
               </div>
             </CardSimple>
@@ -677,6 +733,58 @@ export default function ProjectDetailsPage() {
           </div>
         )}
 
+        {/* EXCHANGE PROGRAM ASSIGNMENTS FROM DATABASE (persist after refresh) */}
+        {isExchangeProgram && isTeacher && assignments.length > 0 && (
+          <div className="mb-6 fade-in-delay-3">
+            <CardSimple className="bg-white">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Affectations des Étudiants ({assignments.length})
+              </h2>
+              {console.log('[FRONTEND] Rendering exchange assignments:', assignments)}
+              <div className="space-y-2">
+                {assignments.map((assignment, idx) => {
+                  console.log('[FRONTEND] Assignment', idx, ':', assignment)
+                  const student = students.find(s => s.id === assignment.student_id)
+                  return (
+                    <div 
+                      key={assignment.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold">
+                          {student?.name?.[0] || '?'}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-800">
+                            {student?.name || 'Unknown'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {student?.email}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="font-semibold text-purple-700">
+                          {assignment.destination?.university_name || 'Non assigné'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {assignment.destination?.city}, {assignment.destination?.country}
+                        </div>
+                        {assignment.grade && (
+                          <span className="mt-1 inline-block px-2 py-0.5 bg-gray-200 rounded text-xs">
+                            Grade {assignment.grade}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardSimple>
+          </div>
+        )}
+
         {/* GROUP PROJECT CONTROLS */}
         {isGroupProject && isTeacher && (
           <div className="mb-6 fade-in-delay-2">
@@ -689,14 +797,29 @@ export default function ProjectDetailsPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="primary"
-                  onClick={() => {
-                    toast.info('Lancement de l\'algorithme de groupes...')
-                    // TODO: Call the group algorithm API
-                  }}
-                  disabled={isLoadingGroupPrefs || students.length === 0}
+                  onClick={handleRunAlgorithm}
+                  disabled={isOptimizing || students.length === 0}
+                  title={students.length === 0 ? "Aucun étudiant inscrit" : "Lancer l'algorithme de formation des groupes"}
                 >
-                  {isLoadingGroupPrefs ? 'Chargement...' : 'Lancer l\'Algorithme de Groupes'}
+                  {isOptimizing ? 'Optimisation en cours...' : `Lancer l\'Algorithme de Groupes (${students.length} étudiants)`}
                 </Button>
+                {assignments.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (window.confirm('Êtes-vous sûr de vouloir supprimer toutes les affectations ?')) {
+                        assignmentAPI.deleteByProject(projectId)
+                          .then(() => {
+                            toast.success('Affectations supprimées')
+                            loadProjectDetails()
+                          })
+                          .catch(err => toast.error('Erreur lors de la suppression'))
+                      }
+                    }}
+                  >
+                    🗑️ Supprimer les affectations
+                  </Button>
+                )}
               </div>
             </CardSimple>
 
@@ -715,7 +838,7 @@ export default function ProjectDetailsPage() {
                 
                 <CardSimple className="text-center bg-white">
                   <div className="text-3xl font-bold text-green-600">
-                    {groupPreferences.mutual_matches || 0}
+                    {groupPreferences.mutual_matches_count || 0}
                   </div>
                   <div className="text-sm text-gray-600">Matches mutuels</div>
                   <div className="text-xs text-gray-500 mt-1">
@@ -832,14 +955,28 @@ export default function ProjectDetailsPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="primary"
-                  onClick={() => {
-                    toast.info('Lancement de l\'algorithme de niveau d\'anglais...')
-                    // TODO: Call the English leveling algorithm API
-                  }}
-                  disabled={isLoadingEnglishStats || students.length === 0}
+                  onClick={handleRunAlgorithm}
+                  disabled={isOptimizing || students.length === 0}
                 >
-                  {isLoadingEnglishStats ? 'Chargement...' : 'Lancer l\'Algorithme de Niveau'}
+                  {isOptimizing ? 'Optimisation en cours...' : 'Lancer l\'Algorithme de Niveau'}
                 </Button>
+                {assignments.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (window.confirm('Êtes-vous sûr de vouloir supprimer toutes les affectations ?')) {
+                        assignmentAPI.deleteByProject(projectId)
+                          .then(() => {
+                            toast.success('Affectations supprimées')
+                            loadProjectDetails()
+                          })
+                          .catch(err => toast.error('Erreur lors de la suppression'))
+                      }
+                    }}
+                  >
+                    🗑️ Supprimer les affectations
+                  </Button>
+                )}
               </div>
             </CardSimple>
 
