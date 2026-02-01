@@ -16,37 +16,38 @@ function LoginPage() {
     password: ''
   })
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
 
   // If already logged in, redirect to dashboard
   if (isLoggedIn && userRole) {
     return <Navigate to={`/${userRole}`} replace />
   }
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+  const validateField = (name, value) => {
+    let error = ''
+    if (name === 'email') {
+      if (!value) error = 'L\'email est requis'
+      else if (!validateEmail(value)) error = 'Adresse email invalide'
+    }
+    if (name === 'password') {
+      if (!value) error = 'Le mot de passe est requis'
+      else if (!validatePassword(value)) error = 'Minimum 6 caractères'
+    }
+    setErrors(prev => ({ ...prev, [name]: error }))
+    return !error
   }
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+    validateField(name, value)
+  }
+
+  const isFormValid = formData.email && formData.password &&
+                     !errors.email && !errors.password
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    // Validate inputs
-    if (!formData.email || !formData.password) {
-      toast.error('Veuillez remplir tous les champs')
-      return
-    }
-
-    if (!validateEmail(formData.email)) {
-      toast.error('Adresse email invalide')
-      return
-    }
-
-    if (!validatePassword(formData.password)) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères')
-      return
-    }
 
     setLoading(true)
 
@@ -105,6 +106,7 @@ function LoginPage() {
             placeholder="prenom.nom@edu.esiee.fr"
             required
             disabled={loading}
+            error={errors.email}
           />
 
           <TextInput
@@ -116,13 +118,14 @@ function LoginPage() {
             placeholder="••••••••"
             required
             disabled={loading}
+            error={errors.password}
           />
 
           <Button
             type="submit"
             variant="primary"
             fullWidth
-            disabled={loading}
+            disabled={loading || !isFormValid}
           >
             {loading ? 'Connexion en cours...' : 'Se connecter'}
           </Button>

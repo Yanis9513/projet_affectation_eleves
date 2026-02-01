@@ -21,6 +21,10 @@ export default function CreateProjectPage() {
     destinations: []
   })
 
+  const [errors, setErrors] = useState({})
+  const [touched, setTouched] = useState({})
+  const [loading, setLoading] = useState(false)
+
   const isExchangeProgram = projectData.type === 'exchange_program'
 
   const projectTypes = [
@@ -46,10 +50,38 @@ export default function CreateProjectPage() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
-    setProjectData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
+    const newValue = type === 'checkbox' ? checked : value
+    setProjectData(prev => ({ ...prev, [name]: newValue }))
+    if (touched[name]) validateField(name, newValue)
+  }
+
+  const validateField = (name, value) => {
+    let error = ''
+    switch(name) {
+      case 'name':
+        if (!value.trim()) error = 'Le nom du projet est requis'
+        else if (value.trim().length < 3) error = 'Minimum 3 caractères'
+        break
+      case 'description':
+        if (!value.trim()) error = 'La description est requise'
+        else if (value.trim().length < 10) error = 'Minimum 10 caractères'
+        break
+      case 'groupSize':
+        if (!value || value < 2) error = 'La taille minimale est 2'
+        break
+      case 'deadline':
+        if (!value) error = 'La date limite est requise'
+        else if (new Date(value) < new Date()) error = 'La date doit être dans le futur'
+        break
+    }
+    setErrors(prev => ({ ...prev, [name]: error }))
+    return !error
+  }
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target
+    setTouched(prev => ({ ...prev, [name]: true }))
+    validateField(name, value)
   }
 
   const handleStudentsUploaded = (students) => {
@@ -62,18 +94,38 @@ export default function CreateProjectPage() {
     toast.success(`${destinations.length} universités ajoutées`)
   }
 
+  const isStepValid = (step) => {
+    switch(step) {
+      case 1:
+        return projectData.name.trim().length >= 3 && 
+               projectData.description.trim().length >= 10 &&
+               !errors.name && !errors.description
+      case 2:
+        return projectData.students.length > 0
+      case 3:
+        return isExchangeProgram ? projectData.destinations.length > 0 : true
+      default:
+        return true
+    }
+  }
+
   const validateStep = (step) => {
+    const newErrors = {}
     switch(step) {
       case 1:
         if (!projectData.name.trim()) {
-          toast.error('Veuillez saisir un nom de projet')
-          return false
+          newErrors.name = 'Veuillez saisir un nom de projet'
+        } else if (projectData.name.trim().length < 3) {
+          newErrors.name = 'Minimum 3 caractères'
         }
         if (!projectData.description.trim()) {
-          toast.error('Veuillez saisir une description')
-          return false
+          newErrors.description = 'Veuillez saisir une description'
+        } else if (projectData.description.trim().length < 10) {
+          newErrors.description = 'Minimum 10 caractères'
         }
-        return true
+        setErrors(newErrors)
+        setTouched({ name: true, description: true })
+        return Object.keys(newErrors).length === 0
       
       case 2:
         if (projectData.students.length === 0) {
@@ -96,7 +148,9 @@ export default function CreateProjectPage() {
           }
         } else {
           if (!projectData.groupSize || projectData.groupSize < 2) {
-            toast.error('La taille du groupe doit être au moins 2')
+            newErrors.groupSize = 'La taille du groupe doit être au moins 2'
+            setErrors(newErrors)
+            setTouched({ groupSize: true })
             return false
           }
         }
@@ -118,6 +172,7 @@ export default function CreateProjectPage() {
   }
 
   const handleSubmit = async () => {
+    setLoading(true)
     try {
       const apiData = {
         title: projectData.name,
@@ -147,6 +202,8 @@ export default function CreateProjectPage() {
     } catch (err) {
       console.error('Error creating project:', err)
       toast.error(err.response?.data?.detail || err.message || 'Erreur lors de la création')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -224,6 +281,8 @@ export default function CreateProjectPage() {
           name="name"
           value={projectData.name}
           onChange={handleInputChange}
+          onBlur={handleBlur}
+          error={touched.name ? errors.name : ''}
           placeholder="Ex: Programme d'échange MIT 2025"
           required
         />
@@ -233,6 +292,8 @@ export default function CreateProjectPage() {
           name="description"
           value={projectData.description}
           onChange={handleInputChange}
+          onBlur={handleBlur}
+          error={touched.description ? errors.description : ''}
           placeholder="Décrivez les objectifs et détails du projet..."
           rows={4}
           required
@@ -396,6 +457,8 @@ export default function CreateProjectPage() {
             max="10"
             value={projectData.groupSize}
             onChange={handleInputChange}
+            onBlur={handleBlur}
+            error={touched.groupSize ? errors.groupSize : ''}
             helperText={`${projectData.students.length} étudiants = environ ${Math.ceil(projectData.students.length / projectData.groupSize)} groupes`}
             required
           />
@@ -511,9 +574,10 @@ export default function CreateProjectPage() {
               variant="primary"
               fullWidth
               onClick={handleSubmit}
+              disabled={!isStepValid(currentStep) || loading}
               className="py-4 text-lg"
             >
-              Créer le projet
+              {loading ? 'Création...' : 'Créer le projet'}
             </Button>
             <p className="text-center text-sm text-gray-500 mt-3">
               Le projet sera créé et les étudiants recevront une notification
@@ -567,7 +631,7 @@ export default function CreateProjectPage() {
             </Button>
 
             {currentStep < 4 && (
-              <Button variant="primary" onClick={nextStep}>
+              <Button variant="primary" onClick={nextStep} disabled={!isStepValid(currentStep)}>
                 Continuer →
               </Button>
             )}
