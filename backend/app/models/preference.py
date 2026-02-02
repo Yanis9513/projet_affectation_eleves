@@ -29,5 +29,5 @@ class StudentPreference(Base):
     # Contrainte: un étudiant ne peut avoir qu'une seule préférence par projet
     __table_args__ = (
         UniqueConstraint('student_id', 'project_id', name='unique_student_project_preference'),
-        UniqueConstraint('student_id', 'rank', name='unique_student_rank'),
+        UniqueConstraint('student_id', 'project_id', 'rank', name='unique_student_project_rank'),
     )
