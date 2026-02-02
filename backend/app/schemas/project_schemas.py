@@ -43,7 +43,7 @@ class DestinationInProjectCreate(BaseModel):
     """Simplified destination schema for project creation"""
     university_name: str
     country: str
-    city: str
+    city: Optional[str] = None
     total_places: int
     mobility_type: str = "ECHANGE_ACADEMIQUE"
     accepted_filieres: str = "ALL"

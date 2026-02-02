@@ -5,7 +5,7 @@ from app.models.destination import MobilityType
 class DestinationBase(BaseModel):
     university_name: str = Field(..., min_length=1, max_length=255)
     country: str = Field(..., min_length=1, max_length=100)
-    city: str = Field(..., min_length=1, max_length=100)
+    city: Optional[str] = Field(None, max_length=100)  # Optional - some destinations may not have city
     total_places: int = Field(..., gt=0)
     mobility_type: MobilityType
     accepted_filieres: str = Field(..., description="Comma-separated list of accepted filieres")
@@ -19,7 +19,7 @@ class DestinationCreate(DestinationBase):
 class DestinationUpdate(BaseModel):
     university_name: Optional[str] = Field(None, min_length=1, max_length=255)
     country: Optional[str] = Field(None, min_length=1, max_length=100)
-    city: Optional[str] = Field(None, min_length=1, max_length=100)
+    city: Optional[str] = Field(None, max_length=100)
     total_places: Optional[int] = Field(None, gt=0)
     mobility_type: Optional[MobilityType] = None
     accepted_filieres: Optional[str] = None
