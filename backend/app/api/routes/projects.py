@@ -158,12 +158,18 @@ async def create_project(
     teacher_id = current_user.teacher_profile.id
     
     try:
+        # Convert project_type - handle both string and enum
+        project_type_value = project_data.project_type
+        if hasattr(project_type_value, 'value'):
+            project_type_value = project_type_value.value
+        project_type_enum = ProjectType(project_type_value)
+        
         # Create project
         new_project = Project(
             teacher_id=teacher_id,
             title=project_data.title,
             description=project_data.description,
-            project_type=ProjectType[project_data.project_type.value.upper()],
+            project_type=project_type_enum,
             group_size=project_data.group_size,
             partner_preference_enabled=project_data.partner_preference_enabled,
             required_english_level=project_data.required_english_level,
