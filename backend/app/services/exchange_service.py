@@ -215,6 +215,12 @@ def run_exchange_optimization(
         assignments = _genetic_algorithm(student_list, dest_list, preferences, respect_constraints)
     else:
         assignments = _greedy_algorithm(student_list, dest_list, preferences, respect_constraints)
+        
+        # If no one got assigned with strict constraints, try without constraints as fallback
+        assigned_count = sum(1 for a in assignments if a.get('destination_id'))
+        if assigned_count == 0 and respect_constraints:
+            print(f"[EXCHANGE] No assignments with strict constraints, trying without constraints...")
+            assignments = _greedy_algorithm(student_list, dest_list, preferences, False)
     
     # SAUVEGARDER les affectations dans la base de données
     from app.models.assignment import Assignment
@@ -299,6 +305,8 @@ def _greedy_algorithm(
                 if respect_constraints:
                     is_valid, errors = check_destination_constraints(student, destination)
                     if not is_valid:
+                        # Log why assignment failed for debugging
+                        print(f"[GREEDY] Student {student_id} rejected for {destination.university_name}: {errors}")
                         continue
                 
                 # Assigner l'étudiant

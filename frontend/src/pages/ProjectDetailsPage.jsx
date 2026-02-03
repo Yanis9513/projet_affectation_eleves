@@ -533,13 +533,21 @@ export default function ProjectDetailsPage() {
                 
                 {/* Close Preferences Button */}
                 {project.is_open_for_preferences && (
-                  <Button
-                    variant="warning"
-                    onClick={handleClosePreferences}
-                    disabled={isClosing}
-                  >
-                    {isClosing ? 'Clôture...' : 'Clôturer les Préférences'}
-                  </Button>
+                  <div className="relative group">
+                    <Button
+                      variant="warning"
+                      onClick={handleClosePreferences}
+                      disabled={isClosing}
+                      className="shadow-md border-2 border-orange-400 font-semibold"
+                    >
+                      {isClosing ? 'Clôture...' : 'Clôturer les Préférences'}
+                    </Button>
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none">
+                      Vous devez clôturer les préférences avant de pouvoir lancer l'algorithme
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-800"></div>
+                    </div>
+                  </div>
                 )}
                 
                 {/* Optimization Buttons - only show if no assignments yet */}
