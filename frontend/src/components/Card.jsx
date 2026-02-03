@@ -6,33 +6,35 @@ export default function Card({
   hover = false,
   onClick,
   className = '',
+  loading = false,
   ...props
 }) {
   const isClickable = !!onClick;
   
-  const baseStyles = 'bg-white rounded-xl shadow-lg overflow-hidden';
-  const hoverStyles = (hover || isClickable) ? 'transition-all duration-300 hover:shadow-2xl hover:-translate-y-2' : '';
+  const baseStyles = 'bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden';
+  const hoverStyles = (hover || isClickable) ? 'transition-shadow duration-200 hover:shadow-md hover:-translate-y-0.5' : '';
   const clickableStyles = isClickable ? 'cursor-pointer' : '';
+  const loadingStyles = loading ? 'animate-pulse opacity-70' : '';
   
-  const cardStyles = `${baseStyles} ${hoverStyles} ${clickableStyles} ${className}`;
+  const cardStyles = `${baseStyles} ${hoverStyles} ${clickableStyles} ${loadingStyles} ${className}`;
   
   return (
     <div className={cardStyles} onClick={onClick} {...props}>
       {/* Header Section */}
       {(header || title) && (
-        <div className="px-6 py-4 bg-gradient-to-r from-esiee-blue to-blue-700 text-white">
-          {header || <h3 className="text-lg font-bold">{title}</h3>}
+        <div className="px-5 py-4 border-b border-gray-200 bg-white">
+          {header || <h3 className="text-base font-medium text-gray-900">{title}</h3>}
         </div>
       )}
       
       {/* Body Section */}
-      <div className="p-6">
+      <div className="p-5">
         {children}
       </div>
       
       {/* Footer Section */}
       {footer && (
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+        <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
           {footer}
         </div>
       )}
@@ -46,12 +48,15 @@ export default function Card({
 export function CardSimple({
   children,
   title,
+  loading = false,
   className = '',
   ...props
 }) {
+  const loadingStyles = loading ? 'animate-pulse opacity-70' : '';
+  
   return (
-    <div className={`bg-white rounded-xl shadow-lg border-l-4 border-esiee-blue p-6 transition-all duration-200 ${className}`} {...props}>
-      {title && <h3 className="text-lg font-bold text-gray-800 mb-4">{title}</h3>}
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-5 ${loadingStyles} ${className}`} {...props}>
+      {title && <h3 className="text-base font-medium text-gray-900 mb-3">{title}</h3>}
       {children}
     </div>
   );
@@ -62,7 +67,7 @@ export function CardSimple({
  */
 export function CardGrid({ children, className = '' }) {
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${className}`}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 ${className}`}>
       {children}
     </div>
   );
