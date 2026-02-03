@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.database import get_db
 from app.models.preference import StudentPreference
 from app.models.student import Student
 from app.models.project import Project
 from app.models.user import User, UserRole
+from app.models.teacher import Teacher
 from app.schemas import PreferenceCreate, PreferenceResponse, MessageResponse
 from app.auth_utils import get_current_user
 from pydantic import BaseModel, validator
@@ -333,7 +334,6 @@ def get_project_preferences(
     
     # Also allow if teacher_id matches by user_id lookup (fallback)
     if not is_project_teacher:
-        from app.models.teacher import Teacher
         teacher_by_user = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
         if teacher_by_user and teacher_by_user.id == project.teacher_id:
             is_project_teacher = True
@@ -344,14 +344,16 @@ def get_project_preferences(
             detail="Vous n'êtes pas autorisé à voir les préférences de ce projet"
         )
     
-    preferences = db.query(StudentPreference).filter(
+    preferences = db.query(StudentPreference).options(
+        joinedload(StudentPreference.student).joinedload(Student.user)
+    ).filter(
         StudentPreference.project_id == project_id
     ).order_by(StudentPreference.student_id).all()
     
     # Build detailed list with student and partner info
     detailed_preferences = []
     for pref in preferences:
-        student = db.query(Student).filter(Student.id == pref.student_id).first()
+        student = pref.student
         student_user = student.user if student else None
         
         partner = None

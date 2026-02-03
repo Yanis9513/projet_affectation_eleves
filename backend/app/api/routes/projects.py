@@ -8,13 +8,38 @@ from app.schemas import (
 from app.models.project import Project, ProjectType
 from app.models.student import Student
 from app.models.user import User, UserRole
-from app.models.teacher import Teacher
 from app.models.destination import Destination, MobilityType
 from app.auth_utils import get_current_user
 from app.services.email_service import email_service
 from typing import List
 
 router = APIRouter()
+
+
+def serialize_project(project: Project, include_students: bool = False, students_data: list = None) -> dict:
+    """Helper function to serialize a Project model to a dictionary.
+    Avoids code duplication across multiple endpoints.
+    """
+    result = {
+        "id": project.id,
+        "teacher_id": project.teacher_id,
+        "title": project.title,
+        "description": project.description,
+        "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
+        "group_size": project.group_size,
+        "partner_preference_enabled": project.partner_preference_enabled,
+        "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
+        "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
+        "deadline": project.deadline.isoformat() if project.deadline else None,
+        "is_active": project.is_active,
+        "is_open_for_preferences": project.is_open_for_preferences,
+        "created_at": project.created_at.isoformat() if project.created_at else None,
+        "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+    }
+    if include_students:
+        result["students"] = students_data or []
+    return result
+
 
 # ===== PROJECT CRUD =====
 
@@ -41,36 +66,17 @@ async def get_projects(
         for student in project.students:
             if student.user:
                 full_name = f"{student.user.first_name} {student.user.last_name}" if student.user.first_name else student.user.email
-            students_data.append(StudentInProject(
-                id=student.id,
-                name=full_name,
-                email=student.user.email,
-                filiere=student.filiere.value if student.filiere else None,
-                english_level=student.english_level.value if student.english_level else None,
-                rank=student.general_rank,
-                grade=student.gpa
-            ))
+                students_data.append(StudentInProject(
+                    id=student.id,
+                    name=full_name,
+                    email=student.user.email,
+                    filiere=student.filiere.value if student.filiere else None,
+                    english_level=student.english_level.value if student.english_level else None,
+                    rank=student.general_rank,
+                    grade=student.gpa
+                ))
         
-        # Build project dict properly excluding SQLAlchemy internal state
-        project_dict = {
-            "id": project.id,
-            "teacher_id": project.teacher_id,
-            "title": project.title,
-            "description": project.description,
-            "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
-            "group_size": project.group_size,
-            "partner_preference_enabled": project.partner_preference_enabled,
-            "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
-            "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
-            "deadline": project.deadline.isoformat() if project.deadline else None,
-            "is_active": project.is_active,
-            "is_open_for_preferences": project.is_open_for_preferences,
-            "created_at": project.created_at.isoformat() if project.created_at else None,
-            "updated_at": project.updated_at.isoformat() if project.updated_at else None,
-            "students": students_data
-        }
-        
-        projects_with_students.append(project_dict)
+        projects_with_students.append(serialize_project(project, include_students=True, students_data=students_data))
     
     return projects_with_students
 
@@ -105,26 +111,7 @@ async def get_my_projects(
                     grade=proj_student.gpa
                 ))
         
-        # Build project dict properly excluding SQLAlchemy internal state
-        project_dict = {
-            "id": project.id,
-            "teacher_id": project.teacher_id,
-            "title": project.title,
-            "description": project.description,
-            "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
-            "group_size": project.group_size,
-            "partner_preference_enabled": project.partner_preference_enabled,
-            "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
-            "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
-            "deadline": project.deadline.isoformat() if project.deadline else None,
-            "is_active": project.is_active,
-            "is_open_for_preferences": project.is_open_for_preferences,
-            "created_at": project.created_at.isoformat() if project.created_at else None,
-            "updated_at": project.updated_at.isoformat() if project.updated_at else None,
-            "students": students_data
-        }
-        
-        projects_with_students.append(project_dict)
+        projects_with_students.append(serialize_project(project, include_students=True, students_data=students_data))
     
     return projects_with_students
 
@@ -151,24 +138,7 @@ async def get_project(project_id: int, db: Session = Depends(get_db)):
                 grade=student.gpa
             ))
     
-    # Build project dict properly excluding SQLAlchemy internal state
-    return {
-        "id": project.id,
-        "teacher_id": project.teacher_id,
-        "title": project.title,
-        "description": project.description,
-        "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
-        "group_size": project.group_size,
-        "partner_preference_enabled": project.partner_preference_enabled,
-        "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
-        "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
-        "deadline": project.deadline.isoformat() if project.deadline else None,
-        "is_active": project.is_active,
-        "is_open_for_preferences": project.is_open_for_preferences,
-        "created_at": project.created_at.isoformat() if project.created_at else None,
-        "updated_at": project.updated_at.isoformat() if project.updated_at else None,
-        "students": students_data
-    }
+    return serialize_project(project, include_students=True, students_data=students_data)
 
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
@@ -243,23 +213,7 @@ async def create_project(
             
             db.commit()
         
-        # Return properly formatted project dict (convert datetime to strings)
-        return {
-            "id": new_project.id,
-            "teacher_id": new_project.teacher_id,
-            "title": new_project.title,
-            "description": new_project.description,
-            "project_type": new_project.project_type.value if hasattr(new_project.project_type, 'value') else new_project.project_type,
-            "group_size": new_project.group_size,
-            "partner_preference_enabled": new_project.partner_preference_enabled,
-            "required_english_level": new_project.required_english_level.value if hasattr(new_project.required_english_level, 'value') else new_project.required_english_level,
-            "target_filiere": new_project.target_filiere.value if hasattr(new_project.target_filiere, 'value') else new_project.target_filiere,
-            "deadline": new_project.deadline.isoformat() if new_project.deadline else None,
-            "is_active": new_project.is_active,
-            "is_open_for_preferences": new_project.is_open_for_preferences,
-            "created_at": new_project.created_at.isoformat() if new_project.created_at else None,
-            "updated_at": new_project.updated_at.isoformat() if new_project.updated_at else None
-        }
+        return serialize_project(new_project)
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -302,23 +256,7 @@ async def update_project(
             detail=f"Error updating project: {str(e)}"
         )
     
-    # Return properly formatted project dict (convert datetime to strings)
-    return {
-        "id": project.id,
-        "teacher_id": project.teacher_id,
-        "title": project.title,
-        "description": project.description,
-        "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
-        "group_size": project.group_size,
-        "partner_preference_enabled": project.partner_preference_enabled,
-        "required_english_level": project.required_english_level.value if hasattr(project.required_english_level, 'value') else project.required_english_level,
-        "target_filiere": project.target_filiere.value if hasattr(project.target_filiere, 'value') else project.target_filiere,
-        "deadline": project.deadline.isoformat() if project.deadline else None,
-        "is_active": project.is_active,
-        "is_open_for_preferences": project.is_open_for_preferences,
-        "created_at": project.created_at.isoformat() if project.created_at else None,
-        "updated_at": project.updated_at.isoformat() if project.updated_at else None
-    }
+    return serialize_project(project)
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(

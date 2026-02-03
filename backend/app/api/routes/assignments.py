@@ -4,6 +4,7 @@ from app.database import get_db
 from app.models.assignment import Assignment
 from app.models.project import Project, ProjectType
 from app.models.preference import StudentPreference
+from app.models.student import Student
 from app.models.user import User
 from app.services.group_algorithm import assign_students_to_groups
 from app.services.genetic_algorithm import GeneticAlgorithmService
@@ -153,7 +154,6 @@ async def run_assignment_algorithm(
     elif project.project_type == ProjectType.GROUP_PROJECT:
         # Use existing group formation algorithm
         # Get ALL students in the project (not just those with preferences)
-        from app.models.student import Student
         students_in_project = db.query(Student).filter(
             Student.projects.any(id=request.project_id)
         ).all()
