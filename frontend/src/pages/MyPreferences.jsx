@@ -27,12 +27,21 @@ export default function MyPreferences() {
     try {
       setLoading(true);
       
-      // Load student profile to get English level
+      // Load student profile to get English level and student_id
       let englishLevel = 'Non défini';
+      let studentId = null;
       try {
         const profileResponse = await studentAPI.getProfile();
         setStudentProfile(profileResponse.data);
         englishLevel = profileResponse.data?.language_level || profileResponse.data?.english_level || 'Non défini';
+        studentId = profileResponse.data?.id;
+        
+        // Cache student_id in localStorage if not present
+        let currentUser = JSON.parse(localStorage.getItem('user'));
+        if (studentId && currentUser && !currentUser.student_id) {
+          currentUser.student_id = studentId;
+          localStorage.setItem('user', JSON.stringify(currentUser));
+        }
       } catch (err) {
         console.error('Error loading student profile:', err);
       }
@@ -64,7 +73,7 @@ export default function MyPreferences() {
         } else if (project.project_type === 'group_project') {
           try {
             const currentUser = JSON.parse(localStorage.getItem('user'));
-            const prefResponse = await preferenceAPI.getStudentPreferences(currentUser.id);
+            const prefResponse = await preferenceAPI.getStudentPreferences(currentUser.student_id);
             const projectPrefs = prefResponse.data?.filter(p => p.project_id === project.id) || [];
             
             if (projectPrefs.length > 0) {
