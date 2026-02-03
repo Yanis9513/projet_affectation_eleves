@@ -4,9 +4,11 @@ from app.database import get_db
 from app.models.assignment import Assignment
 from app.models.project import Project, ProjectType
 from app.models.preference import StudentPreference
+from app.models.user import User
 from app.services.group_algorithm import assign_students_to_groups
 from app.services.genetic_algorithm import GeneticAlgorithmService
 from app.services.english_leveling_service import EnglishLevelingService
+from app.auth_utils import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
@@ -92,7 +94,11 @@ async def get_assignments(project_id: Optional[int] = None, db: Session = Depend
     return result
 
 @router.post("/run-algorithm", response_model=RunAlgorithmResponse)
-async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = Depends(get_db)):
+async def run_assignment_algorithm(
+    request: RunAlgorithmRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """
     Run the assignment algorithm for a specific project
     
@@ -103,6 +109,13 @@ async def run_assignment_algorithm(request: RunAlgorithmRequest, db: Session = D
     project = db.query(Project).filter(Project.id == request.project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Verify ownership - only the project teacher can run algorithms
+    if not current_user.teacher_profile or project.teacher_id != current_user.teacher_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the project teacher can run assignment algorithms"
+        )
     
     # Route to appropriate algorithm based on project type
     if project.project_type == ProjectType.EXCHANGE_PROGRAM:
@@ -273,12 +286,36 @@ async def get_assignment_stats(project_id: Optional[int] = None, db: Session = D
     )
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
-async def clear_assignments(project_id: Optional[int] = None, db: Session = Depends(get_db)):
+async def clear_assignments(
+    project_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Clear all assignments (useful for testing)"""
     query = db.query(Assignment)
     
     if project_id:
+        # Verify ownership before clearing
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if project and not current_user.teacher_profile:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only teachers can clear assignments"
+            )
+        if project and project.teacher_id != current_user.teacher_profile.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the project teacher can clear assignments for this project"
+            )
         query = query.filter(Assignment.project_id == project_id)
+    else:
+        # Clearing all assignments - require admin
+        from app.models.user import UserRole
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins can clear all assignments"
+            )
     
     query.delete()
     db.commit()
