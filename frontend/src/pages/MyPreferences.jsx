@@ -36,8 +36,13 @@ export default function MyPreferences() {
         englishLevel = profileResponse.data?.language_level || profileResponse.data?.english_level || 'Non défini';
         studentId = profileResponse.data?.id;
         
-        // Cache student_id in localStorage if not present
-        let currentUser = JSON.parse(localStorage.getItem('user'));
+        // Cache student_id in localStorage if not present (with safe parsing)
+        let currentUser = {};
+        try {
+          currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        } catch (e) {
+          console.error('Error parsing user from localStorage:', e);
+        }
         if (studentId && currentUser && !currentUser.student_id) {
           currentUser.student_id = studentId;
           localStorage.setItem('user', JSON.stringify(currentUser));
@@ -54,7 +59,8 @@ export default function MyPreferences() {
       const groupPrefs = [];
       const englishPrefs = [];
       
-      for (const project of projects) {
+      // Fetch preferences for all projects in parallel
+      await Promise.all(projects.map(async (project) => {
         if (project.project_type === 'exchange_program') {
           try {
             const prefResponse = await destinationPreferenceAPI.getMyPreferences(project.id);
@@ -72,14 +78,39 @@ export default function MyPreferences() {
           }
         } else if (project.project_type === 'group_project') {
           try {
-            const currentUser = JSON.parse(localStorage.getItem('user'));
+            let currentUser = {};
+            try {
+              currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            } catch (e) {
+              console.error('Error parsing user from localStorage:', e);
+            }
             const prefResponse = await preferenceAPI.getStudentPreferences(currentUser.student_id);
             const projectPrefs = prefResponse.data?.filter(p => p.project_id === project.id) || [];
             
             if (projectPrefs.length > 0) {
+              // Fetch students list to get partner names
+              let studentsMap = {};
+              try {
+                const studentsResponse = await projectAPI.getStudents(project.id);
+                const students = studentsResponse.data || [];
+                students.forEach(s => {
+                  studentsMap[s.id] = s.name || s.email || `Étudiant #${s.id}`;
+                });
+              } catch (e) {
+                console.error('Error fetching students for partner names:', e);
+              }
+              
+              // Enrich preferences with partner names
+              const enrichedPrefs = projectPrefs.map(pref => ({
+                ...pref,
+                preferred_partner_name: pref.preferred_partner_id 
+                  ? studentsMap[pref.preferred_partner_id] || `Étudiant #${pref.preferred_partner_id}`
+                  : null
+              }));
+              
               groupPrefs.push({
                 project: project,
-                preferences: projectPrefs,
+                preferences: enrichedPrefs,
                 submittedAt: projectPrefs[0]?.created_at
               });
             }
@@ -94,7 +125,7 @@ export default function MyPreferences() {
             submittedAt: null // Auto-confirmed from profile
           });
         }
-      }
+      }));
       
       setPreferences({
         exchange: exchangePrefs,
@@ -336,7 +367,7 @@ export default function MyPreferences() {
                                 </div>
                                 <div>
                                   <div className="font-medium text-gray-800">
-                                    Partenaire préféré ID: {pref.preferred_partner_id}
+                                    Partenaire préféré: {pref.preferred_partner_name || `Étudiant #${pref.preferred_partner_id}`}
                                   </div>
                                   <div className="text-sm text-blue-600">
                                     Vous avez choisi de travailler avec ce partenaire

@@ -57,7 +57,12 @@ export default function StudentFormPage() {
     setSubmitting(true)
 
     try {
-      let currentUser = JSON.parse(localStorage.getItem('user'))
+      let currentUser = {}
+      try {
+        currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+      } catch (e) {
+        console.error('Error parsing user from localStorage:', e)
+      }
       let studentId = currentUser?.student_id
       
       // If student_id not in localStorage, fetch from API

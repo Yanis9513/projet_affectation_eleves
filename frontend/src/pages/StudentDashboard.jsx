@@ -23,8 +23,14 @@ export default function StudentDashboard() {
     try {
       setLoading(true);
       
-      // Ensure student_id is in localStorage
-      let currentUser = JSON.parse(localStorage.getItem('user'));
+      // Ensure student_id is in localStorage (with safe parsing)
+      let currentUser = {};
+      try {
+        currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      } catch (e) {
+        console.error('Error parsing user from localStorage:', e);
+      }
+      
       if (!currentUser?.student_id) {
         try {
           const profileResponse = await studentAPI.getProfile();
@@ -47,8 +53,10 @@ export default function StudentDashboard() {
       const projectsResponse = await projectAPI.getMyProjects();
       let projects = projectsResponse.data || [];
       
-      // Check status for each project type
-      for (let project of projects) {
+      // Check status for each project type in parallel
+      const studentId = currentUser?.student_id || profileResponse.data?.id;
+      
+      await Promise.all(projects.map(async (project) => {
         if (project.project_type === 'exchange_program') {
           // Check exchange program preferences (A-F grades)
           try {
@@ -60,9 +68,6 @@ export default function StudentDashboard() {
         } else if (project.project_type === 'group_project') {
           // Check group project partner preferences
           try {
-            const currentUser = JSON.parse(localStorage.getItem('user'));
-            const studentId = currentUser?.student_id || profileResponse.data?.id;
-            
             if (studentId) {
               const prefResponse = await preferenceAPI.getStudentPreferences(studentId);
               // Check if student has preferences for this specific project
@@ -78,7 +83,7 @@ export default function StudentDashboard() {
           // English leveling - no action needed from student (level comes from profile)
           project.has_submitted_preferences = true; // Auto-confirmed from profile
         }
-      }
+      }));
       
       setMyProjects(projects);
       
