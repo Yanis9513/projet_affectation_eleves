@@ -311,20 +311,6 @@ def get_project_preferences(project_id: int, db: Session = Depends(get_db)):
         "preferences": detailed_preferences
     }
     
-    for pref in preferences:
-        rank_str = f"rank_{pref.rank}"
-        if rank_str not in result["by_rank"]:
-            result["by_rank"][rank_str] = []
-        
-        result["by_rank"][rank_str].append({
-            "student_id": pref.student_id,
-            "student_number": pref.student.student_number,
-            "student_name": f"{pref.student.user.first_name} {pref.student.user.last_name}",
-            "filiere": pref.student.filiere,
-            "english_level": pref.student.english_level,
-            "general_rank": pref.student.general_rank
-        })
-    
     return result
 
 @router.get("/preferences/stats")

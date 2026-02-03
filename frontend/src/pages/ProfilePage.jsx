@@ -65,7 +65,6 @@ export default function ProfilePage() {
             bio: profileData.bio || ''
           })
         } catch (apiErr) {
-          console.warn('Could not load teacher profile from API, using localStorage fallback', apiErr)
           // Fallback to localStorage
           const actualUser = storedUser.email ? storedUser : JSON.parse(localStorage.getItem('user') || '{}')
           const emailName = actualUser.email?.split('@')[0] || 'teacher'
@@ -135,7 +134,6 @@ export default function ProfilePage() {
             promotion: profileData.promotion
           })
         } catch (apiErr) {
-          console.warn('Could not load student profile from API, using localStorage fallback', apiErr)
           // Fallback to localStorage
           const actualUser = storedUser.email ? storedUser : JSON.parse(localStorage.getItem('user') || '{}')
           const emailName = actualUser.email?.split('@')[0] || 'student'

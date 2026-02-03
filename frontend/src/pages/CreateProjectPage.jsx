@@ -140,7 +140,6 @@ export default function CreateProjectPage() {
             toast.error('Veuillez ajouter au moins une université partenaire')
             return false
           }
-          // Validate total places >= students
           const totalPlaces = projectData.destinations.reduce((sum, d) => sum + (d.total_places || 0), 0)
           if (totalPlaces < projectData.students.length) {
             toast.error(`Places insuffisantes : ${totalPlaces} places pour ${projectData.students.length} étudiants`)
@@ -441,7 +440,6 @@ export default function CreateProjectPage() {
       )
     }
 
-    // Non-exchange program config
     return (
       <div className="max-w-2xl mx-auto">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">

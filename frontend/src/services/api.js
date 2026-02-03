@@ -167,7 +167,7 @@ export const preferenceAPI = {
 export const assignmentAPI = {
   getByProject: (projectId) => api.get(`/assignments/?project_id=${projectId}`),
   runAlgorithm: (projectId) => api.post('/assignments/run-algorithm', { project_id: projectId }),
-  getStats: (projectId) => api.get(`/assignments/?project_id=${projectId}`),  // TODO: Add dedicated stats endpoint
+  getStats: (projectId) => api.get(`/assignments/?project_id=${projectId}`),
   validate: (assignmentId) => api.post(`/assignments/${assignmentId}/validate`),
   deleteByProject: (projectId) => api.delete(`/assignments/?project_id=${projectId}`),
 }

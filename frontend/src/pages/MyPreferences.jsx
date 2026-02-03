@@ -31,10 +31,8 @@ export default function MyPreferences() {
       let englishLevel = 'Non défini';
       try {
         const profileResponse = await studentAPI.getProfile();
-        console.log('Profile API response:', profileResponse.data);
         setStudentProfile(profileResponse.data);
         englishLevel = profileResponse.data?.language_level || profileResponse.data?.english_level || 'Non défini';
-        console.log('English level loaded:', englishLevel);
       } catch (err) {
         console.error('Error loading student profile:', err);
       }
@@ -377,12 +375,6 @@ export default function MyPreferences() {
                 </h2>
                 <div className="space-y-6">
                   {preferences.english.map((item, index) => {
-                    // Debug logging
-                    console.log('English leveling project:', item);
-                    console.log('Project title:', item.project?.title, 'Type:', typeof item.project?.title);
-                    console.log('English level:', item.englishLevel);
-                    
-                    // Ensure project data is valid
                     const projectTitle = typeof item.project?.title === 'string' ? item.project.title : 'Projet sans titre';
                     const projectDescription = typeof item.project?.description === 'string' ? item.project.description : '';
                     
