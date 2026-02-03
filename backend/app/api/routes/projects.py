@@ -12,6 +12,11 @@ from app.models.destination import Destination, MobilityType
 from app.auth_utils import get_current_user
 from app.services.email_service import email_service
 from typing import List
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -148,14 +153,35 @@ async def create_project(
 ):
     """Create a new project with students"""
     
+    # Debug logging
+    logger.debug(f"=== CREATE PROJECT CALLED ===")
+    logger.debug(f"current_user type: {type(current_user)}")
+    logger.debug(f"current_user: {current_user}")
+    logger.debug(f"project_data: {project_data}")
+    
+    # Check if current_user is actually resolved
+    if hasattr(current_user, '__class__') and current_user.__class__.__name__ == 'Depends':
+        logger.error("current_user is still a Depends object, not resolved!")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication dependency not resolved properly"
+        )
+    
     # Get teacher ID from authenticated user
-    if not current_user.teacher_profile:
+    logger.debug(f"Checking teacher_profile...")
+    logger.debug(f"current_user.id: {getattr(current_user, 'id', 'NO ID')}")
+    logger.debug(f"current_user.role: {getattr(current_user, 'role', 'NO ROLE')}")
+    logger.debug(f"hasattr teacher_profile: {hasattr(current_user, 'teacher_profile')}")
+    
+    if not hasattr(current_user, 'teacher_profile') or not current_user.teacher_profile:
+        logger.warning(f"User {getattr(current_user, 'id', 'unknown')} has no teacher_profile")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only teachers can create projects"
         )
     
     teacher_id = current_user.teacher_profile.id
+    logger.debug(f"teacher_id: {teacher_id}")
     
     try:
         # Convert project_type - handle both string and enum
@@ -188,7 +214,8 @@ async def create_project(
             await upload_students_to_project(
                 new_project.id, 
                 StudentUploadRequest(students=project_data.students), 
-                db
+                db,
+                current_user
             )
         
         # Create destinations if provided (for exchange programs)
@@ -222,6 +249,8 @@ async def create_project(
         return serialize_project(new_project)
     except Exception as e:
         db.rollback()
+        logger.error(f"Error creating project: {str(e)}")
+        logger.exception("Full traceback:")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating project: {str(e)}"
