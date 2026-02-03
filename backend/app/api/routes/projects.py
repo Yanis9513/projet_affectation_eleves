@@ -269,15 +269,23 @@ async def create_project(
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
-    project_id: int, 
-    project_data: ProjectUpdate, 
-    db: Session = Depends(get_db)
+    project_id: int,
+    project_data: ProjectUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update a project"""
     project = db.query(Project).filter(Project.id == project_id).first()
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Verify ownership - only the project teacher can update
+    if not current_user.teacher_profile or project.teacher_id != current_user.teacher_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the project teacher can update this project"
+        )
     
     try:
         # Update only provided fields
@@ -313,12 +321,23 @@ async def update_project(
     }
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_project(project_id: int, db: Session = Depends(get_db)):
+async def delete_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Delete a project"""
     project = db.query(Project).filter(Project.id == project_id).first()
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Verify ownership - only the project teacher can delete
+    if not current_user.teacher_profile or project.teacher_id != current_user.teacher_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the project teacher can delete this project"
+        )
     
     db.delete(project)
     db.commit()
@@ -330,7 +349,8 @@ async def delete_project(project_id: int, db: Session = Depends(get_db)):
 async def upload_students_to_project(
     project_id: int,
     upload_data: StudentUploadRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Upload students to a project via CSV data"""
     
@@ -338,6 +358,13 @@ async def upload_students_to_project(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Verify ownership - only the project teacher can upload students
+    if not current_user.teacher_profile or project.teacher_id != current_user.teacher_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the project teacher can upload students to this project"
+        )
     
     # Get teacher name
     teacher = project.teacher
@@ -504,9 +531,10 @@ async def get_project_students(project_id: int, db: Session = Depends(get_db)):
 
 @router.delete("/{project_id}/students/{student_id}")
 async def remove_student_from_project(
-    project_id: int, 
-    student_id: int, 
-    db: Session = Depends(get_db)
+    project_id: int,
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Remove a student from a project"""
     
@@ -514,6 +542,13 @@ async def remove_student_from_project(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Verify ownership - only the project teacher can remove students
+    if not current_user.teacher_profile or project.teacher_id != current_user.teacher_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the project teacher can remove students from this project"
+        )
     
     # Check if student exists
     student = db.query(Student).filter(Student.id == student_id).first()

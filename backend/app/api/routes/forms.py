@@ -5,6 +5,9 @@ from app.database import get_db
 from app.models.form_question import FormQuestion, QuestionType
 from app.models.student_response import StudentResponse
 from app.models.project import Project
+from app.models.student import Student
+from app.models.user import User, UserRole
+from app.auth_utils import get_current_user
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -56,14 +59,70 @@ class StudentResponseResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+def verify_project_teacher(project: Project, current_user: User):
+    """Verify that the current user is the teacher of the project"""
+    if not current_user.teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can perform this action"
+        )
+    if project.teacher_id != current_user.teacher_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not the teacher of this project"
+        )
+
+
+def verify_student_access(student_id: int, current_user: User, db: Session):
+    """Verify that the current user is the specified student"""
+    if not current_user.student_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can perform this action"
+        )
+    if current_user.student_profile.id != student_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only access your own responses"
+        )
+
+
+def verify_student_or_teacher(student_id: int, project_id: int, current_user: User, db: Session):
+    """Verify that the current user is either the student or the project teacher"""
+    # Check if user is the student
+    is_student = (current_user.student_profile and current_user.student_profile.id == student_id)
+    
+    # Check if user is the project teacher
+    is_teacher = False
+    if current_user.teacher_profile:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if project and project.teacher_id == current_user.teacher_profile.id:
+            is_teacher = True
+    
+    if not is_student and not is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own responses or responses for your projects"
+        )
+
+
 # Routes pour les questions de formulaire
 @router.post("/projects/{project_id}/forms", response_model=FormQuestionResponse, status_code=status.HTTP_201_CREATED)
-def create_form_question(project_id: int, question: FormQuestionCreate, db: Session = Depends(get_db)):
-    """Créer une question de formulaire pour un projet"""
+def create_form_question(
+    project_id: int,
+    question: FormQuestionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Créer une question de formulaire pour un projet - Only project teachers"""
     # Vérifier que le projet existe
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Vérifier que l'utilisateur est le professeur du projet
+    verify_project_teacher(project, current_user)
     
     # Créer la question
     db_question = FormQuestion(
@@ -81,12 +140,17 @@ def create_form_question(project_id: int, question: FormQuestionCreate, db: Sess
     return db_question
 
 @router.get("/projects/{project_id}/forms", response_model=List[FormQuestionResponse])
-def get_project_forms(project_id: int, db: Session = Depends(get_db)):
-    """Récupérer toutes les questions de formulaire d'un projet"""
+def get_project_forms(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les questions de formulaire d'un projet - Any authenticated user"""
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé")
     
+    # Any authenticated user can view forms
     questions = db.query(FormQuestion).filter(
         FormQuestion.project_id == project_id
     ).order_by(FormQuestion.order).all()
@@ -98,9 +162,18 @@ def update_form_question(
     project_id: int,
     question_id: int,
     question_update: FormQuestionUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Modifier une question de formulaire"""
+    """Modifier une question de formulaire - Only project teachers"""
+    # Vérifier que le projet existe
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Vérifier que l'utilisateur est le professeur du projet
+    verify_project_teacher(project, current_user)
+    
     question = db.query(FormQuestion).filter(
         FormQuestion.id == question_id,
         FormQuestion.project_id == project_id
@@ -118,8 +191,21 @@ def update_form_question(
     return question
 
 @router.delete("/projects/{project_id}/forms/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_form_question(project_id: int, question_id: int, db: Session = Depends(get_db)):
-    """Supprimer une question de formulaire"""
+def delete_form_question(
+    project_id: int,
+    question_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Supprimer une question de formulaire - Only project teachers"""
+    # Vérifier que le projet existe
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Vérifier que l'utilisateur est le professeur du projet
+    verify_project_teacher(project, current_user)
+    
     question = db.query(FormQuestion).filter(
         FormQuestion.id == question_id,
         FormQuestion.project_id == project_id
@@ -149,9 +235,13 @@ def delete_form_question(project_id: int, question_id: int, db: Session = Depend
 def submit_student_responses(
     student_id: int,
     responses: List[StudentResponseCreate],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Soumettre les réponses d'un étudiant à un formulaire"""
+    """Soumettre les réponses d'un étudiant à un formulaire - Only the student themselves"""
+    # Vérifier que l'utilisateur est l'étudiant concerné
+    verify_student_access(student_id, current_user, db)
+    
     db_responses = []
     
     for response in responses:
@@ -188,8 +278,25 @@ def submit_student_responses(
     return db_responses
 
 @router.get("/students/{student_id}/responses", response_model=List[StudentResponseResponse])
-def get_student_responses(student_id: int, project_id: Optional[int] = None, db: Session = Depends(get_db)):
-    """Récupérer toutes les réponses d'un étudiant"""
+def get_student_responses(
+    student_id: int,
+    project_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les réponses d'un étudiant - Only the student or project teachers"""
+    # If project_id is provided, check if user is student or project teacher
+    # Otherwise, only the student themselves can view
+    if project_id:
+        verify_student_or_teacher(student_id, project_id, current_user, db)
+    else:
+        # Without project_id, only the student can view their own responses
+        if not current_user.student_profile or current_user.student_profile.id != student_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view your own responses"
+            )
+    
     query = db.query(StudentResponse).filter(StudentResponse.student_id == student_id)
     
     if project_id:
@@ -200,11 +307,18 @@ def get_student_responses(student_id: int, project_id: Optional[int] = None, db:
     return responses
 
 @router.get("/projects/{project_id}/responses")
-def get_project_responses(project_id: int, db: Session = Depends(get_db)):
-    """Récupérer toutes les réponses pour un projet (pour les professeurs)"""
+def get_project_responses(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Récupérer toutes les réponses pour un projet (pour les professeurs) - Only project teachers"""
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Vérifier que l'utilisateur est le professeur du projet
+    verify_project_teacher(project, current_user)
     
     # Récupérer toutes les réponses avec les informations des étudiants
     responses = db.query(StudentResponse).join(FormQuestion).filter(
