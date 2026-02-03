@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Button from '../components/Button'
-import { CardSimple } from '../components/Card'
 import { TextInput, TextArea } from '../components/Input'
 import CSVUploader from '../components/CSVUploader'
 import { projectAPI } from '../services/api'
@@ -227,26 +226,30 @@ export default function CreateProjectPage() {
     const steps = getSteps()
     
     return (
-      <div className="mb-10">
+      <div className="mb-6">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
           {steps.map((step, index) => (
             <div key={step.num} className="flex items-center flex-1">
               {/* Step Circle */}
               <div className="flex flex-col items-center">
                 <div 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                     currentStep > step.num 
-                      ? 'bg-green-500 text-white shadow-md' 
+                      ? 'bg-emerald-500 text-white shadow-md' 
                       : currentStep === step.num
                         ? 'bg-blue-600 text-white shadow-lg ring-4 ring-blue-100'
-                        : 'bg-gray-200 text-gray-500'
+                        : 'bg-slate-200 text-slate-500'
                   }`}
                 >
-                  {currentStep > step.num ? '✓' : step.num}
+                  {currentStep > step.num ? (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : step.num}
                 </div>
                 <span 
                   className={`mt-2 text-xs font-medium ${
-                    currentStep >= step.num ? 'text-gray-700' : 'text-gray-400'
+                    currentStep >= step.num ? 'text-slate-700' : 'text-slate-400'
                   }`}
                 >
                   {step.label}
@@ -256,8 +259,8 @@ export default function CreateProjectPage() {
               {/* Connector Line */}
               {index < steps.length - 1 && (
                 <div 
-                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 ${
-                    currentStep > step.num ? 'bg-green-500' : 'bg-gray-200'
+                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 rounded ${
+                    currentStep > step.num ? 'bg-emerald-500' : 'bg-slate-200'
                   }`}
                 />
               )}
@@ -270,7 +273,7 @@ export default function CreateProjectPage() {
 
   const renderStep1 = () => (
     <div className="w-full max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+      <h2 className="text-xl font-semibold text-slate-900 mb-6">
         Informations du projet
       </h2>
       
@@ -299,7 +302,7 @@ export default function CreateProjectPage() {
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-slate-700 mb-3">
             Type de projet
           </label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -321,10 +324,10 @@ export default function CreateProjectPage() {
                   className="sr-only"
                 />
                 <span className="text-3xl mb-2">{type.icon}</span>
-                <span className="font-semibold text-gray-800 text-center">
+                <span className="font-semibold text-slate-800 text-center">
                   {type.label}
                 </span>
-                <span className="text-xs text-gray-500 text-center mt-1">
+                <span className="text-xs text-slate-500 text-center mt-1">
                   {type.description}
                 </span>
                 {projectData.type === type.value && (
@@ -350,10 +353,10 @@ export default function CreateProjectPage() {
 
   const renderStep2 = () => (
     <div className="w-full max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">
         Import des étudiants
       </h2>
-      <p className="text-gray-600 mb-6">
+      <p className="text-slate-600 mb-6">
         Importez la liste des étudiants participants au format CSV
       </p>
       
@@ -379,10 +382,10 @@ export default function CreateProjectPage() {
       
       return (
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">
             Universités partenaires
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-slate-600 mb-6">
             Ajoutez les universités de destination pour les étudiants
           </p>
           
@@ -402,7 +405,7 @@ export default function CreateProjectPage() {
                 {totalPlaces >= placesNeeded ? '✓ Suffisant' : '⚠️ Insuffisant'}
               </span>
             </div>
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
               <div 
                 className={`h-2 rounded-full transition-all ${
                   totalPlaces >= placesNeeded ? 'bg-green-500' : 'bg-orange-500'
@@ -420,14 +423,14 @@ export default function CreateProjectPage() {
           
           {projectData.destinations.length > 0 && (
             <div className="mt-6">
-              <h3 className="font-semibold text-gray-700 mb-3">
+              <h3 className="font-semibold text-slate-700 mb-3">
                 {projectData.destinations.length} universités configurées
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {projectData.destinations.map((dest, idx) => (
                   <div key={idx} className="p-3 bg-white border rounded-lg shadow-sm">
-                    <div className="font-semibold text-gray-800">{dest.university_name}</div>
-                    <div className="text-sm text-gray-600">{dest.city}, {dest.country}</div>
+                    <div className="font-semibold text-slate-800">{dest.university_name}</div>
+                    <div className="text-sm text-slate-600">{dest.city}, {dest.country}</div>
                     <div className="text-sm text-blue-600 mt-1">
                       {dest.total_places} places disponibles
                     </div>
@@ -442,7 +445,7 @@ export default function CreateProjectPage() {
 
     return (
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">
           Configuration des groupes
         </h2>
 
@@ -461,7 +464,7 @@ export default function CreateProjectPage() {
             required
           />
 
-          <div className="p-4 bg-gray-50 rounded-lg border">
+          <div className="p-4 bg-slate-50 rounded-lg border">
             <label className="flex items-start space-x-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -471,10 +474,10 @@ export default function CreateProjectPage() {
                 className="mt-1 w-4 h-4 text-blue-600 rounded"
               />
               <div>
-                <div className="font-medium text-gray-800">
+                <div className="font-medium text-slate-800">
                   Activer les préférences de partenaire
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-600">
                   Les étudiants pourront indiquer avec qui ils souhaitent travailler
                 </div>
               </div>
@@ -492,28 +495,28 @@ export default function CreateProjectPage() {
     
     return (
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">
           Confirmation
         </h2>
 
         <div className="space-y-4">
           {/* Project Info */}
-          <div className="bg-gray-50 p-5 rounded-lg">
-            <h3 className="font-semibold text-gray-700 mb-3">Informations</h3>
+          <div className="bg-slate-50 p-5 rounded-lg">
+            <h3 className="font-semibold text-slate-700 mb-3">Informations</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Nom :</span>
+                <span className="text-slate-600">Nom :</span>
                 <span className="font-medium">{projectData.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Type :</span>
+                <span className="text-slate-600">Type :</span>
                 <span className="font-medium">
                   {projectTypes.find(t => t.value === projectData.type)?.label}
                 </span>
               </div>
               {projectData.deadline && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Date limite :</span>
+                  <span className="text-slate-600">Date limite :</span>
                   <span className="font-medium">
                     {new Date(projectData.deadline).toLocaleDateString('fr-FR')}
                   </span>
@@ -524,40 +527,40 @@ export default function CreateProjectPage() {
 
           {/* Students */}
           <div className="bg-blue-50 p-5 rounded-lg">
-            <h3 className="font-semibold text-gray-700 mb-3">Étudiants</h3>
+            <h3 className="font-semibold text-slate-700 mb-3">Étudiants</h3>
             <p className="text-2xl font-bold text-blue-600">
               {projectData.students.length}
             </p>
-            <p className="text-sm text-gray-600">étudiants inscrits</p>
+            <p className="text-sm text-slate-600">étudiants inscrits</p>
           </div>
 
           {/* Destinations or Config */}
           {isExchangeProgram ? (
             <div className="bg-purple-50 p-5 rounded-lg">
-              <h3 className="font-semibold text-gray-700 mb-3">Universités</h3>
+              <h3 className="font-semibold text-slate-700 mb-3">Universités</h3>
               <p className="text-2xl font-bold text-purple-600">
                 {projectData.destinations.length}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-slate-600">
                 {totalPlaces} places disponibles au total
               </p>
             </div>
           ) : (
             <div className="bg-green-50 p-5 rounded-lg">
-              <h3 className="font-semibold text-gray-700 mb-3">Configuration</h3>
+              <h3 className="font-semibold text-slate-700 mb-3">Configuration</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Taille des groupes :</span>
+                  <span className="text-slate-600">Taille des groupes :</span>
                   <span className="font-medium">{projectData.groupSize} étudiants</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Nombre de groupes :</span>
+                  <span className="text-slate-600">Nombre de groupes :</span>
                   <span className="font-medium">
                     ~{Math.ceil(projectData.students.length / projectData.groupSize)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Préférences :</span>
+                  <span className="text-slate-600">Préférences :</span>
                   <span className="font-medium">
                     {projectData.partnerPreferenceEnabled ? 'Activées' : 'Désactivées'}
                   </span>
@@ -577,7 +580,7 @@ export default function CreateProjectPage() {
             >
               {loading ? 'Création...' : 'Créer le projet'}
             </Button>
-            <p className="text-center text-sm text-gray-500 mt-3">
+            <p className="text-center text-sm text-slate-500 mt-3">
               Le projet sera créé et les étudiants recevront une notification
             </p>
           </div>
@@ -587,53 +590,61 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 md:py-10">
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6 text-center md:text-left">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-            Nouveau projet
-          </h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">
-            Créez un nouveau projet en quelques étapes
-          </p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Nouveau projet</h1>
+          <p className="text-slate-600 mt-1">Créez un nouveau projet en quelques étapes</p>
         </div>
+        <button
+          onClick={() => navigate('/teacher')}
+          className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Annuler
+        </button>
+      </div>
 
-        {/* Step Indicator */}
-        {renderStepIndicator()}
+      {/* Step Indicator */}
+      {renderStepIndicator()}
 
-        {/* Content */}
-        <div className="bg-white rounded-lg shadow-sm p-4 md:p-8 mb-6">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
-        </div>
+      {/* Content */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-8">
+        {currentStep === 1 && renderStep1()}
+        {currentStep === 2 && renderStep2()}
+        {currentStep === 3 && renderStep3()}
+        {currentStep === 4 && renderStep4()}
+      </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between items-center">
-          <div>
-            {currentStep > 1 && (
-              <Button variant="secondary" onClick={prevStep}>
-                ← Retour
-              </Button>
-            )}
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/teacher')}
-            >
-              Annuler
+      {/* Navigation */}
+      <div className="flex justify-between items-center">
+        <div>
+          {currentStep > 1 && (
+            <Button variant="secondary" onClick={prevStep}>
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Retour
+              </span>
             </Button>
+          )}
+        </div>
 
-            {currentStep < 4 && (
-              <Button variant="primary" onClick={nextStep} disabled={!isStepValid(currentStep)}>
-                Continuer →
-              </Button>
-            )}
-          </div>
+        <div className="flex gap-3">
+          {currentStep < 4 && (
+            <Button variant="primary" onClick={nextStep} disabled={!isStepValid(currentStep)}>
+              <span className="flex items-center gap-2">
+                Continuer
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </span>
+            </Button>
+          )}
         </div>
       </div>
     </div>

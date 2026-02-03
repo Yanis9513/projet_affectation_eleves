@@ -1,6 +1,5 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardSimple } from '../components/Card';
 import Button from '../components/Button';
 import { Loading, Alert } from '../components/Loading';
 import ConfirmModal from '../components/ConfirmModal';
@@ -23,7 +22,7 @@ export default function TeacherDashboard() {
     const translations = {
       'group_project': 'Projet de groupe',
       'english_leveling': 'Niveau d\'anglais',
-      'exchange_program': 'Programme d\'échange'
+      'exchange_program': 'Programme d\'�change'
     }
     return translations[type] || type
   }
@@ -50,7 +49,7 @@ export default function TeacherDashboard() {
   const handleDeleteConfirm = async () => {
     try {
       await projectAPI.delete(deleteModal.projectId);
-      setSuccess(`Projet "${deleteModal.projectTitle}" supprimé avec succès`);
+      setSuccess(`Projet "${deleteModal.projectTitle}" supprim� avec succ�s`);
       setProjects(projects.filter(p => p.id !== deleteModal.projectId));
       setDeleteModal({ isOpen: false, projectId: null, projectTitle: '' });
     } catch (error) {
@@ -72,117 +71,190 @@ export default function TeacherDashboard() {
   const totalStudents = projects.reduce((sum, p) => sum + (p.students?.length || 0), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2 fade-in">
-              Tableau de Bord Enseignant
-            </h1>
-            <p className="text-gray-600 fade-in-delay-1">Gérez vos projets et affectations</p>
+    <div className="animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Tableau de Bord Enseignant
+          </h1>
+          <p className="text-slate-600 mt-1">G�rez vos projets et affectations d'�tudiants</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/profile')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Mon Profil
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => navigate('/teacher/create-project')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nouveau Projet
+          </Button>
+        </div>
+      </div>
+
+      {error && <Alert type="error" message={error} onClose={() => setError('')} className="mb-6" />}
+      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-6" />}
+      
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{projects.length}</p>
+              <p className="text-sm text-slate-500">Projets</p>
+            </div>
           </div>
-          
-          <div className="flex gap-3 fade-in-delay-1 ml-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/profile')}
-            >
-              Mon Profil
-            </Button>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{activeProjects.length}</p>
+              <p className="text-sm text-slate-500">Actifs</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-50 rounded-xl text-purple-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{totalStudents}</p>
+              <p className="text-sm text-slate-500">�tudiants</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-amber-50 rounded-xl text-amber-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">
+                {projects.filter(p => p.is_open_for_preferences).length}
+              </p>
+              <p className="text-sm text-slate-500">En attente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Projects List */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">Mes Projets</h2>
+        </div>
+        
+        {projects.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucun projet</h3>
+            <p className="text-slate-500 mb-6">Cr�ez votre premier projet pour commencer.</p>
             <Button
               variant="primary"
-              size="lg"
               onClick={() => navigate('/teacher/create-project')}
             >
-              Créer un Nouveau Projet
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Cr�er un projet
             </Button>
           </div>
-        </div>
-
-        {error && <Alert type="error" message={error} onClose={() => setError('')} className="mb-4" />}
-        {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 fade-in-delay-2">
-          <CardSimple className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Mes Projets</p>
-            <p className="text-4xl font-bold text-esiee-blue">{projects.length}</p>
-          </CardSimple>
-          
-          <CardSimple className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Projets Actifs</p>
-            <p className="text-4xl font-bold text-green-600">{activeProjects.length}</p>
-          </CardSimple>
-          
-          <CardSimple className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Total Étudiants</p>
-            <p className="text-4xl font-bold text-purple-600">{totalStudents}</p>
-          </CardSimple>
-          
-          <CardSimple className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">En Attente</p>
-            <p className="text-4xl font-bold text-yellow-600">
-              {projects.filter(p => p.is_open_for_preferences).length}
-            </p>
-          </CardSimple>
-        </div>
-
-        <div className="space-y-4 fade-in-delay-3">
-          <h2 className="text-2xl font-bold text-gray-800">Mes Projets</h2>
-          
-          {projects.length === 0 ? (
-            <CardSimple className="text-center py-12 fade-in-delay-3">
-              <p className="text-gray-600 mb-4">Aucun projet créé</p>
-              <Button
-                variant="primary"
-                onClick={() => navigate('/teacher/create-project')}
+        ) : (
+          <div className="space-y-4">
+            {projects.map(project => (
+              <div 
+                key={project.id} 
+                className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-slate-300 transition-all"
               >
-                Créer votre premier projet
-              </Button>
-            </CardSimple>
-          ) : (
-            projects.map(project => (
-              <CardSimple key={project.id} className="hover:shadow-lg transition-shadow fade-in-delay-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-gray-800">{project.title}</h3>
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-slate-900">{project.title}</h3>
                       {project.is_active ? (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
                           Actif
                         </span>
                       ) : (
-                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                           Inactif
                         </span>
                       )}
                       {project.is_open_for_preferences && (
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Ouvert aux préférences
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          Pr�f�rences ouvertes
                         </span>
                       )}
                     </div>
                     
-                    <p className="text-gray-600 mb-3">{project.description}</p>
+                    <p className="text-slate-600 text-sm mb-4 line-clamp-2">{project.description}</p>
                     
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <span>{project.students?.length || 0}/{project.max_students} étudiants</span>
-                      <span>Taille de groupe: {project.group_size || 'N/A'}</span>
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <span className="flex items-center gap-1.5 text-slate-600">
+                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {project.students?.length || 0}/{project.max_students} �tudiants
+                      </span>
+                      <span className="flex items-center gap-1.5 text-slate-600">
+                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+                        </svg>
+                        Groupe: {project.group_size || 'N/A'}
+                      </span>
                       {project.project_type && (
-                        <span>Type: {translateProjectType(project.project_type)}</span>
+                        <span className="flex items-center gap-1.5 text-slate-600">
+                          <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          {translateProjectType(project.project_type)}
+                        </span>
                       )}
                     </div>
                   </div>
                   
-                  <div className="flex flex-col gap-2">
+                  <div className="flex lg:flex-col gap-2">
                     <Button
                       variant="primary"
                       size="sm"
                       onClick={() => navigate(`/projects/${project.id}`)}
                     >
-                      Voir Détails
+                      Voir
                     </Button>
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
                       onClick={() => navigate(`/teacher/edit-project/${project.id}`)}
                     >
@@ -197,23 +269,23 @@ export default function TeacherDashboard() {
                     </Button>
                   </div>
                 </div>
-              </CardSimple>
-            ))
-          )}
-        </div>
-
-        {/* Delete Confirmation Modal */}
-        <ConfirmModal
-          isOpen={deleteModal.isOpen}
-          title="Supprimer le Projet"
-          message={`Êtes-vous sûr de vouloir supprimer le projet "${deleteModal.projectTitle}" ? Cette action est irréversible.`}
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          variant="danger"
-          onConfirm={handleDeleteConfirm}
-          onCancel={handleDeleteCancel}
-        />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Supprimer le Projet"
+        message={`�tes-vous s�r de vouloir supprimer le projet "${deleteModal.projectTitle}" ? Cette action est irr�versible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }

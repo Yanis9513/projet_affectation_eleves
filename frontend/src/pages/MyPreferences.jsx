@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardSimple } from '../components/Card';
 import Button from '../components/Button';
 import { Loading } from '../components/Loading';
 import { projectAPI, destinationPreferenceAPI, preferenceAPI, studentAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+
+// SVG Icons
+const ArrowLeftIcon = () => (
+  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+)
+
+const ClipboardIcon = () => (
+  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+  </svg>
+)
 
 export default function MyPreferences() {
   const navigate = useNavigate();
@@ -148,7 +160,7 @@ export default function MyPreferences() {
       case 'D': return 'bg-yellow-400 text-white';
       case 'E': return 'bg-orange-400 text-white';
       case 'F': return 'bg-red-400 text-white';
-      default: return 'bg-gray-200 text-gray-700';
+      default: return 'bg-slate-200 text-slate-700';
     }
   };
 
@@ -170,9 +182,9 @@ export default function MyPreferences() {
       case 'C1': return 'bg-purple-500 text-white';
       case 'B2': return 'bg-blue-500 text-white';
       case 'B1': return 'bg-blue-400 text-white';
-      case 'A2': return 'bg-green-500 text-white';
-      case 'A1': return 'bg-green-400 text-white';
-      default: return 'bg-gray-200 text-gray-700';
+      case 'A2': return 'bg-emerald-500 text-white';
+      case 'A1': return 'bg-emerald-400 text-white';
+      default: return 'bg-slate-200 text-slate-700';
     }
   };
 
@@ -187,32 +199,35 @@ export default function MyPreferences() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="container mx-auto px-4 max-w-4xl animate-fade-in">
         {/* Header */}
         <div className="mb-8">
           <Button 
-            variant="outline" 
+            variant="secondary" 
             onClick={() => navigate('/student')}
             className="mb-4"
           >
-            ← Retour au tableau de bord
+            <ArrowLeftIcon />
+            Retour au tableau de bord
           </Button>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
             Mes Préférences
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             Consultez les préférences que vous avez soumises pour vos projets
           </p>
         </div>
 
         {!hasAnyPreferences() ? (
-          <CardSimple className="text-center py-12">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-bold text-gray-700 mb-2">
+          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
+            <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mx-auto mb-4">
+              <ClipboardIcon />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
               Aucune préférence soumise
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-slate-600 mb-6 max-w-md mx-auto">
               Vous n'avez pas encore soumis de préférences pour vos projets.
             </p>
             <Button 
@@ -221,34 +236,34 @@ export default function MyPreferences() {
             >
               Voir mes projets
             </Button>
-          </CardSimple>
+          </div>
         ) : (
           <div className="space-y-8">
             {/* Exchange Program Preferences */}
             {preferences.exchange.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-purple-500"></span>
                   Programmes d'Échange
                 </h2>
                 <div className="space-y-6">
                   {preferences.exchange.map((item) => (
-                    <CardSimple key={item.project.id} className="bg-white">
+                    <div key={item.project.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
                       {/* Project Header */}
-                      <div className="border-b pb-4 mb-4">
+                      <div className="border-b border-slate-200 pb-4 mb-4">
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-xl font-bold text-gray-800">
+                          <h3 className="text-lg font-semibold text-slate-900">
                             {item.project.title}
                           </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                             Préférences soumises
                           </span>
                         </div>
-                        <p className="text-gray-600 text-sm mb-2">
+                        <p className="text-slate-600 text-sm mb-2">
                           {item.project.description}
                         </p>
                         {item.submittedAt && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-slate-500">
                             Soumis le: {new Date(item.submittedAt).toLocaleDateString('fr-FR', {
                               day: 'numeric',
                               month: 'long',
@@ -262,7 +277,7 @@ export default function MyPreferences() {
 
                       {/* Preferences List */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-gray-700 mb-3">
+                        <h4 className="font-medium text-slate-700 mb-3">
                           Vos choix ({item.preferences.length} universités)
                         </h4>
                         
@@ -272,17 +287,17 @@ export default function MyPreferences() {
                           .map((pref) => (
                           <div 
                             key={pref.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"
                           >
                             <div className="flex items-center gap-4">
                               <div className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg ${getGradeColor(pref.grade)}`}>
                                 {pref.grade}
                               </div>
                               <div>
-                                <div className="font-semibold text-gray-800">
+                                <div className="font-medium text-slate-900">
                                   {pref.destination?.university_name || 'Université'}
                                 </div>
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-slate-600">
                                   {pref.destination?.city}, {pref.destination?.country}
                                 </div>
                                 <div className={`text-xs font-medium mt-1 ${getGradeColor(pref.grade).replace('bg-', 'text-').replace(' text-white', '')}`}>
@@ -295,23 +310,23 @@ export default function MyPreferences() {
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-6 pt-4 border-t flex gap-3">
+                      <div className="mt-6 pt-4 border-t border-slate-200 flex gap-3">
                         {item.project.is_open_for_preferences && (
                           <Button 
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => navigate(`/student/exchange-preferences/${item.project.id}`)}
                           >
                             Modifier mes préférences
                           </Button>
                         )}
                         <Button 
-                          variant="outline"
+                          variant="secondary"
                           onClick={() => navigate(`/projects/${item.project.id}`)}
                         >
                           Voir le projet
                         </Button>
                       </div>
-                    </CardSimple>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -320,28 +335,28 @@ export default function MyPreferences() {
             {/* Group Project Preferences */}
             {preferences.group.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                   Projets de Groupe
                 </h2>
                 <div className="space-y-6">
                   {preferences.group.map((item) => (
-                    <CardSimple key={item.project.id} className="bg-white">
+                    <div key={item.project.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
                       {/* Project Header */}
-                      <div className="border-b pb-4 mb-4">
+                      <div className="border-b border-slate-200 pb-4 mb-4">
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-xl font-bold text-gray-800">
+                          <h3 className="text-lg font-semibold text-slate-900">
                             {item.project.title}
                           </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                             Préférences soumises
                           </span>
                         </div>
-                        <p className="text-gray-600 text-sm mb-2">
+                        <p className="text-slate-600 text-sm mb-2">
                           {item.project.description}
                         </p>
                         {item.submittedAt && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-slate-500">
                             Soumis le: {new Date(item.submittedAt).toLocaleDateString('fr-FR', {
                               day: 'numeric',
                               month: 'long',
@@ -355,18 +370,20 @@ export default function MyPreferences() {
 
                       {/* Partner Preferences */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-gray-700 mb-3">
+                        <h4 className="font-medium text-slate-700 mb-3">
                           Vos préférences de partenaire
                         </h4>
                         {item.preferences.map((pref) => (
-                          <div key={pref.id} className="p-3 bg-gray-50 rounded-lg">
+                          <div key={pref.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                             {pref.preferred_partner_id ? (
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                                  👤
+                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  </svg>
                                 </div>
                                 <div>
-                                  <div className="font-medium text-gray-800">
+                                  <div className="font-medium text-slate-900">
                                     Partenaire préféré: {pref.preferred_partner_name || `Étudiant #${pref.preferred_partner_id}`}
                                   </div>
                                   <div className="text-sm text-blue-600">
@@ -375,7 +392,7 @@ export default function MyPreferences() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-gray-600">
+                              <div className="text-slate-600">
                                 Aucune préférence de partenaire spécifiée
                               </div>
                             )}
@@ -384,23 +401,23 @@ export default function MyPreferences() {
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-6 pt-4 border-t flex gap-3">
+                      <div className="mt-6 pt-4 border-t border-slate-200 flex gap-3">
                         {item.project.is_open_for_preferences && (
                           <Button 
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => navigate(`/student/form/${item.project.id}`)}
                           >
                             Modifier mes préférences
                           </Button>
                         )}
                         <Button 
-                          variant="outline"
+                          variant="secondary"
                           onClick={() => navigate(`/projects/${item.project.id}`)}
                         >
                           Voir le projet
                         </Button>
                       </div>
-                    </CardSimple>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -409,8 +426,8 @@ export default function MyPreferences() {
             {/* English Leveling Projects */}
             {preferences.english.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
                   Niveaux d'Anglais
                 </h2>
                 <div className="space-y-6">
@@ -419,33 +436,33 @@ export default function MyPreferences() {
                     const projectDescription = typeof item.project?.description === 'string' ? item.project.description : '';
                     
                     return (
-                    <CardSimple key={item.project?.id || index} className="bg-white">
+                    <div key={item.project?.id || index} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
                       {/* Project Header */}
-                      <div className="border-b pb-4 mb-4">
+                      <div className="border-b border-slate-200 pb-4 mb-4">
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-xl font-bold text-gray-800">
+                          <h3 className="text-lg font-semibold text-slate-900">
                             {projectTitle}
                           </h3>
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                             Confirmé
                           </span>
                         </div>
-                        <p className="text-gray-600 text-sm mb-2">
+                        <p className="text-slate-600 text-sm mb-2">
                           {projectDescription}
                         </p>
                       </div>
 
                       {/* English Level Info */}
-                      <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
                         <div className="flex items-center gap-4">
-                          <div className={`w-16 h-16 rounded-lg flex items-center justify-center font-bold text-xl ${getEnglishLevelColor(item.englishLevel)}`}>
+                          <div className={`w-16 h-16 rounded-xl flex items-center justify-center font-bold text-xl ${getEnglishLevelColor(item.englishLevel)}`}>
                             {item.englishLevel}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-800">
+                            <div className="font-medium text-slate-900">
                               Votre niveau d'anglais
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-slate-600">
                               Vous serez groupé avec des étudiants du même niveau
                             </div>
                           </div>
@@ -453,20 +470,20 @@ export default function MyPreferences() {
                       </div>
 
                       {/* Note */}
-                      <div className="mt-4 text-sm text-gray-600 bg-yellow-50 p-3 rounded">
-                        <strong>Note:</strong> Votre niveau d'anglais est automatiquement déterminé à partir de votre profil. Pour le modifier, allez dans la section "Mon Profil".
+                      <div className="mt-4 text-sm text-slate-600 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                        <strong className="text-amber-800">Note:</strong> Votre niveau d'anglais est automatiquement déterminé à partir de votre profil. Pour le modifier, allez dans la section "Mon Profil".
                       </div>
 
                       {/* Actions */}
-                      <div className="mt-6 pt-4 border-t flex gap-3">
+                      <div className="mt-6 pt-4 border-t border-slate-200 flex gap-3">
                         <Button 
-                          variant="outline"
+                          variant="secondary"
                           onClick={() => navigate(`/projects/${item.project?.id}`)}
                         >
                           Voir le projet
                         </Button>
                       </div>
-                    </CardSimple>
+                    </div>
                     );
                   })}
                 </div>

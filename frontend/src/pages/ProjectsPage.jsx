@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Card, { CardGrid } from '../components/Card';
 import Button from '../components/Button';
-import { SkeletonCard } from '../components/Skeleton';
+import { SkeletonCard } from '../components/Loading';
 import { projectAPI } from '../services/api';
 
 const translateProjectType = (type) => {
@@ -13,6 +13,15 @@ const translateProjectType = (type) => {
     'exchange_program': 'Programme d\'échange'
   };
   return translations[type] || type.replace('_', ' ');
+};
+
+const getProjectTypeStyle = (type) => {
+  const styles = {
+    'group_project': 'bg-blue-100 text-blue-700',
+    'english_leveling': 'bg-emerald-100 text-emerald-700',
+    'exchange_program': 'bg-purple-100 text-purple-700'
+  };
+  return styles[type] || 'bg-slate-100 text-slate-700';
 };
 
 export default function ProjectsPage() {
@@ -86,10 +95,10 @@ export default function ProjectsPage() {
   
   if (loading) {
     return (
-      <div>
+      <div className="animate-fade-in">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Projets disponibles</h1>
-          <p className="text-gray-600">Chargement des projets...</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Projets disponibles</h1>
+          <p className="text-slate-600">Chargement des projets...</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <SkeletonCard />
@@ -104,217 +113,273 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2 fade-in">
-            Projets Disponibles
-          </h1>
-          <p className="text-gray-600 fade-in-delay-1">
-            Découvrez les projets proposés par nos enseignants pour cette année
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 fade-in-delay-2">
-          <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg p-6 border-l-4 border-esiee-blue hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Total Projets</p>
-            <p className="text-4xl font-bold text-gray-800">{projects.length}</p>
-          </div>
-          <div className="bg-gradient-to-br from-green-50 to-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Disponibles</p>
-            <p className="text-4xl font-bold text-green-600">{availableCount}</p>
-          </div>
-          <div className="bg-gradient-to-br from-red-50 to-white rounded-xl shadow-lg p-6 border-l-4 border-red-500 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Complets</p>
-            <p className="text-4xl font-bold text-red-600">{fullCount}</p>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-6 fade-in-delay-3">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="🔍 Rechercher un projet, enseignant..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-5 py-3 pl-12 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-esiee-blue focus:border-esiee-blue outline-none transition-all shadow-sm hover:shadow-md"
-            />
-            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">
-              🔍
-            </span>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-4 fade-in-delay-3">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Disponibilité</h3>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={filter === 'all' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('all')}
-            >
-              Tous ({projects.length})
-            </Button>
-            <Button
-              variant={filter === 'available' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('available')}
-            >
-              ✓ Disponibles ({availableCount})
-            </Button>
-            <Button
-              variant={filter === 'full' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('full')}
-            >
-              ✕ Complets ({fullCount})
-            </Button>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Type de Projet</h3>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={typeFilter === 'all' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setTypeFilter('all')}
-            >
-              Tous les types
-            </Button>
-            {groupProjectCount > 0 && (
-              <Button
-                variant={typeFilter === 'group_project' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setTypeFilter('group_project')}
-              >
-                👥 Projets de Groupe ({groupProjectCount})
-              </Button>
-            )}
-            {englishLevelingCount > 0 && (
-              <Button
-                variant={typeFilter === 'english_leveling' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setTypeFilter('english_leveling')}
-              >
-                🇬🇧 Répartition Anglais ({englishLevelingCount})
-              </Button>
-            )}
-            {exchangeCount > 0 && (
-              <Button
-                variant={typeFilter === 'exchange_program' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setTypeFilter('exchange_program')}
-              >
-                Programme d'Échange ({exchangeCount})
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Projects Grid */}
-        {loading ? (
-          <Loading text="Chargement des projets..." />
-        ) : (
-          <CardGrid className="fade-in-delay-4">
-            {filteredProjects.map((project) => {
-              const studentCount = project.students?.length || 0;
-              const isAvailable = studentCount < project.max_students;
-              
-              return (
-                <Card
-                  key={project.id}
-                  hover
-                  onClick={() => openProjectDetails(project)}
-                >
-                  {/* Status Badge */}
-                  <div className="flex justify-between items-start mb-3">
-                    <span className={`
-                      px-3 py-1 rounded-full text-xs font-semibold
-                      ${isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
-                    `}>
-                      {isAvailable ? '✓ Disponible' : '✗ Complet'}
-                    </span>
-                    {project.project_type && (
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-esiee-blue text-white">
-                        {translateProjectType(project.project_type)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Project Title */}
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">
-                    {project.title}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {project.description}
-                  </p>
-
-                  {/* Project Info */}
-                  <div className="mb-4">
-                    {project.target_filiere && (
-                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded mr-2">
-                        {project.target_filiere}
-                      </span>
-                    )}
-                    {project.project_type && (
-                      <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                        {translateProjectType(project.project_type)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Student Count */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">
-                      👥 {project.students?.length || 0}/{project.max_students} étudiants
-                    </span>
-                    <span className="text-esiee-blue font-semibold hover:underline">
-                      Voir détails →
-                    </span>
-                  </div>
-                </Card>
-              );
-            })}
-          </CardGrid>
-        )}
-
-        {filteredProjects.length === 0 && !loading && (
-          <div className="text-center py-12 bg-white rounded-xl shadow-lg fade-in-delay-4">
-            <h3 className="text-xl font-bold text-gray-700 mb-2">Aucun projet trouvé</h3>
-            <p className="text-gray-500">
-              {searchQuery ? `Aucun résultat pour "${searchQuery}"` : 'Aucun projet ne correspond à vos critères'}
-            </p>
-            {(searchQuery || filter !== 'all' || typeFilter !== 'all') && (
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => {
-                  setSearchQuery('');
-                  setFilter('all');
-                  setTypeFilter('all');
-                }}
-              >
-                Réinitialiser les filtres
-              </Button>
-            )}
-          </div>
-        )}
+    <div className="animate-fade-in">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          Projets Disponibles
+        </h1>
+        <p className="text-slate-600">
+          Découvrez les projets ouverts aux préférences
+        </p>
       </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{projects.length}</p>
+              <p className="text-sm text-slate-500">Total Projets</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{availableCount}</p>
+              <p className="text-sm text-slate-500">Disponibles</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 rounded-xl text-red-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{fullCount}</p>
+              <p className="text-sm text-slate-500">Complets</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Rechercher un projet, enseignant..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-10 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-slate-700 mb-2">Disponibilité</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  filter === 'all' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Tous ({projects.length})
+              </button>
+              <button
+                onClick={() => setFilter('available')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  filter === 'available' 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Disponibles ({availableCount})
+              </button>
+              <button
+                onClick={() => setFilter('full')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  filter === 'full' 
+                    ? 'bg-red-600 text-white' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Complets ({fullCount})
+              </button>
+            </div>
+          </div>
+          
+          <div className="w-px h-8 bg-slate-200 hidden sm:block" />
+          
+          <div className="flex-1">
+            <p className="text-sm font-medium text-slate-700 mb-2">Type de projet</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setTypeFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  typeFilter === 'all' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Tous
+              </button>
+              {groupProjectCount > 0 && (
+                <button
+                  onClick={() => setTypeFilter('group_project')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    typeFilter === 'group_project' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Groupe ({groupProjectCount})
+                </button>
+              )}
+              {englishLevelingCount > 0 && (
+                <button
+                  onClick={() => setTypeFilter('english_leveling')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    typeFilter === 'english_leveling' 
+                      ? 'bg-emerald-600 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Anglais ({englishLevelingCount})
+                </button>
+              )}
+              {exchangeCount > 0 && (
+                <button
+                  onClick={() => setTypeFilter('exchange_program')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    typeFilter === 'exchange_program' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Échange ({exchangeCount})
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {filteredProjects.map((project) => {
+          const studentCount = project.students?.length || 0;
+          const isAvailable = studentCount < project.max_students;
+          
+          return (
+            <div
+              key={project.id}
+              onClick={() => openProjectDetails(project)}
+              className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-lg hover:border-slate-300 transition-all cursor-pointer group"
+            >
+              {/* Status Badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                  isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {isAvailable ? 'Disponible' : 'Complet'}
+                </span>
+                {project.project_type && (
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getProjectTypeStyle(project.project_type)}`}>
+                    {translateProjectType(project.project_type)}
+                  </span>
+                )}
+              </div>
+
+              {/* Project Title */}
+              <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                {project.title}
+              </h3>
+
+              {/* Description */}
+              <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                {project.description}
+              </p>
+
+              {/* Project Info */}
+              {project.target_filiere && (
+                <div className="mb-4">
+                  <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-lg">
+                    {project.target_filiere}
+                  </span>
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <span className="flex items-center gap-1.5 text-sm text-slate-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {studentCount}/{project.max_students}
+                </span>
+                <span className="text-blue-600 font-medium text-sm group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                  Voir détails
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredProjects.length === 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucun projet trouvé</h3>
+          <p className="text-slate-500 mb-6">
+            {searchQuery ? `Aucun résultat pour "${searchQuery}"` : 'Aucun projet ne correspond à vos critères'}
+          </p>
+          {(searchQuery || filter !== 'all' || typeFilter !== 'all') && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearchQuery('');
+                setFilter('all');
+                setTypeFilter('all');
+              }}
+            >
+              Réinitialiser les filtres
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -56,7 +56,7 @@ function SignupPage() {
 
   return (
     <div className="max-w-md mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-8 border-t-4 border-esiee-blue fade-in">
+      <div className="bg-white rounded-lg shadow-lg p-8 border-t-4 border-blue-500 animate-fade-in">
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <img 
@@ -67,7 +67,7 @@ function SignupPage() {
         </div>
 
         {/* Title */}
-        <h2 className="text-3xl font-bold text-center text-esiee-blue mb-2">
+        <h2 className="text-3xl font-bold text-center text-blue-600 mb-2">
           S'inscrire
         </h2>
         <p className="text-center text-gray-600 mb-6">
@@ -106,7 +106,7 @@ function SignupPage() {
             Vous avez un compte ?{' '}
             <a 
               href="/login" 
-              className="text-esiee-blue hover:text-blue-700 font-medium transition-colors duration-200"
+              className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
             >
               Se connecter
             </a>

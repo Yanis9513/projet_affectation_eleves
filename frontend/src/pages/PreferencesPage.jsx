@@ -1,11 +1,47 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import Button from '../components/Button'
-import { CardSimple } from '../components/Card'
 import { TextInput } from '../components/Input'
-import { SkeletonCard } from '../components/Skeleton'
+import { SkeletonCard } from '../components/Loading'
 import { projectAPI, preferenceAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+
+// Icons
+const ArrowUpIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+  </svg>
+)
+
+const ArrowDownIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+)
+
+const TrashIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+)
+
+const PlusIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+)
+
+const InfoIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const SendIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+  </svg>
+)
 
 function PreferencesPage() {
   const { user } = useAuth()
@@ -109,114 +145,129 @@ function PreferencesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="container mx-auto px-4 space-y-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h1 className="text-3xl font-bold text-esiee-blue mb-2">Mes Préférences de Projets</h1>
-            <p className="text-gray-600">Chargement des projets...</p>
-          </div>
-          <SkeletonCard />
-          <SkeletonCard />
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Mes Préférences de Projets</h1>
+          <p className="text-slate-600 mt-1">Chargement des projets...</p>
         </div>
+        <SkeletonCard />
+        <SkeletonCard />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 space-y-6">
-        
-        <CardSimple className="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-esiee-blue fade-in">
-          <h1 className="text-3xl font-bold text-esiee-blue mb-2">Mes Préférences de Projets</h1>
-          <p className="text-gray-600">
-            Sélectionnez et classez vos projets préférés. Votre premier choix a la priorité la plus élevée.
-          </p>
-        </CardSimple>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+        <h1 className="text-2xl font-bold mb-2">Mes Préférences de Projets</h1>
+        <p className="text-blue-100">
+          Sélectionnez et classez vos projets préférés. Votre premier choix a la priorité la plus élevée.
+        </p>
+      </div>
 
-        {/* Partner Preference Section */}
-        <CardSimple className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 fade-in-delay-1">
-          <h2 className="text-xl font-bold text-purple-700 mb-3">Préférence de Partenaire (Optionnel)</h2>
-          <p className="text-gray-600 mb-4 text-sm">
-            Si vous souhaitez être dans le même groupe qu'un camarade, entrez son email. 
-            L'algorithme tentera de vous grouper ensemble si possible.
-          </p>
-          <TextInput
-            name="partnerEmail"
-            type="email"
-            value={partnerEmail}
-            onChange={(e) => setPartnerEmail(e.target.value)}
-            placeholder="email.partenaire@edu.esiee.fr"
-            helperText="L'email doit être celui d'un étudiant inscrit dans le système"
-          />
-        </CardSimple>
+      {/* Partner Preference Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="p-3 bg-purple-50 rounded-xl">
+            <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Préférence de Partenaire</h2>
+            <p className="text-sm text-slate-600">
+              Optionnel : Si vous souhaitez être dans le même groupe qu'un camarade, entrez son email.
+            </p>
+          </div>
+        </div>
+        <TextInput
+          name="partnerEmail"
+          type="email"
+          value={partnerEmail}
+          onChange={(e) => setPartnerEmail(e.target.value)}
+          placeholder="email.partenaire@edu.esiee.fr"
+          helperText="L'email doit être celui d'un étudiant inscrit dans le système"
+        />
+      </div>
 
-        <div className="grid md:grid-cols-2 gap-6 fade-in-delay-2">
-          {/* Available Projects */}
-          <CardSimple>
-            <h2 className="text-xl font-bold text-esiee-blue mb-4">Projets Disponibles</h2>
-            <div className="space-y-2">
-              {projects
-                .filter(p => !preferences.find(pref => pref.id === p.id))
-                .map(project => (
-                  <div
-                    key={project.id}
-                    className="flex justify-between items-center p-3 border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-esiee-blue transition-colors"
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Available Projects */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <h2 className="text-lg font-semibold text-slate-900">Projets Disponibles</h2>
+          </div>
+          <div className="p-4 space-y-2 max-h-[400px] overflow-y-auto">
+            {projects
+              .filter(p => !preferences.find(pref => pref.id === p.id))
+              .map(project => (
+                <div
+                  key={project.id}
+                  className="flex justify-between items-center p-3 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all group"
+                >
+                  <span className="text-slate-700 font-medium">{project.title}</span>
+                  <button
+                    onClick={() => handleAddPreference(project.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-white hover:bg-blue-600 rounded-lg transition-colors"
                   >
-                    <span className="text-gray-800">{project.title}</span>
-                    <button
-                      onClick={() => handleAddPreference(project.id)}
-                      className="text-esiee-blue hover:text-blue-700 font-medium transition-colors"
-                    >
-                      + Ajouter
-                    </button>
-                  </div>
-                ))}
-            </div>
-          </CardSimple>
+                    <PlusIcon />
+                    <span>Ajouter</span>
+                  </button>
+                </div>
+              ))}
+            {projects.filter(p => !preferences.find(pref => pref.id === p.id)).length === 0 && (
+              <p className="text-slate-500 text-center py-8">Tous les projets ont été ajoutés</p>
+            )}
+          </div>
+        </div>
 
-          {/* Selected Preferences */}
-          <CardSimple>
-            <h2 className="text-xl font-bold text-esiee-blue mb-4">Vos Préférences (Classées)</h2>
+        {/* Selected Preferences */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <h2 className="text-lg font-semibold text-slate-900">Vos Préférences (Classées)</h2>
+          </div>
+          <div className="p-4">
             {preferences.length === 0 ? (
-              <div className="text-gray-500 text-center py-8">
-                Aucune préférence sélectionnée. Ajoutez des projets à gauche.
+              <div className="text-slate-500 text-center py-8">
+                <p className="mb-2">Aucune préférence sélectionnée</p>
+                <p className="text-sm">Ajoutez des projets depuis la liste à gauche</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {preferences.map((pref, index) => (
                   <div
                     key={pref.id}
-                    className="flex items-center justify-between p-3 border-2 rounded-lg bg-blue-50 border-blue-200 hover:shadow-md transition-shadow"
+                    className="flex items-center justify-between p-3 border-2 rounded-xl bg-blue-50 border-blue-200 hover:shadow-md transition-all"
                   >
-                    <div className="flex items-center space-x-3">
-                      <span className="bg-esiee-blue text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">
+                    <div className="flex items-center gap-3">
+                      <span className="bg-blue-600 text-white rounded-xl w-10 h-10 flex items-center justify-center font-bold text-lg shadow-sm">
                         {pref.order}
                       </span>
-                      <span className="font-medium text-gray-800">{pref.title}</span>
+                      <span className="font-medium text-slate-800">{pref.title}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleMoveUp(index)}
                         disabled={index === 0}
-                        className="text-gray-600 hover:text-gray-800 disabled:opacity-30 text-xl transition-colors"
+                        className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30 rounded-lg transition-colors"
                         title="Monter"
                       >
-                        ↑
+                        <ArrowUpIcon />
                       </button>
                       <button
                         onClick={() => handleMoveDown(index)}
                         disabled={index === preferences.length - 1}
-                        className="text-gray-600 hover:text-gray-800 disabled:opacity-30 text-xl transition-colors"
+                        className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30 rounded-lg transition-colors"
                         title="Descendre"
                       >
-                        ↓
+                        <ArrowDownIcon />
                       </button>
                       <button
                         onClick={() => handleRemovePreference(pref.id)}
-                        className="text-red-600 hover:text-red-700 ml-2 text-xl transition-colors"
+                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 ml-1 rounded-lg transition-colors"
                         title="Supprimer"
                       >
-                        ✕
+                        <TrashIcon />
                       </button>
                     </div>
                   </div>
@@ -225,10 +276,10 @@ function PreferencesPage() {
             )}
 
             {preferences.length > 0 && (
-              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-gray-700 mb-3">
-                  Vous avez sélectionné <strong>{preferences.length} projet(s)</strong>.
-                  {partnerEmail && ` Partenaire: ${partnerEmail}`}
+              <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="text-sm text-slate-700 mb-3">
+                  Vous avez sélectionné <strong className="text-emerald-700">{preferences.length} projet(s)</strong>.
+                  {partnerEmail && <span className="text-purple-600"> Partenaire: {partnerEmail}</span>}
                 </p>
                 <Button
                   onClick={handleSubmit}
@@ -236,24 +287,58 @@ function PreferencesPage() {
                   fullWidth
                   disabled={submitting}
                 >
-                  {submitting ? '⏳ Envoi en cours...' : '📤 Soumettre mes Préférences'}
+                  <span className="flex items-center justify-center gap-2">
+                    {submitting ? (
+                      <>
+                        <span className="animate-spin">⏳</span>
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      <>
+                        <SendIcon />
+                        Soumettre mes Préférences
+                      </>
+                    )}
+                  </span>
                 </Button>
               </div>
             )}
-          </CardSimple>
+          </div>
         </div>
+      </div>
 
-        {/* Information Box */}
-        <CardSimple className="bg-blue-50 border-l-4 border-blue-500 fade-in-delay-2">
-          <h3 className="text-lg font-bold text-blue-800 mb-2">Comment ça marche ?</h3>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm">
-            <li>Classez vos projets préférés par ordre de priorité (1 = préférence maximale)</li>
-            <li>Vous pouvez réorganiser vos choix avec les flèches ↑ ↓</li>
-            <li>Optionnel : Indiquez un partenaire pour être dans le même groupe</li>
-            <li>L'algorithme d'affectation tiendra compte de vos préférences</li>
-            <li>Vous recevrez une notification une fois l'affectation effectuée</li>
-          </ul>
-        </CardSimple>
+      {/* Information Box */}
+      <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <InfoIcon />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">Comment ça marche ?</h3>
+            <ul className="space-y-2 text-slate-700 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">1.</span>
+                Classez vos projets préférés par ordre de priorité (1 = préférence maximale)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">2.</span>
+                Vous pouvez réorganiser vos choix avec les flèches ↑ ↓
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">3.</span>
+                Optionnel : Indiquez un partenaire pour être dans le même groupe
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">4.</span>
+                L'algorithme d'affectation tiendra compte de vos préférences
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">5.</span>
+                Vous recevrez une notification une fois l'affectation effectuée
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   )

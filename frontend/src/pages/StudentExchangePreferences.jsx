@@ -1,10 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CardSimple } from '../components/Card';
 import Button from '../components/Button';
 import { Loading } from '../components/Loading';
 import { destinationAPI, destinationPreferenceAPI } from '../services/api';
 import toast from 'react-hot-toast';
+
+// SVG Icons
+const ArrowLeftIcon = () => (
+  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+)
+
+const InfoIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const CheckCircleIcon = () => (
+  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
 
 export default function StudentExchangePreferences() {
   const { projectId } = useParams();
@@ -112,13 +130,13 @@ export default function StudentExchangePreferences() {
 
   const getGradeColor = (grade) => {
     switch(grade) {
-      case 'A': return 'bg-green-500 text-white';
-      case 'B': return 'bg-green-400 text-white';
+      case 'A': return 'bg-emerald-500 text-white';
+      case 'B': return 'bg-emerald-400 text-white';
       case 'C': return 'bg-blue-400 text-white';
-      case 'D': return 'bg-yellow-400 text-white';
+      case 'D': return 'bg-amber-400 text-white';
       case 'E': return 'bg-orange-400 text-white';
       case 'F': return 'bg-red-400 text-white';
-      default: return 'bg-gray-200 text-gray-700';
+      default: return 'bg-slate-200 text-slate-700';
     }
   };
 
@@ -139,66 +157,74 @@ export default function StudentExchangePreferences() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="container mx-auto px-4 max-w-4xl animate-fade-in">
         {/* Header */}
         <div className="mb-8">
           <Button 
-            variant="outline" 
+            variant="secondary" 
             onClick={() => navigate('/student')}
             className="mb-4"
           >
-            ← Retour au tableau de bord
+            <ArrowLeftIcon />
+            Retour au tableau de bord
           </Button>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
             Noter les Universités
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             Attribuez une note de A (préférée) à F (moins préférée) à chaque université
           </p>
         </div>
 
         {/* Instructions */}
-        <CardSimple className="mb-6 bg-blue-50 border-l-4 border-blue-500">
-          <h3 className="font-bold text-blue-800 mb-2">Comment ça marche :</h3>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• A = Université que vous préférez le plus</li>
-            <li>• B = Université très intéressante</li>
-            <li>• C = Université intéressante</li>
-            <li>• D = Université acceptable</li>
-            <li>• E = Peu intéressé</li>
-            <li>• F = Dernier choix</li>
-            <li className="font-semibold mt-2">Chaque note doit être unique !</li>
-          </ul>
-        </CardSimple>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+              <InfoIcon />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-900 mb-2">Comment ça marche :</h3>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• <strong>A</strong> = Université que vous préférez le plus</li>
+                <li>• <strong>B</strong> = Université très intéressante</li>
+                <li>• <strong>C</strong> = Université intéressante</li>
+                <li>• <strong>D</strong> = Université acceptable</li>
+                <li>• <strong>E</strong> = Peu intéressé</li>
+                <li>• <strong>F</strong> = Dernier choix</li>
+                <li className="font-semibold mt-2 text-blue-800">Chaque note doit être unique !</li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
         {/* Destinations List */}
         <div className="space-y-4 mb-8">
           {destinations.map((dest, index) => (
-            <CardSimple key={dest.id} className="bg-white">
+            <div key={dest.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Destination Info */}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl font-bold text-gray-400">
+                    <span className="text-xl font-bold text-slate-300">
                       #{index + 1}
                     </span>
-                    <h3 className="text-xl font-bold text-gray-800">
+                    <h3 className="text-lg font-semibold text-slate-900">
                       {dest.university_name}
                     </h3>
                   </div>
-                  <p className="text-gray-600 mb-2">
+                  <p className="text-slate-600 mb-2">
                     {dest.city}, {dest.country}
                   </p>
                   <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                    <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                       {dest.total_places} places
                     </span>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                       {dest.mobility_type}
                     </span>
                     {dest.min_english_level && (
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                      <span className="px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
                         Anglais: {dest.min_english_level}
                       </span>
                     )}
@@ -216,7 +242,7 @@ export default function StudentExchangePreferences() {
                         className={`w-10 h-10 rounded-lg font-bold text-lg transition-all ${
                           preferences[dest.id] === grade
                             ? getGradeColor(grade)
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         } ${hasSubmitted ? 'cursor-not-allowed opacity-50' : ''}`}
                       >
                         {grade}
@@ -224,19 +250,19 @@ export default function StudentExchangePreferences() {
                     ))}
                   </div>
                   <span className={`text-sm font-medium ${
-                    preferences[dest.id] ? getGradeColor(preferences[dest.id]).split(' ')[0].replace('bg-', 'text-') : 'text-gray-500'
+                    preferences[dest.id] ? getGradeColor(preferences[dest.id]).split(' ')[0].replace('bg-', 'text-') : 'text-slate-500'
                   }`}>
                     {getGradeDescription(preferences[dest.id])}
                   </span>
                 </div>
               </div>
-            </CardSimple>
+            </div>
           ))}
         </div>
 
         {/* Summary */}
-        <CardSimple className="mb-6 bg-gray-50">
-          <h3 className="font-bold text-gray-800 mb-4">Récapitulatif de vos choix</h3>
+        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6 shadow-sm">
+          <h3 className="font-semibold text-slate-900 mb-4">Récapitulatif de vos choix</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {Object.entries(preferences)
               .filter(([_, grade]) => grade !== '')
@@ -255,11 +281,11 @@ export default function StudentExchangePreferences() {
               })}
           </div>
           {Object.values(preferences).filter(g => g !== '').length !== destinations.length && (
-            <p className="text-orange-600 text-sm mt-4">
+            <p className="text-amber-600 text-sm mt-4">
               {destinations.length - Object.values(preferences).filter(g => g !== '').length} université(s) sans note
             </p>
           )}
-        </CardSimple>
+        </div>
 
         {/* Submit Button or Already Submitted Message */}
         {!hasSubmitted ? (
@@ -273,28 +299,31 @@ export default function StudentExchangePreferences() {
             </Button>
           </div>
         ) : (
-          <CardSimple className="bg-green-50 border-2 border-green-200 text-center">
-            <h3 className="text-xl font-bold text-green-800 mb-2">
-              ✓ Préférences déjà soumises
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center shadow-sm">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mx-auto mb-4">
+              <CheckCircleIcon />
+            </div>
+            <h3 className="text-xl font-semibold text-emerald-800 mb-2">
+              Préférences déjà soumises
             </h3>
-            <p className="text-green-700 mb-4">
+            <p className="text-emerald-700 mb-4">
               Vous avez déjà soumis vos préférences pour ce projet. Vous pouvez les consulter dans "Mes Préférences".
             </p>
             <div className="flex justify-center gap-4">
               <Button 
-                variant="outline" 
+                variant="secondary" 
                 onClick={() => navigate('/my-preferences')}
               >
                 Voir mes préférences
               </Button>
               <Button 
-                variant="outline" 
+                variant="secondary" 
                 onClick={() => navigate('/student')}
               >
                 Retour au tableau de bord
               </Button>
             </div>
-          </CardSimple>
+          </div>
         )}
       </div>
     </div>
