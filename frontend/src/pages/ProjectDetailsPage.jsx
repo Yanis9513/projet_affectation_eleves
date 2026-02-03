@@ -78,6 +78,19 @@ export default function ProjectDetailsPage() {
       const projectResponse = await projectAPI.getById(projectId)
       setProject(projectResponse.data)
 
+      const storedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('user') || 'null')
+        } catch {
+          return null
+        }
+      })()
+      const isAdmin = (storedUser?.role || userRole)?.toLowerCase?.() === 'admin'
+      const isProjectOwnerTeacher =
+        (storedUser?.role || userRole)?.toLowerCase?.() === 'teacher' &&
+        storedUser?.teacher_id &&
+        projectResponse.data?.teacher_id === storedUser.teacher_id
+
       // Load students enrolled in this project
       const studentsResponse = await projectAPI.getStudents(projectId)
       setStudents(studentsResponse.data || [])
@@ -97,8 +110,10 @@ export default function ProjectDetailsPage() {
           // No assignments yet, that's okay
         }
       } else if (projectResponse.data?.project_type === 'group_project') {
-        // Load group project preferences
-        await loadGroupPreferences()
+        // Load group project preferences (teacher only)
+        if (isAdmin || isProjectOwnerTeacher) {
+          await loadGroupPreferences()
+        }
         // Load assignments for group projects
         try {
           const assignmentsResponse = await assignmentAPI.getByProject(projectId)
@@ -1117,7 +1132,7 @@ export default function ProjectDetailsPage() {
                     <p className="text-gray-600 text-sm mb-3">
                       {dest.city}, {dest.country}
                     </p>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="space-y-2 text-sm">
                       <div className="bg-blue-50 p-2 rounded">
                         <span className="text-gray-600">Places:</span>
                         <span className="font-bold text-blue-700 ml-1">
@@ -1126,7 +1141,7 @@ export default function ProjectDetailsPage() {
                       </div>
                       <div className="bg-green-50 p-2 rounded">
                         <span className="text-gray-600">Filères:</span>
-                        <span className="font-bold text-green-700 ml-1 truncate">
+                        <span className="font-bold text-green-700 ml-1 break-words">
                           {dest.accepted_filieres}
                         </span>
                       </div>
