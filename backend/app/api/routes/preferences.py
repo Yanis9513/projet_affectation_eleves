@@ -5,7 +5,9 @@ from app.database import get_db
 from app.models.preference import StudentPreference
 from app.models.student import Student
 from app.models.project import Project
+from app.models.user import User, UserRole
 from app.schemas import PreferenceCreate, PreferenceResponse, MessageResponse
+from app.auth_utils import get_current_user
 from pydantic import BaseModel, validator
 from datetime import datetime
 
@@ -57,13 +59,24 @@ class PreferencesBulkCreate(BaseModel):
 def create_student_preferences(
     student_id: int,
     preferences_data: PreferencesBulkCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Soumettre les préférences d'un étudiant (création en masse)"""
     # Vérifier que l'étudiant existe
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    
+    # Authorization check: user must be the student or a teacher
+    is_student_owner = current_user.student_profile and current_user.student_profile.id == student_id
+    is_teacher = current_user.teacher_profile is not None
+    
+    if not is_student_owner and not is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé à soumettre des préférences pour cet étudiant"
+        )
     
     # Vérifier que tous les projets existent et sont ouverts
     for pref in preferences_data.preferences:
@@ -108,7 +121,8 @@ def create_student_preferences(
 def submit_partner_preference(
     student_id: int,
     preference_data: PreferenceCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Submit partner preference for a group project"""
     
@@ -116,6 +130,21 @@ def submit_partner_preference(
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Authorization check: user must be the student
+    is_student_owner = (current_user.student_profile and current_user.student_profile.id == student_id)
+    
+    # Also allow if student_id matches by user_id lookup (fallback)
+    if not is_student_owner:
+        student_by_user = db.query(Student).filter(Student.user_id == current_user.id).first()
+        if student_by_user and student_by_user.id == student_id:
+            is_student_owner = True
+    
+    if not is_student_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé à soumettre des préférences de partenaire pour cet étudiant"
+        )
     
     # Verify project exists
     project = db.query(Project).filter(Project.id == preference_data.project_id).first()
@@ -177,11 +206,32 @@ def submit_partner_preference(
     return MessageResponse(message=message, success=True)
 
 @router.get("/students/{student_id}/preferences", response_model=List[PreferenceWithProjectResponse])
-def get_student_preferences(student_id: int, db: Session = Depends(get_db)):
+def get_student_preferences(
+    student_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Récupérer les préférences d'un étudiant"""
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    
+    # Authorization check: user must be the student or a teacher
+    is_student_owner = (current_user.student_profile and current_user.student_profile.id == student_id)
+    
+    # Also allow if student_id matches by user_id lookup (fallback)
+    if not is_student_owner:
+        student_by_user = db.query(Student).filter(Student.user_id == current_user.id).first()
+        if student_by_user and student_by_user.id == student_id:
+            is_student_owner = True
+    
+    is_teacher = current_user.teacher_profile is not None
+    
+    if not is_student_owner and not is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé à voir les préférences de cet étudiant"
+        )
     
     preferences = db.query(StudentPreference).filter(
         StudentPreference.student_id == student_id
@@ -209,15 +259,39 @@ def get_student_preferences(student_id: int, db: Session = Depends(get_db)):
 def update_student_preferences(
     student_id: int,
     preferences_data: PreferencesBulkCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Modifier les préférences d'un étudiant (remplace toutes les préférences existantes)"""
+    # Authorization check: user must be the student
+    is_student_owner = current_user.student_profile and current_user.student_profile.id == student_id
+    
+    if not is_student_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé à modifier les préférences de cet étudiant"
+        )
+    
     # Utiliser la même logique que la création
-    return create_student_preferences(student_id, preferences_data, db)
+    return create_student_preferences(student_id, preferences_data, db, current_user)
 
 @router.delete("/students/{student_id}/preferences", status_code=status.HTTP_204_NO_CONTENT)
-def delete_student_preferences(student_id: int, db: Session = Depends(get_db)):
+def delete_student_preferences(
+    student_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Supprimer toutes les préférences d'un étudiant"""
+    # Authorization check: user must be the student or a teacher
+    is_student_owner = current_user.student_profile and current_user.student_profile.id == student_id
+    is_teacher = current_user.teacher_profile is not None
+    
+    if not is_student_owner and not is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé à supprimer les préférences de cet étudiant"
+        )
+    
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Étudiant non trouvé")
@@ -230,14 +304,45 @@ def delete_student_preferences(student_id: int, db: Session = Depends(get_db)):
     return None
 
 @router.get("/projects/{project_id}/preferences")
-def get_project_preferences(project_id: int, db: Session = Depends(get_db)):
+def get_project_preferences(
+    project_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Récupérer toutes les préférences pour un projet (utile pour les professeurs)"""
-    from app.models.student import Student
-    from app.models.user import User
-    
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Authorization check:
+    # - admins can always view
+    # - teachers can view if they own the project
+    is_admin = current_user.role == UserRole.ADMIN
+    is_project_teacher = False
+
+    if current_user.role == UserRole.TEACHER:
+        # Prefer relationship from Project -> Teacher to avoid relying on user.teacher_profile
+        if project.teacher and project.teacher.user_id == current_user.id:
+            is_project_teacher = True
+        else:
+            # Fallback: compare teacher_profile id to project.teacher_id
+            is_project_teacher = (
+                current_user.teacher_profile is not None
+                and current_user.teacher_profile.id == project.teacher_id
+            )
+    
+    # Also allow if teacher_id matches by user_id lookup (fallback)
+    if not is_project_teacher:
+        from app.models.teacher import Teacher
+        teacher_by_user = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
+        if teacher_by_user and teacher_by_user.id == project.teacher_id:
+            is_project_teacher = True
+    
+    if not is_admin and not is_project_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé à voir les préférences de ce projet"
+        )
     
     preferences = db.query(StudentPreference).filter(
         StudentPreference.project_id == project_id
@@ -310,12 +415,23 @@ def get_project_preferences(project_id: int, db: Session = Depends(get_db)):
         "mutual_matches": mutual_matches,
         "preferences": detailed_preferences
     }
-    
-    return result
 
 @router.get("/preferences/stats")
-def get_preferences_stats(db: Session = Depends(get_db)):
+def get_preferences_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Récupérer des statistiques globales sur les préférences"""
+    # Authorization check: user must be a teacher or admin
+    is_teacher = current_user.teacher_profile is not None
+    is_admin = current_user.role == UserRole.ADMIN
+    
+    if not is_teacher and not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé à voir les statistiques globales"
+        )
+    
     total_students = db.query(Student).count()
     students_with_preferences = db.query(StudentPreference.student_id).distinct().count()
     total_projects = db.query(Project).filter(Project.is_active == True).count()
