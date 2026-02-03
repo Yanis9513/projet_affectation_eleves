@@ -169,17 +169,26 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         }
     )
     
+    # Build user response with profile IDs
+    user_response = {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role.value
+    }
+    
+    # Include student_id or teacher_id if applicable
+    if user.student_profile:
+        user_response["student_id"] = user.student_profile.id
+    if user.teacher_profile:
+        user_response["teacher_id"] = user.teacher_profile.id
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": user.role.value
-        }
+        "user": user_response
     }
 
 @router.get("/me", response_model=UserResponse)
