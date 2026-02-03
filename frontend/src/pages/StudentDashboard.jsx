@@ -135,11 +135,11 @@ export default function StudentDashboard() {
       case 'exchange_program':
         return { color: 'bg-purple-100 text-purple-800', label: 'Échange' };
       case 'english_leveling':
-        return { color: 'bg-green-100 text-green-800', label: 'Niveau d\'anglais' };
+        return { color: 'bg-emerald-100 text-emerald-800', label: 'Niveau d\'anglais' };
       case 'group_project':
         return { color: 'bg-blue-100 text-blue-800', label: 'Groupe' };
       default:
-        return { color: 'bg-gray-100 text-gray-800', label: type };
+        return { color: 'bg-slate-100 text-slate-800', label: type };
     }
   };
 

@@ -75,12 +75,8 @@ function Layout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3">
-              <img src="/logo-esiee.svg" alt="ESIEE Paris" className="h-9" />
-              <div className="hidden sm:block">
-                <span className="text-sm font-semibold text-slate-900">ESIEE Paris</span>
-                <span className="block text-xs text-slate-500">Affectation Étudiants</span>
-              </div>
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/logo-esiee.svg" alt="ESIEE Paris" className="h-10" />
             </Link>
 
             {/* Mobile menu button */}
@@ -206,7 +202,7 @@ function Layout() {
                       className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <LogoutIcon />
-                      Déconnexion
+                      Deconnexion
                     </button>
                   </div>
                 </>
@@ -235,7 +231,7 @@ function Layout() {
 
       {/* Main Content */}
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           <Outlet />
         </div>
       </main>

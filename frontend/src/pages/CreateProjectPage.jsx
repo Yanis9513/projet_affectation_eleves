@@ -312,7 +312,7 @@ export default function CreateProjectPage() {
                 className={`relative flex flex-col items-center p-5 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
                   projectData.type === type.value 
                     ? 'border-blue-500 bg-blue-50 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <input
@@ -366,8 +366,8 @@ export default function CreateProjectPage() {
       />
       
       {projectData.students.length > 0 && (
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800">
+        <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <p className="text-emerald-800">
             <span className="font-semibold">{projectData.students.length} étudiants</span> importés avec succès
           </p>
         </div>
@@ -392,15 +392,15 @@ export default function CreateProjectPage() {
           {/* Capacity indicator */}
           <div className={`mb-6 p-4 rounded-lg border ${
             totalPlaces >= placesNeeded 
-              ? 'bg-green-50 border-green-200' 
-              : 'bg-orange-50 border-orange-200'
+              ? 'bg-emerald-50 border-emerald-200' 
+              : 'bg-amber-50 border-amber-200'
           }`}>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">
                 Capacité : {totalPlaces} places / {placesNeeded} étudiants
               </span>
               <span className={`text-sm font-bold ${
-                totalPlaces >= placesNeeded ? 'text-green-700' : 'text-orange-700'
+                totalPlaces >= placesNeeded ? 'text-emerald-700' : 'text-amber-700'
               }`}>
                 {totalPlaces >= placesNeeded ? '✓ Suffisant' : '⚠️ Insuffisant'}
               </span>
@@ -408,7 +408,7 @@ export default function CreateProjectPage() {
             <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
               <div 
                 className={`h-2 rounded-full transition-all ${
-                  totalPlaces >= placesNeeded ? 'bg-green-500' : 'bg-orange-500'
+                  totalPlaces >= placesNeeded ? 'bg-emerald-500' : 'bg-amber-500'
                 }`}
                 style={{ width: `${Math.min((totalPlaces / placesNeeded) * 100, 100)}%` }}
               />
@@ -546,7 +546,7 @@ export default function CreateProjectPage() {
               </p>
             </div>
           ) : (
-            <div className="bg-green-50 p-5 rounded-lg">
+            <div className="bg-emerald-50 p-5 rounded-lg">
               <h3 className="font-semibold text-slate-700 mb-3">Configuration</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

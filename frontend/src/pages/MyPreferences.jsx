@@ -154,10 +154,10 @@ export default function MyPreferences() {
 
   const getGradeColor = (grade) => {
     switch(grade) {
-      case 'A': return 'bg-green-500 text-white';
-      case 'B': return 'bg-green-400 text-white';
+      case 'A': return 'bg-emerald-500 text-white';
+      case 'B': return 'bg-emerald-400 text-white';
       case 'C': return 'bg-blue-400 text-white';
-      case 'D': return 'bg-yellow-400 text-white';
+      case 'D': return 'bg-amber-400 text-white';
       case 'E': return 'bg-orange-400 text-white';
       case 'F': return 'bg-red-400 text-white';
       default: return 'bg-slate-200 text-slate-700';

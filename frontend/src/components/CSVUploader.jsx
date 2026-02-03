@@ -572,7 +572,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-slate-200">
             {previewData.map((item, index) => (
               <tr key={item.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium">{item.university_name}</td>
@@ -615,7 +615,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-slate-200">
             {existingStudents.length > 0 && (
               <tr className="bg-slate-50">
                 <td colSpan="6" className="px-6 py-2 text-sm font-medium text-slate-700">
