@@ -23,6 +23,22 @@ export default function StudentDashboard() {
     try {
       setLoading(true);
       
+      // Ensure student_id is in localStorage
+      let currentUser = JSON.parse(localStorage.getItem('user'));
+      if (!currentUser?.student_id) {
+        try {
+          const profileResponse = await studentAPI.getProfile();
+          const studentId = profileResponse.data?.id;
+          
+          if (studentId) {
+            currentUser.student_id = studentId;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+          }
+        } catch (err) {
+          console.error('Error fetching student profile for ID:', err);
+        }
+      }
+      
       // Get student profile
       const profileResponse = await studentAPI.getProfile();
       setStudent(profileResponse.data);
@@ -45,10 +61,16 @@ export default function StudentDashboard() {
           // Check group project partner preferences
           try {
             const currentUser = JSON.parse(localStorage.getItem('user'));
-            const prefResponse = await preferenceAPI.getStudentPreferences(currentUser.id);
-            // Check if student has preferences for this specific project
-            const projectPrefs = prefResponse.data?.filter(p => p.project_id === project.id);
-            project.has_submitted_preferences = projectPrefs && projectPrefs.length > 0;
+            const studentId = currentUser?.student_id || profileResponse.data?.id;
+            
+            if (studentId) {
+              const prefResponse = await preferenceAPI.getStudentPreferences(studentId);
+              // Check if student has preferences for this specific project
+              const projectPrefs = prefResponse.data?.filter(p => p.project_id === project.id);
+              project.has_submitted_preferences = projectPrefs && projectPrefs.length > 0;
+            } else {
+              project.has_submitted_preferences = false;
+            }
           } catch (err) {
             project.has_submitted_preferences = false;
           }

@@ -4,7 +4,7 @@ import Button from '../components/Button'
 import { CardSimple } from '../components/Card'
 import { Select } from '../components/Input'
 import { Alert, Loading } from '../components/Loading'
-import { projectAPI, preferenceAPI } from '../services/api'
+import { projectAPI, preferenceAPI, studentAPI } from '../services/api'
 
 export default function StudentFormPage() {
   const { projectId } = useParams()
@@ -57,9 +57,27 @@ export default function StudentFormPage() {
     setSubmitting(true)
 
     try {
-      const currentUser = JSON.parse(localStorage.getItem('user'))
-      if (!currentUser?.id) {
-        throw new Error('Utilisateur non connecté')
+      let currentUser = JSON.parse(localStorage.getItem('user'))
+      let studentId = currentUser?.student_id
+      
+      // If student_id not in localStorage, fetch from API
+      if (!studentId) {
+        try {
+          const profileResponse = await studentAPI.getProfile()
+          studentId = profileResponse.data?.id
+          
+          // Update localStorage with student_id for future requests
+          if (studentId) {
+            currentUser.student_id = studentId
+            localStorage.setItem('user', JSON.stringify(currentUser))
+          }
+        } catch (profileErr) {
+          console.error('Error fetching student profile:', profileErr)
+        }
+      }
+      
+      if (!studentId) {
+        throw new Error('Étudiant non identifié. Veuillez vous reconnecter.')
       }
       
       const preferenceData = {
@@ -68,7 +86,7 @@ export default function StudentFormPage() {
         rank: 1
       }
       
-      await preferenceAPI.submitPartnerPreference(currentUser.id, preferenceData)
+      await preferenceAPI.submitPartnerPreference(studentId, preferenceData)
       
       setSuccess(true)
 
