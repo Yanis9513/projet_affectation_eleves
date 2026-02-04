@@ -338,6 +338,12 @@ class EnglishLevelingService:
                     "english_level": english_level
                 })
         
+        # Mark algorithm as ran on the project
+        from app.models.project import Project
+        project = self.db.query(Project).filter(Project.id == self.project_id).first()
+        if project:
+            project.algorithm_ran = True
+        
         self.db.commit()
         return assignments_created
     

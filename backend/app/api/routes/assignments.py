@@ -244,6 +244,8 @@ async def run_assignment_algorithm(
                 db.add(assignment)
                 assignments_created += 1
         
+        # Mark algorithm as ran on the project
+        project.algorithm_ran = True
         db.commit()
         
         return RunAlgorithmResponse(

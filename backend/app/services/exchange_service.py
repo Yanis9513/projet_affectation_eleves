@@ -224,13 +224,18 @@ def run_exchange_optimization(
     
     # SAUVEGARDER les affectations dans la base de données
     from app.models.assignment import Assignment
+    from app.models.project import Project
     from datetime import datetime
     
     # Supprimer les anciennes affectations
     db.query(Assignment).filter(Assignment.project_id == project_id).delete()
     
-    # Créer les nouvelles affectations
+    # Créer les nouvelles affectations (only for students with a destination)
     for assignment_data in assignments:
+        # Skip unassigned students - don't create assignment without destination
+        if not assignment_data.get('destination_id'):
+            continue
+            
         assignment = Assignment(
             student_id=assignment_data['student_id'],
             project_id=project_id,
@@ -240,6 +245,11 @@ def run_exchange_optimization(
             assigned_at=datetime.utcnow()
         )
         db.add(assignment)
+    
+    # Update project to mark algorithm as ran
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if project:
+        project.algorithm_ran = True
     
     db.commit()
     
@@ -465,11 +475,40 @@ def _genetic_algorithm(
     # Retourner la meilleure solution
     best_individual = max(population, key=fitness)
     
+    # POST-PROCESSING: Validate and fix capacity constraints
+    # Count assignments per destination
+    dest_counts = defaultdict(int)
+    valid_assignments = {}
+    
+    # Sort students by preference score (higher is better) to prioritize better students
+    def student_priority(student_id):
+        dest_id = best_individual.get(student_id)
+        if not dest_id:
+            return -1
+        student_prefs = preferences.get(student_id, {})
+        grade = student_prefs.get(dest_id, 'F')
+        return calculate_preference_score(grade)
+    
+    sorted_student_ids = sorted(best_individual.keys(), key=student_priority, reverse=True)
+    
+    for student_id in sorted_student_ids:
+        dest_id = best_individual.get(student_id)
+        if dest_id:
+            destination = next((d for d in destinations if d.id == dest_id), None)
+            if destination and dest_counts[dest_id] < destination.total_places:
+                valid_assignments[student_id] = dest_id
+                dest_counts[dest_id] += 1
+            else:
+                # Over capacity - this student doesn't get assigned
+                valid_assignments[student_id] = None
+        else:
+            valid_assignments[student_id] = None
+    
     # Convertir en format d'assignations
     assignments = []
     for student in students:
         student_id = student.id
-        dest_id = best_individual.get(student_id)
+        dest_id = valid_assignments.get(student_id)
         
         if dest_id:
             destination = next((d for d in destinations if d.id == dest_id), None)

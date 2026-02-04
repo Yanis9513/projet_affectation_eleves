@@ -35,6 +35,9 @@ def serialize_project(project: Project, include_students: bool = False, students
             "email": project.teacher.user.email
         }
     
+    # Use the database field for algorithm_ran status
+    algorithm_ran = project.algorithm_ran if hasattr(project, 'algorithm_ran') else False
+    
     result = {
         "id": project.id,
         "teacher_id": project.teacher_id,
@@ -52,6 +55,7 @@ def serialize_project(project: Project, include_students: bool = False, students
         "created_at": project.created_at.isoformat() if project.created_at else None,
         "updated_at": project.updated_at.isoformat() if project.updated_at else None,
         "destinations_count": len(project.destinations) if project.destinations else 0,
+        "algorithm_ran": algorithm_ran,
     }
     if include_students:
         result["students"] = students_data or []
