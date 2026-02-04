@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { invalidateQueries } from '../services/useQuery'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Button from '../components/Button'
@@ -250,7 +251,7 @@ export default function CreateProjectPage() {
       setCreationProgress({ step: 'Terminé!', percent: 100 })
       
       toast.success('Projet créé avec succès!')
-      
+      invalidateQueries('projects')
       setTimeout(() => {
         navigate('/teacher')
       }, 1000)

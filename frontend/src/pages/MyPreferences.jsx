@@ -23,18 +23,13 @@ const ClipboardIcon = () => (
 const PreferenceCard = ({ item, navigate, getGradeColor, getGradeDescription, getEnglishLevelColor }) => {
   const { type, project, preferences, submittedAt, englishLevel } = item;
   
-  // Determine the status badge based on algorithm_ran and is_open_for_preferences
+  // Determine the status badge based on algorithm_ran only
+  // algorithm_ran = true means groups have been formed by the teacher
   const isFormed = project?.algorithm_ran || false;
-  const isOpen = project?.is_open_for_preferences || false;
   
-  let statusBadge;
-  if (isFormed) {
-    statusBadge = { text: 'Groupes formés', className: 'bg-blue-100 text-blue-700' };
-  } else if (isOpen) {
-    statusBadge = { text: 'En attente', className: 'bg-amber-100 text-amber-700' };
-  } else {
-    statusBadge = { text: 'Préférences soumises', className: 'bg-emerald-100 text-emerald-700' };
-  }
+  const statusBadge = isFormed 
+    ? { text: 'Groupes formés', className: 'bg-blue-100 text-blue-700' }
+    : { text: 'Préférences soumises', className: 'bg-emerald-100 text-emerald-700' };
   
   // Type indicator colors
   const typeColors = {
@@ -467,21 +462,21 @@ export default function MyPreferences() {
                   onClick={() => handleFilterChange('formed')}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterStatus === 'formed' 
-                      ? 'bg-emerald-600 text-white' 
+                      ? 'bg-blue-600 text-white' 
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  Groupes formés
+                  Groupes formés ({getAllPreferences().filter(p => p.project?.algorithm_ran).length})
                 </button>
                 <button
                   onClick={() => handleFilterChange('pending')}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterStatus === 'pending' 
-                      ? 'bg-amber-600 text-white' 
+                      ? 'bg-emerald-600 text-white' 
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  En attente
+                  Préférences soumises ({getAllPreferences().filter(p => !p.project?.algorithm_ran).length})
                 </button>
               </div>
             </div>

@@ -1229,7 +1229,8 @@ export default function ProjectDetailsPage() {
             <h2 className="text-2xl font-bold text-slate-800 mb-4">
               Étudiants Inscrits ({students.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+            {/* Show only 6 students at a time with scroll - 2 rows of 3 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[420px] overflow-y-auto pr-2">
               {students.map((student, idx) => (
                 <div
                   key={student.id || idx}
