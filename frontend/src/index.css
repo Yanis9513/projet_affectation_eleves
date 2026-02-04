@@ -5,13 +5,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== CSS CUSTOM PROPERTIES - DESIGN TOKENS ===== */
+:root {
+  /* Couleurs organiques (moins saturées, plus naturelles) */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #eff6ff;
+  
+  --color-surface: #ffffff;
+  --color-surface-raised: #fafbfc;
+  --color-surface-sunken: #f4f6f8;
+  
+  --color-text-primary: #1a1f36;
+  --color-text-secondary: #5e6687;
+  --color-text-muted: #8792a2;
+  
+  --color-border: #e3e8ee;
+  --color-border-hover: #c9d1dc;
+  
+  /* Ombres réalistes (pas parfaitement uniformes) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.05), 0 4px 6px -1px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 4px 6px -2px rgb(0 0 0 / 0.05), 0 10px 15px -3px rgb(0 0 0 / 0.08);
+  --shadow-xl: 0 10px 25px -5px rgb(0 0 0 / 0.08), 0 20px 40px -10px rgb(0 0 0 / 0.1);
+  
+  /* Rayons de bordure non uniformes pour un look plus naturel */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  
+  /* Timing functions organiques */
+  --ease-natural: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
 /* ===== BASE STYLES ===== */
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-primary);
+  letter-spacing: -0.011em;
+  line-height: 1.6;
 }
 
 code {
@@ -376,5 +415,150 @@ h1, h2, h3, h4, h5, h6 {
 .page-transition-exit-active {
   opacity: 0;
   transition: opacity 200ms;
+}
+
+/* ===== PROFESSIONAL ORGANIC STYLES ===== */
+
+/* Asymmetric spacing utilities */
+.space-organic > * + * {
+  margin-top: calc(1rem + 0.125rem * var(--stagger, 0));
+}
+
+/* Subtle texture overlay for depth */
+.texture-subtle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.015;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Cards avec ombres réalistes */
+.card-natural {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s var(--ease-natural);
+}
+
+.card-natural:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-hover);
+  transform: translateY(-1px);
+}
+
+/* Boutons avec états naturels */
+.btn-natural {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.15s var(--ease-natural);
+}
+
+.btn-natural::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.05) 100%);
+  pointer-events: none;
+}
+
+.btn-natural:active {
+  transform: scale(0.98);
+}
+
+/* Typography avec variations naturelles */
+.heading-natural {
+  letter-spacing: -0.025em;
+  font-weight: 650;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Gradient borders subtils */
+.border-gradient {
+  position: relative;
+}
+
+.border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.05) 100%);
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Focus states accessibles mais élégants */
+.focus-natural:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary);
+}
+
+/* Skeleton loader plus réaliste */
+.skeleton-natural {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-sunken) 0%,
+    var(--color-surface) 40%,
+    var(--color-surface) 60%,
+    var(--color-surface-sunken) 100%
+  );
+  background-size: 300% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Hover subtil pour liens */
+.link-natural {
+  color: var(--color-primary);
+  text-decoration: none;
+  background-image: linear-gradient(var(--color-primary), var(--color-primary));
+  background-position: 0% 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition: background-size 0.25s var(--ease-natural);
+}
+
+.link-natural:hover {
+  background-size: 100% 1px;
+}
+
+/* Input avec états organiques */
+.input-natural {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.15s var(--ease-natural);
+}
+
+.input-natural:hover:not(:focus) {
+  border-color: var(--color-border-hover);
+}
+
+.input-natural:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Badges moins uniformes */
+.badge-natural {
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 

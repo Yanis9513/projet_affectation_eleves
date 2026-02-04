@@ -171,49 +171,54 @@ function HomePage() {
     <div className="animate-fade-in">
       {/* Hero Section with Slider */}
       <div className="relative min-h-[85vh] flex items-center overflow-hidden">
-        {/* Animated Background */}
+        {/* Animated Background - Plus subtil et naturel */}
         <div className="absolute inset-0 -z-10">
-          <div className={`absolute inset-0 bg-gradient-to-br ${currentColor.bgGradient} opacity-5 transition-all duration-1000`}></div>
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-blue-100 to-purple-100 rounded-full blur-3xl opacity-40 -translate-y-1/2 translate-x-1/3 animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-emerald-100 to-blue-100 rounded-full blur-3xl opacity-40 translate-y-1/3 -translate-x-1/3"></div>
+          <div className={`absolute inset-0 bg-gradient-to-br ${currentColor.bgGradient} opacity-[0.03] transition-all duration-1000`}></div>
           
-          {/* Floating particles */}
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}></div>
-          <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-purple-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '4s' }}></div>
-          <div className="absolute bottom-1/3 left-1/3 w-2 h-2 bg-emerald-400 rounded-full opacity-60 animate-bounce" style={{ animationDelay: '1s', animationDuration: '3.5s' }}></div>
+          {/* Organic blob shapes instead of perfect circles */}
+          <div className="absolute top-0 right-0 w-[600px] h-[550px] opacity-30 -translate-y-1/3 translate-x-1/4"
+            style={{
+              background: 'radial-gradient(ellipse at 30% 40%, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
+            }}
+          ></div>
+          <div className="absolute bottom-0 left-0 w-[500px] h-[450px] opacity-25 translate-y-1/4 -translate-x-1/4"
+            style={{
+              background: 'radial-gradient(ellipse at 60% 50%, rgba(16, 185, 129, 0.12) 0%, transparent 70%)',
+            }}
+          ></div>
         </div>
 
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left side - Text Content */}
             <div className="text-center lg:text-left">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-slate-200 shadow-sm mb-8">
-                <span className={`w-2 h-2 rounded-full ${currentColor.bg} animate-pulse`}></span>
-                <span className="text-sm font-medium text-slate-700">Plateforme ESIEE Paris</span>
+              {/* Badge - Plus discret */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100/80 backdrop-blur-sm rounded-full border border-slate-200/60 mb-6">
+                <span className={`w-1.5 h-1.5 rounded-full ${currentColor.bg}`}></span>
+                <span className="text-xs font-medium text-slate-600 tracking-wide">ESIEE Paris</span>
               </div>
 
-              {/* Main heading */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-slate-900 mb-6 leading-tight">
+              {/* Main heading - Typographie plus sophistiquée */}
+              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-bold text-slate-900 mb-5 leading-[1.1] tracking-tight">
                 Simplifiez vos{' '}
                 <br className="hidden sm:block" />
-                <span className={`text-transparent bg-clip-text bg-gradient-to-r ${currentColor.bgGradient}`}>
-                  Affectations
+                <span className="text-blue-600">
+                  affectations
                 </span>
               </h1>
 
-              <p className="text-lg sm:text-xl xl:text-2xl text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0">
-                Optimisez vos affectations de projets, programmes d'echange et groupes de travail avec notre algorithme genetique.
+              <p className="text-lg xl:text-xl text-slate-500 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Optimisez vos affectations de projets, programmes d'échange et groupes avec notre algorithme génétique.
               </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-12">
+              {/* CTA Buttons - Hiérarchie plus claire */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-10">
                 {isLoggedIn ? (
                   <Link to={`/${userRole}`}>
                     <Button variant="primary" size="lg">
                       <span className="flex items-center gap-2">
-                        Mon Tableau de Bord
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        Tableau de bord
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                       </span>
@@ -223,116 +228,112 @@ function HomePage() {
                   <>
                     <Link to="/login">
                       <Button variant="primary" size="lg">
-                        <span className="flex items-center gap-2">
-                          Commencer maintenant
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </span>
+                        Commencer
                       </Button>
                     </Link>
                     <Link to="/signup">
-                      <Button variant="secondary" size="lg">
-                        Creer un compte
+                      <Button variant="ghost" size="lg">
+                        Créer un compte
                       </Button>
                     </Link>
                   </>
                 )}
               </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-8 max-w-lg mx-auto lg:mx-0">
-                <div className="text-center lg:text-left">
-                  <div className="text-3xl font-bold text-slate-900">
+              {/* Quick Stats - Moins proéminent, plus subtil */}
+              <div className="flex items-center justify-center lg:justify-start gap-8 text-sm">
+                <div>
+                  <span className="text-2xl font-semibold text-slate-900">
                     <AnimatedCounter end={500} suffix="+" />
-                  </div>
-                  <div className="text-sm text-slate-500">Etudiants</div>
+                  </span>
+                  <span className="text-slate-400 ml-1">étudiants</span>
                 </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-3xl font-bold text-slate-900">
+                <div className="w-px h-6 bg-slate-200"></div>
+                <div>
+                  <span className="text-2xl font-semibold text-slate-900">
                     <AnimatedCounter end={50} suffix="+" />
-                  </div>
-                  <div className="text-sm text-slate-500">Projets</div>
+                  </span>
+                  <span className="text-slate-400 ml-1">projets</span>
                 </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-3xl font-bold text-slate-900">
+                <div className="w-px h-6 bg-slate-200"></div>
+                <div>
+                  <span className="text-2xl font-semibold text-slate-900">
                     <AnimatedCounter end={99} suffix="%" />
-                  </div>
-                  <div className="text-sm text-slate-500">Satisfaction</div>
+                  </span>
+                  <span className="text-slate-400 ml-1">satisfaction</span>
                 </div>
               </div>
             </div>
 
             {/* Right side - Feature Slider Card */}
             <div className="relative">
-              {/* Slider Navigation Arrows */}
+              {/* Slider Navigation Arrows - Plus discrets */}
               <button
                 onClick={prevSlide}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 lg:-translate-x-6 z-10 w-12 h-12 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:shadow-xl transition-all"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 lg:-translate-x-5 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md border border-slate-200/60 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-white transition-all"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <button
                 onClick={nextSlide}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 lg:translate-x-6 z-10 w-12 h-12 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:shadow-xl transition-all"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 lg:translate-x-5 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md border border-slate-200/60 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-white transition-all"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
 
-              {/* Slider Card */}
-              <div className="relative bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-                {/* Card Header with gradient */}
-                <div className={`relative h-32 bg-gradient-to-r ${currentColor.bgGradient} flex items-center justify-center transition-all duration-500`}>
-                  <div className="absolute inset-0 bg-black/10"></div>
-                  <div className="relative text-white">
+              {/* Slider Card - Design plus raffiné */}
+              <div className="relative bg-white rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden">
+                {/* Card Header with gradient - Plus subtil */}
+                <div className={`relative h-28 bg-gradient-to-br ${currentColor.bgGradient} flex items-center justify-center transition-all duration-500`}>
+                  <div className="relative text-white/90">
                     {slides[currentSlide].icon}
                   </div>
                   
-                  {/* Slide counter */}
-                  <div className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm font-medium">
-                    {currentSlide + 1} / {slides.length}
+                  {/* Slide counter - Plus discret */}
+                  <div className="absolute bottom-3 right-3 text-white/60 text-xs font-medium">
+                    {currentSlide + 1}/{slides.length}
                   </div>
                 </div>
 
                 {/* Card Content */}
-                <div className="p-8">
-                  <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${currentColor.bgLight} ${currentColor.text} mb-4`}>
+                <div className="p-6 lg:p-7">
+                  <div className={`inline-block px-2.5 py-1 rounded-md text-xs font-medium ${currentColor.bgLight} ${currentColor.text} mb-3`}>
                     {slides[currentSlide].subtitle}
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">
                     {slides[currentSlide].title}
                   </h3>
                   
-                  <p className="text-slate-600 mb-6 min-h-[72px]">
+                  <p className="text-slate-500 text-sm leading-relaxed mb-5 min-h-[60px]">
                     {slides[currentSlide].description}
                   </p>
 
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Stats - Plus compacts */}
+                  <div className="grid grid-cols-2 gap-3">
                     {slides[currentSlide].stats.map((stat, index) => (
-                      <div key={index} className={`p-4 rounded-xl ${currentColor.bgLight} border ${currentColor.border}`}>
-                        <div className={`text-xl font-bold ${currentColor.text}`}>{stat.value}</div>
-                        <div className="text-sm text-slate-500">{stat.label}</div>
+                      <div key={index} className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                        <div className={`text-base font-semibold ${currentColor.text}`}>{stat.value}</div>
+                        <div className="text-xs text-slate-400">{stat.label}</div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Slide Indicators */}
-                <div className="flex justify-center gap-2 pb-6">
+                {/* Slide Indicators - Plus subtils */}
+                <div className="flex justify-center gap-1.5 pb-5">
                   {slides.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => goToSlide(index)}
-                      className={`transition-all duration-300 rounded-full ${
+                      className={`transition-all duration-200 rounded-full ${
                         index === currentSlide 
-                          ? `w-8 h-2 ${currentColor.bg}` 
-                          : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                          ? `w-6 h-1.5 ${currentColor.bg}` 
+                          : 'w-1.5 h-1.5 bg-slate-200 hover:bg-slate-300'
                       }`}
                     />
                   ))}
@@ -343,126 +344,120 @@ function HomePage() {
         </div>
       </div>
 
-      {/* Process Section - Horizontal Scrolling Cards */}
-      <div className="py-20 bg-slate-50 -mx-4 sm:-mx-6 lg:-mx-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl xl:text-4xl font-bold text-slate-900 mb-4">
-              Comment ca marche ?
+      {/* Process Section - Plus organique et moins symétrique */}
+      <div className="py-16 lg:py-20 bg-slate-50/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 lg:mb-14">
+            <h2 className="text-2xl lg:text-3xl font-semibold text-slate-900 mb-3">
+              Comment ça marche
             </h2>
-            <p className="text-lg xl:text-xl text-slate-600 max-w-2xl mx-auto">
-              Un processus simple et efficace en 4 etapes
+            <p className="text-slate-500 max-w-lg">
+              Un processus simple en 4 étapes pour optimiser vos affectations.
             </p>
           </div>
 
-          {/* Process Steps */}
-          <div className="relative">
-            {/* Connection Line */}
-            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 via-emerald-500 to-amber-500 transform -translate-y-1/2 z-0"></div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { step: 1, title: "Import", desc: "Importez votre liste d'etudiants via CSV", color: "blue", icon: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" },
-                { step: 2, title: "Configure", desc: "Definissez les contraintes du projet", color: "purple", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
-                { step: 3, title: "Optimise", desc: "L'algorithme trouve la meilleure solution", color: "emerald", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
-                { step: 4, title: "Export", desc: "Telechargez et partagez les resultats", color: "amber", icon: "M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" }
-              ].map((item) => (
-                <div key={item.step} className="relative group">
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative z-10">
-                    {/* Step Number */}
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[item.color].bgGradient} text-white flex items-center justify-center font-bold text-lg mb-4 shadow-lg ${colorClasses[item.color].shadow}`}>
-                      {item.step}
-                    </div>
-                    
-                    {/* Icon */}
-                    <div className={`w-10 h-10 rounded-lg ${colorClasses[item.color].bgLight} ${colorClasses[item.color].text} flex items-center justify-center mb-4`}>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                      </svg>
-                    </div>
-                    
-                    <h3 className="text-lg font-semibold text-slate-900 mb-2">{item.title}</h3>
-                    <p className="text-slate-600 text-sm">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Grid */}
-      <div className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl xl:text-4xl font-bold text-slate-900 mb-4">
-              Pourquoi nous choisir ?
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Process Steps - Layout asymétrique */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
             {[
-              { title: "Import CSV facile", desc: "Importez vos etudiants en un clic", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-              { title: "Algorithme puissant", desc: "Optimisation genetique avancee", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
-              { title: "Multi-projets", desc: "Echange, groupes, niveaux anglais", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
-              { title: "Preferences etudiants", desc: "Les etudiants classent leurs choix", icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" },
-              { title: "Resultats en temps reel", desc: "Visualisez instantanement", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
-              { title: "Export universel", desc: "CSV, PDF, partage facile", icon: "M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" }
-            ].map((feature, index) => (
-              <div 
-                key={index} 
-                className="group p-6 bg-white rounded-2xl border border-slate-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300"
-              >
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-100 group-hover:scale-110 transition-all">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={feature.icon} />
-                  </svg>
+              { step: 1, title: "Import", desc: "Importez votre liste d'étudiants via CSV", color: "blue", icon: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" },
+              { step: 2, title: "Configure", desc: "Définissez les contraintes du projet", color: "purple", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+              { step: 3, title: "Optimise", desc: "L'algorithme trouve la meilleure solution", color: "emerald", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+              { step: 4, title: "Export", desc: "Téléchargez et partagez les résultats", color: "amber", icon: "M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" }
+            ].map((item, idx) => (
+              <div key={item.step} className="group">
+                <div className={`bg-white rounded-xl p-5 border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition-all duration-200 h-full ${idx === 1 ? 'lg:translate-y-2' : idx === 2 ? 'lg:-translate-y-1' : ''}`}>
+                  {/* Step indicator */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className={`text-xs font-medium ${colorClasses[item.color].text} ${colorClasses[item.color].bgLight} px-2 py-0.5 rounded`}>
+                      0{item.step}
+                    </span>
+                    <div className="flex-1 h-px bg-slate-100"></div>
+                  </div>
+                  
+                  <h3 className="text-base font-medium text-slate-900 mb-1.5">{item.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-slate-600">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* CTA Section */}
-      {!isLoggedIn && (
-        <div className="py-20 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
-          </div>
-          
-          <div className="max-w-4xl mx-auto text-center relative z-10">
-            <h2 className="text-3xl sm:text-4xl xl:text-5xl font-bold text-white mb-4">
-              Pret a optimiser vos affectations ?
+      {/* Features Section - Design plus sobre */}
+      <div className="py-16 lg:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12">
+            <h2 className="text-2xl lg:text-3xl font-semibold text-slate-900 mb-3">
+              Fonctionnalités clés
             </h2>
-            <p className="text-lg xl:text-xl text-blue-100 mb-8 max-w-xl mx-auto">
-              Rejoignez les enseignants qui simplifient deja la gestion de leurs projets.
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">
+            {[
+              { title: "Import CSV", desc: "Importez vos étudiants en un clic depuis Excel", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+              { title: "Algorithme génétique", desc: "Optimisation avancée respectant toutes les contraintes", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
+              { title: "Multi-projets", desc: "Échanges, groupes, niveaux d'anglais", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
+              { title: "Préférences", desc: "Les étudiants classent leurs choix", icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" },
+              { title: "Temps réel", desc: "Visualisez les résultats instantanément", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
+              { title: "Export", desc: "CSV, PDF, partage facile", icon: "M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" }
+            ].map((feature, index) => (
+              <div 
+                key={index} 
+                className="flex items-start gap-4"
+              >
+                <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={feature.icon} />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-medium text-slate-900 mb-0.5">{feature.title}</h3>
+                  <p className="text-sm text-slate-500">{feature.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section - Plus discret */}
+      {!isLoggedIn && (
+        <div className="py-16 bg-slate-900">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-white mb-3">
+              Prêt à commencer ?
+            </h2>
+            <p className="text-slate-400 mb-6 max-w-md mx-auto">
+              Rejoignez les enseignants qui simplifient déjà la gestion de leurs projets.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Link to="/signup">
-                <Button variant="secondary" size="lg" className="shadow-xl">
-                  <span className="flex items-center gap-2">
-                    Creer un compte gratuit
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </span>
+                <Button variant="primary" size="md">
+                  Créer un compte
                 </Button>
               </Link>
-              <Link to="/login" className="text-white hover:text-blue-100 font-medium flex items-center gap-2 transition-colors">
-                Se connecter
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <Link to="/login">
+                <Button variant="ghost" size="md" className="text-slate-300 hover:text-white">
+                  Se connecter
+                </Button>
               </Link>
             </div>
           </div>
         </div>
       )}
+
+      {/* Footer simple */}
+      <footer className="py-8 border-t border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+            <p>© 2024 ESIEE Paris — Système d'affectation</p>
+            <div className="flex items-center gap-6">
+              <a href="#" className="hover:text-slate-700 transition-colors">Aide</a>
+              <a href="#" className="hover:text-slate-700 transition-colors">Contact</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
