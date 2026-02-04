@@ -5,6 +5,12 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.api.routes import auth, students, projects, assignments, teachers, forms, preferences, destinations, exchange
 from app.database import engine, Base
+from app.config import settings
+from app.middleware import RequestLoggingMiddleware, setup_logging
+import os
+
+# Configuration du logging
+setup_logging(os.getenv('LOG_LEVEL', 'INFO'))
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -14,19 +20,26 @@ limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Student Assignment API",
-    description="API for managing student project assignments and exchange programs",
-    version="1.0.0"
+    description="API pour la gestion des affectations d'etudiants et programmes d'echange",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS middleware configuration
+# Middleware de logging (seulement en dev)
+if os.getenv('ENVIRONMENT', 'development') == 'development':
+    app.add_middleware(RequestLoggingMiddleware)
+
+# CORS middleware configuration - utilise les origines de la config
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev servers
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    expose_headers=["X-Process-Time"],
 )
 
 # Include routers
@@ -40,14 +53,42 @@ app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignm
 app.include_router(destinations.router, prefix="/api", tags=["Destinations"])
 app.include_router(exchange.router, prefix="/api", tags=["Exchange Program"])
 
-@app.get("/")
+@app.get("/", tags=["Health"])
 async def root():
+    """Point d'entree de l'API."""
     return {
-        "message": "Welcome to Student Assignment API",
+        "message": "Bienvenue sur l'API d'affectation des etudiants",
         "docs": "/docs",
+        "redoc": "/redoc",
+        "version": "1.0.0",
+        "status": "running"
+    }
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Verification de l'etat de sante de l'API."""
+    return {
+        "status": "healthy",
+        "database": "connected",
         "version": "1.0.0"
     }
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+@app.get("/api/info", tags=["Health"])
+async def api_info():
+    """Informations sur l'API."""
+    return {
+        "name": "Student Assignment API",
+        "version": "1.0.0",
+        "environment": os.getenv('ENVIRONMENT', 'development'),
+        "endpoints": {
+            "auth": "/api/auth",
+            "students": "/api/students",
+            "teachers": "/api/teachers",
+            "projects": "/api/projects",
+            "forms": "/api/forms",
+            "preferences": "/api/preferences",
+            "assignments": "/api/assignments",
+            "destinations": "/api/projects/{id}/destinations",
+            "exchange": "/api/projects/{id}/exchange",
+        }
+    }
