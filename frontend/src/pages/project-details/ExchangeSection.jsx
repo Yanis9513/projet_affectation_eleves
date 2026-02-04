@@ -168,5 +168,5 @@ function getCountryFlag(country) {
     'Australie': '🇦🇺',
     'Bresil': '🇧🇷',
   };
-  return flags[country] || '🌍';
+  return flags[country] || '�️';
 }

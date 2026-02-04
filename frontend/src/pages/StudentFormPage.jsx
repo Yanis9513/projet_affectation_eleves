@@ -273,7 +273,7 @@ export default function StudentFormPage() {
             )}
 
             <div className="bg-slate-50 p-4 rounded-lg">
-              <h3 className="font-bold text-slate-800 mb-2">📌 Rappel Important</h3>
+              <h3 className="font-bold text-slate-800 mb-2">Rappel Important</h3>
               <ul className="text-sm text-slate-700 space-y-1 list-disc list-inside">
                 <li>Les groupes de {project.groupSize} étudiants seront formés automatiquement</li>
                 <li>Vos préférences sont prises en compte mais non garanties</li>

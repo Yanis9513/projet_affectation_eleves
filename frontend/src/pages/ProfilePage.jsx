@@ -139,13 +139,17 @@ export default function ProfilePage() {
             role: 'STUDENT'
           })
           
+          // Use all profile data from backend including stats
           setProfile({
             id: profileData.id,
             student_number: profileData.student_number,
             filiere: profileData.filiere,
-            english_level: profileData.language_level,
-            general_rank: profileData.ranking,
-            promotion: profileData.promotion
+            language_level: profileData.language_level,
+            general_rank: profileData.general_rank || profileData.ranking,
+            gpa: profileData.gpa,
+            promotion: profileData.promotion,
+            projects_count: profileData.projects_count,
+            assignments_count: profileData.assignments_count
           })
           
           setFormData({
@@ -360,7 +364,7 @@ export default function ProfilePage() {
                 <>
                   <ProfileField label="Numéro d'étudiant" value={profile?.student_number} />
                   <ProfileField label="Filière" value={profile?.filiere} />
-                  <ProfileField label="Niveau d'anglais" value={profile?.english_level} />
+                  <ProfileField label="Niveau d'anglais" value={profile?.language_level} />
                   <ProfileField label="Rang général" value={profile?.general_rank} />
                   <ProfileField label="Moyenne (GPA)" value={profile?.gpa?.toFixed(2)} />
                   <ProfileField label="Promotion" value={profile?.promotion} />
@@ -392,7 +396,8 @@ export default function ProfilePage() {
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleChange}
-                  required
+                  disabled
+                  helperText="Ce champ ne peut pas être modifié"
                 />
 
                 <TextInput
@@ -400,7 +405,8 @@ export default function ProfilePage() {
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleChange}
-                  required
+                  disabled
+                  helperText="Ce champ ne peut pas être modifié"
                 />
 
                 <TextInput
@@ -409,7 +415,8 @@ export default function ProfilePage() {
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
+                  disabled
+                  helperText="Ce champ ne peut pas être modifié"
                 />
 
                 {user?.role === 'STUDENT' && (
