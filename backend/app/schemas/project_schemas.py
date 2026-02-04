@@ -99,6 +99,7 @@ class ProjectWithStudents(ProjectResponse):
 
 class StudentUploadRequest(BaseModel):
     students: List[StudentInProjectCreate]
+    send_emails: bool = True  # Set to False during project creation wizard
 
 class StudentUploadResponse(BaseModel):
     success: bool

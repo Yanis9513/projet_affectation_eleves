@@ -25,9 +25,20 @@ def serialize_project(project: Project, include_students: bool = False, students
     """Helper function to serialize a Project model to a dictionary.
     Avoids code duplication across multiple endpoints.
     """
+    # Get teacher info
+    teacher_info = None
+    if project.teacher and project.teacher.user:
+        teacher_info = {
+            "id": project.teacher.id,
+            "first_name": project.teacher.user.first_name,
+            "last_name": project.teacher.user.last_name,
+            "email": project.teacher.user.email
+        }
+    
     result = {
         "id": project.id,
         "teacher_id": project.teacher_id,
+        "teacher": teacher_info,
         "title": project.title,
         "description": project.description,
         "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
@@ -40,6 +51,7 @@ def serialize_project(project: Project, include_students: bool = False, students
         "is_open_for_preferences": project.is_open_for_preferences,
         "created_at": project.created_at.isoformat() if project.created_at else None,
         "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+        "destinations_count": len(project.destinations) if project.destinations else 0,
     }
     if include_students:
         result["students"] = students_data or []
@@ -196,11 +208,11 @@ async def create_project(
         db.commit()
         db.refresh(new_project)
         
-        # Create/link students if provided
+        # Create/link students if provided (don't send emails during creation - will be sent on finalization)
         if project_data.students:
             await upload_students_to_project(
                 new_project.id, 
-                StudentUploadRequest(students=project_data.students), 
+                StudentUploadRequest(students=project_data.students, send_emails=True),  # Send emails on project creation
                 db,
                 current_user
             )
@@ -352,14 +364,15 @@ async def upload_students_to_project(
                 # Link student to project if not already linked
                 if project not in student.projects:
                     student.projects.append(project)
-                    # Send enrollment email
-                    student_name = f"{existing_user.first_name} {existing_user.last_name}".strip() or existing_user.email
-                    email_service.send_student_enrollment_email(
-                        student_email=existing_user.email,
-                        student_name=student_name,
-                        project_title=project.title,
-                        teacher_name=teacher_name
-                    )
+                    # Send enrollment email only if send_emails is True
+                    if upload_data.send_emails:
+                        student_name = f"{existing_user.first_name} {existing_user.last_name}".strip() or existing_user.email
+                        email_service.send_student_enrollment_email(
+                            student_email=existing_user.email,
+                            student_name=student_name,
+                            project_title=project.title,
+                            teacher_name=teacher_name
+                        )
                 
                 full_name = f"{existing_user.first_name} {existing_user.last_name}" if existing_user.first_name else existing_user.email
                 result_students.append(StudentInProject(
@@ -439,14 +452,15 @@ async def upload_students_to_project(
             # Link student to project
             new_student.projects.append(project)
             
-            # Send enrollment email
-            student_name = f"{new_user.first_name} {new_user.last_name}".strip()
-            email_service.send_student_enrollment_email(
-                student_email=new_user.email,
-                student_name=student_name,
-                project_title=project.title,
-                teacher_name=teacher_name
-            )
+            # Send enrollment email only if send_emails is True
+            if upload_data.send_emails:
+                student_name = f"{new_user.first_name} {new_user.last_name}".strip()
+                email_service.send_student_enrollment_email(
+                    student_email=new_user.email,
+                    student_name=student_name,
+                    project_title=project.title,
+                    teacher_name=teacher_name
+                )
             
             created_count += 1
             full_name = f"{new_user.first_name} {new_user.last_name}".strip()
