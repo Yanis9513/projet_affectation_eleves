@@ -113,7 +113,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="max-w-5xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-2">

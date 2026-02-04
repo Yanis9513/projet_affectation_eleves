@@ -284,7 +284,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -543,13 +543,13 @@ export default function ProfilePage() {
                 color="emerald" 
               />
               <StatItem 
-                value={0} 
-                label="Groupes formés" 
+                value={profile?.active_projects_count || 0} 
+                label="Projets actifs" 
                 color="purple" 
               />
               <StatItem 
                 value={0} 
-                label="En cours" 
+                label="Groupes formés" 
                 color="amber" 
               />
             </div>
@@ -561,8 +561,8 @@ export default function ProfilePage() {
                 color="blue" 
               />
               <StatItem 
-                value={profile?.general_rank || 'N/A'} 
-                label="Rang" 
+                value={profile?.assignments_count || 0} 
+                label="Affectations" 
                 color="purple" 
               />
               <StatItem 
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                 color="emerald" 
               />
               <StatItem 
-                value={profile?.english_level || 'N/A'} 
+                value={profile?.language_level || 'N/A'} 
                 label="Anglais" 
                 color="amber" 
               />

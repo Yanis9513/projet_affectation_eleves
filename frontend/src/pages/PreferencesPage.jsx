@@ -157,7 +157,7 @@ function PreferencesPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
         <h1 className="text-2xl font-bold mb-2">Mes Préférences de Projets</h1>

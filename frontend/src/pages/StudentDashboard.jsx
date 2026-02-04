@@ -148,7 +148,7 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="max-w-5xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
