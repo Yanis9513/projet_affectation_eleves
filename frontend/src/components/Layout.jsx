@@ -230,7 +230,7 @@ function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 bg-white">
         <div className="px-4 sm:px-6 lg:px-8 py-8">
           <Outlet />
         </div>
