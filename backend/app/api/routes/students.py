@@ -31,10 +31,17 @@ class StudentResponse(StudentBase):
 async def get_current_student_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get current student profile"""
     from app.models.student import Student
+    from app.models.assignment import Assignment
     
     student = db.query(Student).filter(Student.user_id == current_user.id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student profile not found")
+    
+    # Count projects the student is enrolled in
+    projects_count = len(student.projects) if student.projects else 0
+    
+    # Count assignments for this student
+    assignments_count = db.query(Assignment).filter(Assignment.student_id == student.id).count()
     
     return {
         "id": student.id,
@@ -44,9 +51,13 @@ async def get_current_student_profile(current_user: User = Depends(get_current_u
         "last_name": current_user.last_name,
         "student_number": student.student_number,
         "ranking": student.general_rank,
+        "general_rank": student.general_rank,
+        "gpa": student.gpa,
         "language_level": student.english_level.value if student.english_level else None,
         "filiere": student.filiere.value if student.filiere else None,
-        "promotion": student.promotion if hasattr(student, 'promotion') else None
+        "promotion": student.promotion if hasattr(student, 'promotion') else None,
+        "projects_count": projects_count,
+        "assignments_count": assignments_count
     }
 
 @router.put("/me/profile", response_model=dict)
@@ -107,10 +118,19 @@ async def update_current_student_profile(student_update: StudentBase, current_us
     }
 
 @router.get("/", response_model=List[StudentResponse])
-async def get_students(db: Session = Depends(get_db)):
-    """Get all students"""
+async def get_students(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all students - requires authentication (teachers only)"""
     from app.models.student import Student
-    from app.models.user import User
+    
+    # Only teachers can list all students
+    if not current_user.teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seuls les enseignants peuvent voir la liste des étudiants"
+        )
     
     students = db.query(Student).join(User).all()
     return [{
@@ -123,13 +143,27 @@ async def get_students(db: Session = Depends(get_db)):
     } for s in students]
 
 @router.get("/{student_id}", response_model=StudentResponse)
-async def get_student(student_id: int, db: Session = Depends(get_db)):
-    """Get a specific student by ID"""
+async def get_student(
+    student_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a specific student by ID - requires authentication"""
     from app.models.student import Student
     
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    
+    # Teachers can view any student, students can only view themselves
+    is_owner = current_user.student_profile and current_user.student_profile.id == student_id
+    is_teacher = current_user.teacher_profile is not None
+    
+    if not is_owner and not is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'avez pas l'autorisation de voir ce profil"
+        )
     
     return {
         "id": student.id,
