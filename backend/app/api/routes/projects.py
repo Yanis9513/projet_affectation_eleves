@@ -153,35 +153,22 @@ async def create_project(
 ):
     """Create a new project with students"""
     
-    # Debug logging
-    logger.debug(f"=== CREATE PROJECT CALLED ===")
-    logger.debug(f"current_user type: {type(current_user)}")
-    logger.debug(f"current_user: {current_user}")
-    logger.debug(f"project_data: {project_data}")
-    
     # Check if current_user is actually resolved
     if hasattr(current_user, '__class__') and current_user.__class__.__name__ == 'Depends':
-        logger.error("current_user is still a Depends object, not resolved!")
+        logger.error("Authentication dependency not resolved")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication dependency not resolved properly"
+            detail="Erreur d'authentification"
         )
     
     # Get teacher ID from authenticated user
-    logger.debug(f"Checking teacher_profile...")
-    logger.debug(f"current_user.id: {getattr(current_user, 'id', 'NO ID')}")
-    logger.debug(f"current_user.role: {getattr(current_user, 'role', 'NO ROLE')}")
-    logger.debug(f"hasattr teacher_profile: {hasattr(current_user, 'teacher_profile')}")
-    
     if not hasattr(current_user, 'teacher_profile') or not current_user.teacher_profile:
-        logger.warning(f"User {getattr(current_user, 'id', 'unknown')} has no teacher_profile")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only teachers can create projects"
+            detail="Seuls les enseignants peuvent créer des projets"
         )
     
     teacher_id = current_user.teacher_profile.id
-    logger.debug(f"teacher_id: {teacher_id}")
     
     try:
         # Convert project_type - handle both string and enum
@@ -242,19 +229,21 @@ async def create_project(
                     )
                     db.add(new_destination)
                 except Exception as dest_error:
-                    print(f"Error creating destination {dest_data.university_name}: {dest_error}")
+                    logger.warning("Erreur lors de la création d'une destination: %s", type(dest_error).__name__)
             
             db.commit()
         
         return serialize_project(new_project)
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Error creating project: {str(e)}")
-        logger.exception("Full traceback:")
+        logger.error("Erreur lors de la création du projet: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating project: {str(e)}"
-        )
+            detail="Erreur lors de la création du projet. Veuillez réessayer."
+        ) from e
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
@@ -284,12 +273,16 @@ async def update_project(
         
         db.commit()
         db.refresh(project)
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
+        logger.error("Erreur lors de la mise à jour du projet: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating project: {str(e)}"
-        )
+            detail="Erreur lors de la mise à jour du projet. Veuillez réessayer."
+        ) from e
     
     return serialize_project(project)
 
