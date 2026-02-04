@@ -445,19 +445,6 @@ function HomePage() {
           </div>
         </div>
       )}
-
-      {/* Footer simple */}
-      <footer className="py-8 border-t border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-            <p>© 2024 ESIEE Paris — Système d'affectation</p>
-            <div className="flex items-center gap-6">
-              <a href="#" className="hover:text-slate-700 transition-colors">Aide</a>
-              <a href="#" className="hover:text-slate-700 transition-colors">Contact</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

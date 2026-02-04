@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Button from '../components/Button'
@@ -23,6 +23,11 @@ export default function CreateProjectPage() {
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
   const [loading, setLoading] = useState(false)
+  const [creationProgress, setCreationProgress] = useState({ step: '', percent: 0 })
+  
+  // Track previous counts to only show toast when items are added
+  const prevStudentCount = useRef(0)
+  const prevDestinationCount = useRef(0)
 
   const isExchangeProgram = projectData.type === 'exchange_program'
 
@@ -31,22 +36,46 @@ export default function CreateProjectPage() {
       value: 'group_project', 
       label: 'Projet de Groupe', 
       description: 'Création automatique de groupes',
-      icon: '👥'
+      icon: 'group'
     },
     { 
       value: 'english_leveling', 
       label: 'Répartition par Niveau d\'Anglais', 
       description: 'Groupes homogènes selon le niveau',
-      icon: '🌍'
+      icon: 'language'
     },
     { 
       value: 'exchange_program', 
-      label: 'Programme d\'Échange', 
+      label: 'Programme d\'\u00c9change', 
       description: 'Affectation aux universités partenaires',
-      icon: '✈️'
+      icon: 'exchange'
     }
   ]
-
+  const renderProjectTypeIcon = (iconType) => {
+    const iconClass = "w-8 h-8 text-slate-600"
+    switch(iconType) {
+      case 'group':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        )
+      case 'language':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+          </svg>
+        )
+      case 'exchange':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
     const newValue = type === 'checkbox' ? checked : value
@@ -85,12 +114,22 @@ export default function CreateProjectPage() {
 
   const handleStudentsUploaded = (students) => {
     setProjectData(prev => ({ ...prev, students }))
-    toast.success(`${students.length} étudiants importés`)
+    // Only show toast when count increases (new items added)
+    if (students.length > prevStudentCount.current) {
+      const added = students.length - prevStudentCount.current
+      toast.success(`${added} étudiant${added > 1 ? 's' : ''} importé${added > 1 ? 's' : ''}`)
+    }
+    prevStudentCount.current = students.length
   }
 
   const handleDestinationsUploaded = (destinations) => {
     setProjectData(prev => ({ ...prev, destinations }))
-    toast.success(`${destinations.length} universités ajoutées`)
+    // Only show toast when count increases (new items added)
+    if (destinations.length > prevDestinationCount.current) {
+      const added = destinations.length - prevDestinationCount.current
+      toast.success(`${added} université${added > 1 ? 's' : ''} ajoutée${added > 1 ? 's' : ''}`)
+    }
+    prevDestinationCount.current = destinations.length
   }
 
   const isStepValid = (step) => {
@@ -139,10 +178,13 @@ export default function CreateProjectPage() {
             toast.error('Veuillez ajouter au moins une université partenaire')
             return false
           }
+          // Show warning but don't block if places < students
           const totalPlaces = projectData.destinations.reduce((sum, d) => sum + (d.total_places || 0), 0)
           if (totalPlaces < projectData.students.length) {
-            toast.error(`Places insuffisantes : ${totalPlaces} places pour ${projectData.students.length} étudiants`)
-            return false
+            toast(`Attention : ${totalPlaces} places pour ${projectData.students.length} étudiants. Certains étudiants ne pourront pas être affectés.`, {
+              icon: '⚠️',
+              duration: 5000
+            })
           }
         } else {
           if (!projectData.groupSize || projectData.groupSize < 2) {
@@ -171,6 +213,8 @@ export default function CreateProjectPage() {
 
   const handleSubmit = async () => {
     setLoading(true)
+    setCreationProgress({ step: 'Préparation des données...', percent: 10 })
+    
     try {
       const apiData = {
         title: projectData.name,
@@ -189,17 +233,32 @@ export default function CreateProjectPage() {
         destinations: isExchangeProgram ? projectData.destinations : []
       }
 
+      setCreationProgress({ step: 'Création du projet...', percent: 30 })
+      
+      // Small delay to show progress
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      setCreationProgress({ step: 'Enregistrement des étudiants...', percent: 50 })
+      
       const response = await projectAPI.create(apiData)
+      
+      setCreationProgress({ step: 'Envoi des emails aux étudiants...', percent: 80 })
+      
+      // Give time for visual feedback
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      setCreationProgress({ step: 'Terminé!', percent: 100 })
       
       toast.success('Projet créé avec succès!')
       
       setTimeout(() => {
         navigate('/teacher')
-      }, 1500)
+      }, 1000)
       
     } catch (err) {
       console.error('Error creating project:', err)
       toast.error(err.response?.data?.detail || err.message || 'Erreur lors de la création')
+      setCreationProgress({ step: '', percent: 0 })
     } finally {
       setLoading(false)
     }
@@ -323,7 +382,7 @@ export default function CreateProjectPage() {
                   onChange={handleInputChange}
                   className="sr-only"
                 />
-                <span className="text-3xl mb-2">{type.icon}</span>
+                <div className="mb-2">{renderProjectTypeIcon(type.icon)}</div>
                 <span className="font-semibold text-slate-800 text-center">
                   {type.label}
                 </span>
@@ -332,7 +391,9 @@ export default function CreateProjectPage() {
                 </span>
                 {projectData.type === type.value && (
                   <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                 )}
               </label>
@@ -346,6 +407,7 @@ export default function CreateProjectPage() {
           type="date"
           value={projectData.deadline}
           onChange={handleInputChange}
+          min={new Date().toISOString().split('T')[0]}
         />
       </div>
     </div>
@@ -402,7 +464,7 @@ export default function CreateProjectPage() {
               <span className={`text-sm font-bold ${
                 totalPlaces >= placesNeeded ? 'text-emerald-700' : 'text-amber-700'
               }`}>
-                {totalPlaces >= placesNeeded ? '✓ Suffisant' : '⚠️ Insuffisant'}
+                {totalPlaces >= placesNeeded ? 'Suffisant' : 'Insuffisant'}
               </span>
             </div>
             <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
@@ -571,6 +633,20 @@ export default function CreateProjectPage() {
 
           {/* Action */}
           <div className="pt-4">
+            {loading && creationProgress.percent > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-700">{creationProgress.step}</span>
+                  <span className="text-sm text-slate-500">{creationProgress.percent}%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${creationProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+            )}
             <Button
               variant="primary"
               fullWidth
@@ -578,7 +654,15 @@ export default function CreateProjectPage() {
               disabled={!isStepValid(currentStep) || loading}
               className="py-4 text-lg"
             >
-              {loading ? 'Création...' : 'Créer le projet'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Création en cours...
+                </span>
+              ) : 'Créer le projet'}
             </Button>
             <p className="text-center text-sm text-slate-500 mt-3">
               Le projet sera créé et les étudiants recevront une notification
