@@ -826,7 +826,7 @@ export default function ProjectDetailsPage() {
                       }
                     }}
                   >
-                    🗑️ Supprimer les affectations
+                    Supprimer les affectations
                   </Button>
                 )}
               </div>
@@ -983,7 +983,7 @@ export default function ProjectDetailsPage() {
                       }
                     }}
                   >
-                    🗑️ Supprimer les affectations
+                    Supprimer les affectations
                   </Button>
                 )}
               </div>
