@@ -50,7 +50,13 @@ export default function MyAssignments() {
     try {
       setLoading(true);
       const response = await studentAPI.getMyAssignments();
-      setAssignments(response.data.assignments || []);
+      // Sort by assigned_at date (newest first)
+      const sortedAssignments = (response.data.assignments || []).sort((a, b) => {
+        const dateA = new Date(a.assigned_at || 0);
+        const dateB = new Date(b.assigned_at || 0);
+        return dateB - dateA;
+      });
+      setAssignments(sortedAssignments);
       setStudentInfo({
         name: response.data.student_name,
         id: response.data.student_id,
@@ -198,13 +204,16 @@ export default function MyAssignments() {
                   {assignment.project_type === 'exchange_program' && assignment.destination && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-lg">
-                        <span className="text-slate-600">🎓 Destination assignée:</span>
+                        <span className="text-slate-600">Destination assignée :</span>
                         <span className="font-bold text-purple-700">
                           {assignment.destination.university_name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-600">
-                        <span>📍</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
                         <span>{assignment.destination.city}, {assignment.destination.country}</span>
                       </div>
                       {assignment.grade && (
@@ -229,7 +238,7 @@ export default function MyAssignments() {
                   {assignment.project_type === 'group_project' && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 text-lg">
-                        <span className="text-slate-600">👥 Groupe</span>
+                        <span className="text-slate-600">Groupe</span>
                         <span className="font-bold text-blue-700">#{assignment.group_number}</span>
                         <span className="text-sm text-slate-500">
                           ({assignment.group_size} membres)
@@ -261,7 +270,7 @@ export default function MyAssignments() {
                   {assignment.project_type === 'english_leveling' && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 text-lg">
-                        <span className="text-slate-600">📚 Groupe de niveau</span>
+                        <span className="text-slate-600">Groupe de niveau</span>
                         <span className="font-bold text-emerald-700">#{assignment.group_number}</span>
                         <span className="text-sm text-slate-500">
                           ({assignment.group_size} étudiants)

@@ -31,6 +31,9 @@ export default function ProjectsPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  const userRole = localStorage.getItem('userRole');
+  const isTeacher = userRole && userRole.toLowerCase() === 'teacher';
 
   useEffect(() => {
     loadProjects();
@@ -86,6 +89,13 @@ export default function ProjectsPage() {
     
     return passesAvailabilityFilter && passesTypeFilter && passesSearchFilter;
   });
+  
+  // Sort by creation date (newest first)
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    const dateA = new Date(a.created_at || 0);
+    const dateB = new Date(b.created_at || 0);
+    return dateB - dateA;
+  });
 
   const availableCount = projects.filter(p => (p.students?.length || 0) < p.max_students).length;
   const fullCount = projects.filter(p => (p.students?.length || 0) >= p.max_students).length;
@@ -115,13 +125,26 @@ export default function ProjectsPage() {
   return (
     <div className="max-w-5xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">
-          Projets Disponibles
-        </h1>
-        <p className="text-slate-600">
-          Découvrez les projets ouverts aux préférences
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            Projets Disponibles
+          </h1>
+          <p className="text-slate-600">
+            Découvrez les projets ouverts aux préférences
+          </p>
+        </div>
+        {isTeacher && (
+          <Button
+            onClick={() => navigate('/teacher/create-project')}
+            className="flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nouveau Projet
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -292,7 +315,7 @@ export default function ProjectsPage() {
 
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredProjects.map((project) => {
+        {sortedProjects.map((project) => {
           const studentCount = project.students?.length || 0;
           const isAvailable = studentCount < project.max_students;
           
