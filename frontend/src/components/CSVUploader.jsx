@@ -98,7 +98,7 @@ export default function CSVUploader({
         // Parse numeric fields
         if (item.total_places) {
           const places = parseInt(item.total_places)
-          item.total_places = isNaN(places) ? 1 : places
+          item.total_places = isNaN(places) || places < 1 ? 1 : places
         } else {
           item.total_places = 1
         }
@@ -335,12 +335,18 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
         return
       }
       
+      const places = parseInt(manualData.total_places)
+      if (isNaN(places) || places < 1) {
+        setError('Le nombre de places doit être au moins 1')
+        return
+      }
+
       const newDestination = {
         id: Date.now(),
         university_name: manualData.university_name,
         country: manualData.country,
         city: manualData.city || '',
-        total_places: parseInt(manualData.total_places) || 1,
+        total_places: places,
         mobility_type: manualData.mobility_type || 'ECHANGE_ACADEMIQUE',
         accepted_filieres: manualData.accepted_filieres || 'ALL',
         min_english_level: manualData.min_english_level || '',
@@ -438,6 +444,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
             <input
               type="number"
               value={manualData.total_places || ''}
+              min="1"
               onChange={(e) => setManualData({...manualData, total_places: e.target.value})}
               placeholder="Ex: 5"
               className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -632,6 +639,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
                   <input
                     type="number"
                     value={item.total_places}
+                    min="1"
                     onChange={(e) => handleEditItem(index, 'total_places', parseInt(e.target.value) || 1)}
                     className="border rounded px-2 py-1 w-16 text-sm"
                   />
