@@ -98,26 +98,29 @@ const PreferenceCard = ({ item, navigate, getGradeColor, getGradeDescription, ge
                   <div className="font-medium text-slate-900">
                     {pref.destination?.university_name || 'Université'}
                   </div>
-                  <div className="text-sm text-slate-600">
-                    {pref.destination?.city ? `${pref.destination.city}, ` : ''}
-                    {pref.destination?.country && (
-                      <span className="inline-flex items-center gap-2">
-                        {getCountryCode(pref.destination.country) && (
-                          <CountryFlag 
-                            countryCode={getCountryCode(pref.destination.country)} 
-                            svg 
-                            style={{ 
-                              width: '1.5em', 
-                              height: '1.1em',
-                              border: '1px solid rgba(0,0,0,0.1)',
-                              borderRadius: '2px'
-                            }} 
-                          />
-                        )}
-                        <span title={pref.destination.country}>{pref.destination.country}</span>
-                      </span>
-                    )}
-                  </div>
+                  
+                      {pref.destination && (
+                        <span className="inline-flex items-center gap-2">
+                          {pref.destination.city && <span>{pref.destination.city},</span>}
+                          {pref.destination.country && getCountryCode(pref.destination.country) && (
+                            <CountryFlag
+                              countryCode={getCountryCode(pref.destination.country)}
+                              svg
+                              style={{
+                                width: '1.5em',
+                                height: '1.1em',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                borderRadius: '2px',
+                                display: 'block',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          )}
+                          {pref.destination.country && (
+                            <span title={pref.destination.country}>{pref.destination.country}</span>
+                          )}
+                        </span>
+                      )}
                   <div className={`text-xs font-medium mt-1 ${getGradeColor(pref.grade).replace('bg-', 'text-').replace(' text-white', '')}`}>
                     {getGradeDescription(pref.grade)}
                   </div>
