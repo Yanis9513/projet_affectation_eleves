@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardSimple } from '../components/Card';
 import Button from '../components/Button';
 import { Loading } from '../components/Loading';
 import { useAuth } from '../context/AuthContext';
@@ -136,11 +135,11 @@ export default function StudentDashboard() {
       case 'exchange_program':
         return { color: 'bg-purple-100 text-purple-800', label: 'Échange' };
       case 'english_leveling':
-        return { color: 'bg-green-100 text-green-800', label: 'Niveau d\'anglais' };
+        return { color: 'bg-emerald-100 text-emerald-800', label: 'Niveau d\'anglais' };
       case 'group_project':
         return { color: 'bg-blue-100 text-blue-800', label: 'Groupe' };
       default:
-        return { color: 'bg-gray-100 text-gray-800', label: type };
+        return { color: 'bg-slate-100 text-slate-800', label: type };
     }
   };
 
@@ -149,164 +148,270 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Tableau de Bord Étudiant
-          </h1>
-          <p className="text-gray-600">
-            Bienvenue {student?.user?.first_name} {student?.user?.last_name}
-          </p>
+    <div className="max-w-5xl mx-auto animate-fade-in">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Tableau de Bord
+            </h1>
+            <p className="text-slate-600 mt-1">
+              Bienvenue, {student?.user?.first_name || 'Étudiant'}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={() => navigate('/profile')}>
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Mon Profil
+            </Button>
+          </div>
         </div>
+      </div>
 
-        {/* Notifications - Pending Actions */}
-        {pendingActions.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              Actions Requises ({pendingActions.length})
-            </h2>
-            {pendingActions.map(project => (
-              <CardSimple 
-                key={project.id} 
-                className="mb-4 bg-orange-50 border-2 border-orange-300"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-semibold">
-                        Action requise
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs ${project.badgeColor}`}>
+      {/* Pending Actions Alert */}
+      {pendingActions.length > 0 && (
+        <div className="mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-amber-100 rounded-lg text-amber-600 flex-shrink-0">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-amber-900 mb-1">
+                Actions requises ({pendingActions.length})
+              </h3>
+              <p className="text-amber-700 text-sm mb-4">
+                Vous avez des préférences à soumettre pour les projets suivants.
+              </p>
+              <div className="space-y-3">
+                {pendingActions.map(project => (
+                  <div 
+                    key={project.id}
+                    className="flex items-center justify-between bg-white rounded-lg p-4 border border-amber-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${project.badgeColor}`}>
                         {project.badgeLabel}
                       </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-1">
-                      {project.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-3">
-                      {project.description}
-                    </p>
-                    {project.deadline && (
-                      <p className="text-orange-600 text-sm font-medium">
-                        Date limite: {new Date(project.deadline).toLocaleDateString('fr-FR')}
-                      </p>
-                    )}
-                  </div>
-                  <Button 
-                    variant="primary" 
-                    onClick={() => handleAction(project)}
-                  >
-                    {project.actionLabel}
-                  </Button>
-                </div>
-              </CardSimple>
-            ))}
-          </div>
-        )}
-
-        {/* My Projects */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Mes Projets ({myProjects.length})
-          </h2>
-          
-          {myProjects.length === 0 ? (
-            <CardSimple className="text-center py-8">
-              <p className="text-gray-600">
-                Vous n'êtes inscrit à aucun projet pour le moment.
-              </p>
-            </CardSimple>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myProjects.map(project => {
-                const badge = getProjectTypeBadge(project.project_type);
-                return (
-                  <CardSimple 
-                    key={project.id}
-                    className="hover:shadow-lg transition-all cursor-pointer"
-                    onClick={() => navigate(`/projects/${project.id}`)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-gray-800">{project.title}</h3>
-                      <span className={`px-2 py-1 rounded text-xs ${badge.color}`}>
-                        {badge.label}
-                      </span>
-                    </div>
-                    
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                      {project.description}
-                    </p>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-500">
-                        {project.project_type === 'exchange_program' && (
-                          <span>
-                            {project.destinations?.length || 0} universités
-                          </span>
-                        )}
-                        {project.project_type === 'group_project' && (
-                          <span>
-                            {project.group_size || project.min_students || '?'} étudiants/groupe
-                          </span>
-                        )}
-                        {project.project_type === 'english_leveling' && student?.english_level && (
-                          <span>
-                            Votre niveau: <strong>{student.english_level}</strong>
-                          </span>
+                      <div>
+                        <p className="font-medium text-slate-900">{project.title}</p>
+                        {project.deadline && (
+                          <p className="text-sm text-amber-600">
+                            Date limite : {new Date(project.deadline).toLocaleDateString('fr-FR')}
+                          </p>
                         )}
                       </div>
-                      
-                      {project.is_open_for_preferences && !project.has_submitted_preferences && (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
-                          Préférences ouvertes
-                        </span>
-                      )}
-                      {project.has_submitted_preferences && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                          ✓ Préférences soumises
-                        </span>
-                      )}
                     </div>
-                  </CardSimple>
-                );
-              })}
+                    <Button 
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleAction(project)}
+                    >
+                      {project.actionLabel}
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
         </div>
+      )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <CardSimple 
-            className="text-center cursor-pointer hover:shadow-md transition-all"
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{myProjects.length}</p>
+              <p className="text-sm text-slate-500">Projets inscrits</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-amber-50 rounded-xl text-amber-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{pendingActions.length}</p>
+              <p className="text-sm text-slate-500">Actions en attente</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-900">
+                {myProjects.filter(p => p.has_submitted_preferences).length}
+              </p>
+              <p className="text-sm text-slate-500">Préférences soumises</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* My Projects */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Mes Projets
+          </h2>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/projects')}>
+            Voir tous les projets
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Button>
+        </div>
+        
+        {myProjects.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucun projet</h3>
+            <p className="text-slate-500 mb-6">Vous n'êtes inscrit à aucun projet pour le moment.</p>
+            <Button variant="primary" onClick={() => navigate('/projects')}>
+              Parcourir les projets
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {myProjects.map(project => {
+              const badge = getProjectTypeBadge(project.project_type);
+              return (
+                <div 
+                  key={project.id}
+                  className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-lg hover:border-slate-300 transition-all cursor-pointer group"
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+                      {badge.label}
+                    </span>
+                    {project.has_submitted_preferences ? (
+                      <span className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Soumis
+                      </span>
+                    ) : project.is_open_for_preferences ? (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                        En attente
+                      </span>
+                    ) : null}
+                  </div>
+                  
+                  <h3 className="font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    {project.title}
+                  </h3>
+                  
+                  <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                    {project.description}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-sm text-slate-500">
+                    {project.project_type === 'exchange_program' && (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                        </svg>
+                        {project.destinations?.length || 0} universités
+                      </span>
+                    )}
+                    {project.project_type === 'group_project' && (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {project.group_size || project.min_students || '?'} étudiants/groupe
+                      </span>
+                    )}
+                    {project.project_type === 'english_leveling' && student?.english_level && (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                        </svg>
+                        Niveau : <strong className="text-slate-900">{student.english_level}</strong>
+                      </span>
+                    )}
+                    
+                    <svg className="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">
+          Accès rapide
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button
             onClick={() => navigate('/projects')}
+            className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:shadow-md hover:border-blue-200 transition-all group"
           >
-            <h3 className="font-bold text-gray-800 mb-2">Parcourir les Projets</h3>
-            <p className="text-sm text-gray-600">
-              Voir tous les projets disponibles
-            </p>
-          </CardSimple>
+            <div className="p-2 bg-blue-50 rounded-lg text-blue-600 inline-block mb-3 group-hover:bg-blue-100 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-slate-900 mb-1">Parcourir les Projets</h3>
+            <p className="text-sm text-slate-500">Voir tous les projets disponibles</p>
+          </button>
 
-          <CardSimple 
-            className="text-center cursor-pointer hover:shadow-md transition-all"
-            onClick={() => navigate('/profile')}
-          >
-            <h3 className="font-bold text-gray-800 mb-2">Mon Profil</h3>
-            <p className="text-sm text-gray-600">
-              Modifier mes informations
-            </p>
-          </CardSimple>
-
-          <CardSimple 
-            className="text-center cursor-pointer hover:shadow-md transition-all"
+          <button
             onClick={() => navigate('/my-preferences')}
+            className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:shadow-md hover:border-purple-200 transition-all group"
           >
-            <h3 className="font-bold text-gray-800 mb-2">Mes Préférences</h3>
-            <p className="text-sm text-gray-600">
-              Voir mes préférences actuelles
-            </p>
-          </CardSimple>
+            <div className="p-2 bg-purple-50 rounded-lg text-purple-600 inline-block mb-3 group-hover:bg-purple-100 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-slate-900 mb-1">Mes Préférences</h3>
+            <p className="text-sm text-slate-500">Voir mes préférences actuelles</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/my-assignments')}
+            className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:shadow-md hover:border-emerald-200 transition-all group"
+          >
+            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600 inline-block mb-3 group-hover:bg-emerald-100 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-slate-900 mb-1">Mes Affectations</h3>
+            <p className="text-sm text-slate-500">Voir mes affectations finales</p>
+          </button>
         </div>
       </div>
     </div>

@@ -75,8 +75,8 @@ export const projectAPI = {
   create: (projectData) => api.post('/projects/', projectData),
   update: (id, projectData) => api.put(`/projects/${id}`, projectData),
   delete: (id) => api.delete(`/projects/${id}`),
-  uploadStudents: (projectId, students) => 
-    api.post(`/projects/${projectId}/upload-students`, { students }),
+  uploadStudents: (projectId, students, sendEmails = true) => 
+    api.post(`/projects/${projectId}/upload-students`, { students, send_emails: sendEmails }),
   getStudents: (projectId) => api.get(`/projects/${projectId}/students`),
   removeStudent: (projectId, studentId) => 
     api.delete(`/projects/${projectId}/students/${studentId}`),
@@ -167,7 +167,7 @@ export const preferenceAPI = {
 export const assignmentAPI = {
   getByProject: (projectId) => api.get(`/assignments/?project_id=${projectId}`),
   runAlgorithm: (projectId) => api.post('/assignments/run-algorithm', { project_id: projectId }),
-  getStats: (projectId) => api.get(`/assignments/?project_id=${projectId}`),
+  getStats: (projectId) => api.get(`/assignments/stats?project_id=${projectId}`),
   validate: (assignmentId) => api.post(`/assignments/${assignmentId}/validate`),
   deleteByProject: (projectId) => api.delete(`/assignments/?project_id=${projectId}`),
 }

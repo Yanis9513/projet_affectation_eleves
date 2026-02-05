@@ -1,10 +1,34 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CardSimple } from '../components/Card'
 import Button from '../components/Button'
 import { TextInput, Select } from '../components/Input'
 import { Loading, Alert } from '../components/Loading'
 import { studentAPI, teacherAPI, authAPI } from '../services/api'
+
+// Icons
+const UserIcon = () => (
+  <svg className="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+)
+
+const EditIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+)
+
+const SaveIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+)
+
+const CancelIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+)
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -115,13 +139,17 @@ export default function ProfilePage() {
             role: 'STUDENT'
           })
           
+          // Use all profile data from backend including stats
           setProfile({
             id: profileData.id,
             student_number: profileData.student_number,
             filiere: profileData.filiere,
-            english_level: profileData.language_level,
-            general_rank: profileData.ranking,
-            promotion: profileData.promotion
+            language_level: profileData.language_level,
+            general_rank: profileData.general_rank || profileData.ranking,
+            gpa: profileData.gpa,
+            promotion: profileData.promotion,
+            projects_count: profileData.projects_count,
+            assignments_count: profileData.assignments_count
           })
           
           setFormData({
@@ -260,167 +288,116 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Header */}
-        <div className="mb-6 fade-in">
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            ← Retour
-          </Button>
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Mon Profil</h1>
+          <p className="text-slate-600 mt-1">Gérez vos informations personnelles</p>
         </div>
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Retour
+        </button>
+      </div>
 
-        <div className="mb-8 fade-in-delay-1">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Mon Profil
-          </h1>
-          <p className="text-gray-600">
-            Gérez vos informations personnelles
-          </p>
-        </div>
+      {/* Alerts */}
+      {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
 
-        {error && <Alert type="error" message={error} onClose={() => setError('')} className="mb-4" />}
-        {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
-
-        {/* Profile Card */}
-        <CardSimple className="mb-6 fade-in-delay-2">
-          <div className="flex items-center gap-6 mb-6">
-            <div className="w-24 h-24 rounded-full bg-esiee-blue text-white flex items-center justify-center text-3xl font-bold">
-              {user?.first_name?.[0]}{user?.last_name?.[0]}
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                {user?.first_name} {user?.last_name}
-              </h2>
-              <p className="text-gray-600">{user?.role === 'TEACHER' ? 'Enseignant' : 'Étudiant'}</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
-            </div>
+      {/* Profile Header Card */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex items-center gap-6">
+          <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+            {user?.first_name && user?.last_name ? (
+              <span className="text-3xl font-bold">
+                {user.first_name[0]}{user.last_name[0]}
+              </span>
+            ) : (
+              <UserIcon />
+            )}
           </div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold">
+              {user?.first_name} {user?.last_name}
+            </h2>
+            <p className="text-blue-100 mt-1">
+              {user?.role === 'TEACHER' ? 'Enseignant' : 'Étudiant'}
+            </p>
+            <p className="text-blue-200 text-sm mt-1">{user?.email}</p>
+          </div>
+          {!editing && (
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm"
+            >
+              <EditIcon />
+              <span>Modifier</span>
+            </button>
+          )}
+        </div>
+      </div>
 
+      {/* Profile Details Card */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <h3 className="text-lg font-semibold text-slate-900">
+            {editing ? 'Modifier les informations' : 'Informations personnelles'}
+          </h3>
+        </div>
+        
+        <div className="p-6">
           {!editing ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prénom
-                  </label>
-                  <p className="text-gray-900">{user?.first_name}</p>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ProfileField label="Prénom" value={user?.first_name} />
+              <ProfileField label="Nom" value={user?.last_name} />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nom
-                  </label>
-                  <p className="text-gray-900">{user?.last_name}</p>
-                </div>
+              <ProfileField label="Email" value={user?.email} />
+              <ProfileField label="Nom d'utilisateur" value={user?.username} />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <p className="text-gray-900">{user?.email}</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nom d'utilisateur
-                  </label>
-                  <p className="text-gray-900">{user?.username}</p>
-                </div>
-
-                {user?.role === 'STUDENT' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Numéro d'étudiant
-                      </label>
-                      <p className="text-gray-900">{profile?.student_number}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Filière
-                      </label>
-                      <p className="text-gray-900">{profile?.filiere}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Niveau d'anglais
-                      </label>
-                      <p className="text-gray-900">{profile?.english_level}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Rang général
-                      </label>
-                      <p className="text-gray-900">{profile?.general_rank}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Moyenne générale (GPA)
-                      </label>
-                      <p className="text-gray-900">{profile?.gpa ? profile.gpa.toFixed(2) : 'N/A'}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Promotion
-                      </label>
-                      <p className="text-gray-900">{profile?.promotion}</p>
-                    </div>
-                  </>
-                )}
-
-                {user?.role === 'TEACHER' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Département
-                      </label>
-                      <p className="text-gray-900">{profile?.department}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bureau
-                      </label>
-                      <p className="text-gray-900">{profile?.office}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Téléphone
-                      </label>
-                      <p className="text-gray-900">{profile?.phone || 'Non renseigné'}</p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {user?.role === 'TEACHER' && profile?.bio && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Biographie
-                  </label>
-                  <p className="text-gray-900">{profile.bio}</p>
-                </div>
+              {user?.role === 'STUDENT' && (
+                <>
+                  <ProfileField label="Numéro d'étudiant" value={profile?.student_number} />
+                  <ProfileField label="Filière" value={profile?.filiere} />
+                  <ProfileField label="Niveau d'anglais" value={profile?.language_level} />
+                  <ProfileField label="Rang général" value={profile?.general_rank} />
+                  <ProfileField label="Moyenne (GPA)" value={profile?.gpa?.toFixed(2)} />
+                  <ProfileField label="Promotion" value={profile?.promotion} />
+                </>
               )}
 
-              <Button variant="primary" onClick={() => setEditing(true)}>
-                Modifier le profil
-              </Button>
-            </>
+              {user?.role === 'TEACHER' && (
+                <>
+                  <ProfileField label="Département" value={profile?.department} />
+                  <ProfileField label="Bureau" value={profile?.office} />
+                  <ProfileField label="Téléphone" value={profile?.phone} />
+                </>
+              )}
+
+              {user?.role === 'TEACHER' && profile?.bio && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-500 mb-1">
+                    Biographie
+                  </label>
+                  <p className="text-slate-900">{profile.bio}</p>
+                </div>
+              )}
+            </div>
           ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <TextInput
                   label="Prénom"
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleChange}
-                  required
+                  disabled
+                  helperText="Ce champ ne peut pas être modifié"
                 />
 
                 <TextInput
@@ -428,7 +405,8 @@ export default function ProfilePage() {
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleChange}
-                  required
+                  disabled
+                  helperText="Ce champ ne peut pas être modifié"
                 />
 
                 <TextInput
@@ -437,7 +415,8 @@ export default function ProfilePage() {
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
+                  disabled
+                  helperText="Ce champ ne peut pas être modifié"
                 />
 
                 {user?.role === 'STUDENT' && (
@@ -513,8 +492,8 @@ export default function ProfilePage() {
               </div>
 
               {user?.role === 'TEACHER' && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Biographie
                   </label>
                   <textarea
@@ -522,74 +501,119 @@ export default function ProfilePage() {
                     value={formData.bio}
                     onChange={handleChange}
                     rows="4"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none"
                     placeholder="Parlez-nous de vous, vos domaines d'expertise..."
                   />
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
                 <Button variant="primary" onClick={handleSave}>
-                  Enregistrer
+                  <span className="flex items-center gap-2">
+                    <SaveIcon />
+                    Enregistrer
+                  </span>
                 </Button>
                 <Button variant="outline" onClick={() => {
                   setEditing(false)
                   setError('')
                   loadProfile()
                 }}>
-                  Annuler
+                  <span className="flex items-center gap-2">
+                    <CancelIcon />
+                    Annuler
+                  </span>
                 </Button>
               </div>
-            </>
+            </div>
           )}
-        </CardSimple>
+        </div>
+      </div>
 
-        {/* Statistics Card */}
-        <CardSimple className="fade-in-delay-3">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">
-            Statistiques
-          </h3>
+      {/* Statistics Card */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <h3 className="text-lg font-semibold text-slate-900">Statistiques</h3>
+        </div>
+        
+        <div className="p-6">
           {user?.role === 'TEACHER' ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-3xl font-bold text-esiee-blue">{profile?.projects_count || 0}</p>
-                <p className="text-sm text-gray-600">Projets créés</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-green-600">{profile?.students_count || 0}</p>
-                <p className="text-sm text-gray-600">Étudiants supervisés</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-purple-600">0</p>
-                <p className="text-sm text-gray-600">Groupes formés</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-yellow-600">0</p>
-                <p className="text-sm text-gray-600">En cours</p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <StatItem 
+                value={profile?.projects_count || 0} 
+                label="Projets créés" 
+                color="blue" 
+              />
+              <StatItem 
+                value={profile?.students_count || 0} 
+                label="Étudiants supervisés" 
+                color="emerald" 
+              />
+              <StatItem 
+                value={profile?.active_projects_count || 0} 
+                label="Projets actifs" 
+                color="purple" 
+              />
+              <StatItem 
+                value={0} 
+                label="Groupes formés" 
+                color="amber" 
+              />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-3xl font-bold text-esiee-blue">{profile?.projects_count || 0}</p>
-                <p className="text-sm text-gray-600">Projets inscrits</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-purple-600">{profile?.general_rank || 'N/A'}</p>
-                <p className="text-sm text-gray-600">Rang</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-green-600">{profile?.gpa ? profile.gpa.toFixed(2) : 'N/A'}</p>
-                <p className="text-sm text-gray-600">Moyenne</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-yellow-600">{profile?.english_level || 'N/A'}</p>
-                <p className="text-sm text-gray-600">Anglais</p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <StatItem 
+                value={profile?.projects_count || 0} 
+                label="Projets inscrits" 
+                color="blue" 
+              />
+              <StatItem 
+                value={profile?.assignments_count || 0} 
+                label="Affectations" 
+                color="purple" 
+              />
+              <StatItem 
+                value={profile?.gpa ? profile.gpa.toFixed(2) : 'N/A'} 
+                label="Moyenne" 
+                color="emerald" 
+              />
+              <StatItem 
+                value={profile?.language_level || 'N/A'} 
+                label="Anglais" 
+                color="amber" 
+              />
             </div>
           )}
-        </CardSimple>
+        </div>
       </div>
+    </div>
+  )
+}
+
+// Helper components
+function ProfileField({ label, value }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-500 mb-1">
+        {label}
+      </label>
+      <p className="text-slate-900 font-medium">{value || 'Non renseigné'}</p>
+    </div>
+  )
+}
+
+function StatItem({ value, label, color }) {
+  const colorClasses = {
+    blue: 'text-blue-600 bg-blue-50',
+    emerald: 'text-emerald-600 bg-emerald-50',
+    purple: 'text-purple-600 bg-purple-50',
+    amber: 'text-amber-600 bg-amber-50'
+  }
+  
+  return (
+    <div className={`p-4 rounded-xl ${colorClasses[color].split(' ')[1]}`}>
+      <p className={`text-3xl font-bold ${colorClasses[color].split(' ')[0]}`}>{value}</p>
+      <p className="text-sm text-slate-600 mt-1">{label}</p>
     </div>
   )
 }

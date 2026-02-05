@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
+import { invalidateQueries } from '../services/useQuery'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Button from '../components/Button'
-import { CardSimple } from '../components/Card'
 import { TextInput, TextArea } from '../components/Input'
 import CSVUploader from '../components/CSVUploader'
 import { projectAPI } from '../services/api'
@@ -24,6 +26,11 @@ export default function CreateProjectPage() {
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
   const [loading, setLoading] = useState(false)
+  const [creationProgress, setCreationProgress] = useState({ step: '', percent: 0 })
+  
+  // Track previous counts to only show toast when items are added
+  const prevStudentCount = useRef(0)
+  const prevDestinationCount = useRef(0)
 
   const isExchangeProgram = projectData.type === 'exchange_program'
 
@@ -32,22 +39,46 @@ export default function CreateProjectPage() {
       value: 'group_project', 
       label: 'Projet de Groupe', 
       description: 'Création automatique de groupes',
-      icon: '👥'
+      icon: 'group'
     },
     { 
       value: 'english_leveling', 
       label: 'Répartition par Niveau d\'Anglais', 
       description: 'Groupes homogènes selon le niveau',
-      icon: '🌍'
+      icon: 'language'
     },
     { 
       value: 'exchange_program', 
-      label: 'Programme d\'Échange', 
+      label: 'Programme d\'\u00c9change', 
       description: 'Affectation aux universités partenaires',
-      icon: '✈️'
+      icon: 'exchange'
     }
   ]
-
+  const renderProjectTypeIcon = (iconType) => {
+    const iconClass = "w-8 h-8 text-slate-600"
+    switch(iconType) {
+      case 'group':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        )
+      case 'language':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+          </svg>
+        )
+      case 'exchange':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
     const newValue = type === 'checkbox' ? checked : value
@@ -86,12 +117,22 @@ export default function CreateProjectPage() {
 
   const handleStudentsUploaded = (students) => {
     setProjectData(prev => ({ ...prev, students }))
-    toast.success(`${students.length} étudiants importés`)
+    // Only show toast when count increases (new items added)
+    if (students.length > prevStudentCount.current) {
+      const added = students.length - prevStudentCount.current
+      toast.success(`${added} étudiant${added > 1 ? 's' : ''} importé${added > 1 ? 's' : ''}`)
+    }
+    prevStudentCount.current = students.length
   }
 
   const handleDestinationsUploaded = (destinations) => {
     setProjectData(prev => ({ ...prev, destinations }))
-    toast.success(`${destinations.length} universités ajoutées`)
+    // Only show toast when count increases (new items added)
+    if (destinations.length > prevDestinationCount.current) {
+      const added = destinations.length - prevDestinationCount.current
+      toast.success(`${added} université${added > 1 ? 's' : ''} ajoutée${added > 1 ? 's' : ''}`)
+    }
+    prevDestinationCount.current = destinations.length
   }
 
   const isStepValid = (step) => {
@@ -140,10 +181,13 @@ export default function CreateProjectPage() {
             toast.error('Veuillez ajouter au moins une université partenaire')
             return false
           }
+          // Show warning but don't block if places < students
           const totalPlaces = projectData.destinations.reduce((sum, d) => sum + (d.total_places || 0), 0)
           if (totalPlaces < projectData.students.length) {
-            toast.error(`Places insuffisantes : ${totalPlaces} places pour ${projectData.students.length} étudiants`)
-            return false
+            toast(`Attention : ${totalPlaces} places pour ${projectData.students.length} étudiants. Certains étudiants ne pourront pas être affectés.`, {
+              icon: '⚠️',
+              duration: 5000
+            })
           }
         } else {
           if (!projectData.groupSize || projectData.groupSize < 2) {
@@ -172,6 +216,8 @@ export default function CreateProjectPage() {
 
   const handleSubmit = async () => {
     setLoading(true)
+    setCreationProgress({ step: 'Préparation des données...', percent: 10 })
+    
     try {
       const apiData = {
         title: projectData.name,
@@ -190,17 +236,32 @@ export default function CreateProjectPage() {
         destinations: isExchangeProgram ? projectData.destinations : []
       }
 
+      setCreationProgress({ step: 'Création du projet...', percent: 30 })
+      
+      // Small delay to show progress
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      setCreationProgress({ step: 'Enregistrement des étudiants...', percent: 50 })
+      
       const response = await projectAPI.create(apiData)
       
-      toast.success('Projet créé avec succès!')
+      setCreationProgress({ step: 'Envoi des emails aux étudiants...', percent: 80 })
       
+      // Give time for visual feedback
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      setCreationProgress({ step: 'Terminé!', percent: 100 })
+      
+      toast.success('Projet créé avec succès!')
+      invalidateQueries('projects')
       setTimeout(() => {
         navigate('/teacher')
-      }, 1500)
+      }, 1000)
       
     } catch (err) {
       console.error('Error creating project:', err)
       toast.error(err.response?.data?.detail || err.message || 'Erreur lors de la création')
+      setCreationProgress({ step: '', percent: 0 })
     } finally {
       setLoading(false)
     }
@@ -227,26 +288,30 @@ export default function CreateProjectPage() {
     const steps = getSteps()
     
     return (
-      <div className="mb-10">
+      <div className="mb-6">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
           {steps.map((step, index) => (
             <div key={step.num} className="flex items-center flex-1">
               {/* Step Circle */}
               <div className="flex flex-col items-center">
                 <div 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                     currentStep > step.num 
-                      ? 'bg-green-500 text-white shadow-md' 
+                      ? 'bg-emerald-500 text-white shadow-md' 
                       : currentStep === step.num
                         ? 'bg-blue-600 text-white shadow-lg ring-4 ring-blue-100'
-                        : 'bg-gray-200 text-gray-500'
+                        : 'bg-slate-200 text-slate-500'
                   }`}
                 >
-                  {currentStep > step.num ? '✓' : step.num}
+                  {currentStep > step.num ? (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : step.num}
                 </div>
                 <span 
                   className={`mt-2 text-xs font-medium ${
-                    currentStep >= step.num ? 'text-gray-700' : 'text-gray-400'
+                    currentStep >= step.num ? 'text-slate-700' : 'text-slate-400'
                   }`}
                 >
                   {step.label}
@@ -256,8 +321,8 @@ export default function CreateProjectPage() {
               {/* Connector Line */}
               {index < steps.length - 1 && (
                 <div 
-                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 ${
-                    currentStep > step.num ? 'bg-green-500' : 'bg-gray-200'
+                  className={`flex-1 h-0.5 mx-4 transition-all duration-300 rounded ${
+                    currentStep > step.num ? 'bg-emerald-500' : 'bg-slate-200'
                   }`}
                 />
               )}
@@ -270,7 +335,7 @@ export default function CreateProjectPage() {
 
   const renderStep1 = () => (
     <div className="w-full max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+      <h2 className="text-xl font-semibold text-slate-900 mb-6">
         Informations du projet
       </h2>
       
@@ -299,7 +364,7 @@ export default function CreateProjectPage() {
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-slate-700 mb-3">
             Type de projet
           </label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -309,7 +374,7 @@ export default function CreateProjectPage() {
                 className={`relative flex flex-col items-center p-5 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
                   projectData.type === type.value 
                     ? 'border-blue-500 bg-blue-50 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <input
@@ -320,16 +385,18 @@ export default function CreateProjectPage() {
                   onChange={handleInputChange}
                   className="sr-only"
                 />
-                <span className="text-3xl mb-2">{type.icon}</span>
-                <span className="font-semibold text-gray-800 text-center">
+                <div className="mb-2">{renderProjectTypeIcon(type.icon)}</div>
+                <span className="font-semibold text-slate-800 text-center">
                   {type.label}
                 </span>
-                <span className="text-xs text-gray-500 text-center mt-1">
+                <span className="text-xs text-slate-500 text-center mt-1">
                   {type.description}
                 </span>
                 {projectData.type === type.value && (
                   <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                 )}
               </label>
@@ -343,6 +410,7 @@ export default function CreateProjectPage() {
           type="date"
           value={projectData.deadline}
           onChange={handleInputChange}
+          min={new Date().toISOString().split('T')[0]}
         />
       </div>
     </div>
@@ -350,10 +418,10 @@ export default function CreateProjectPage() {
 
   const renderStep2 = () => (
     <div className="w-full max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">
         Import des étudiants
       </h2>
-      <p className="text-gray-600 mb-6">
+      <p className="text-slate-600 mb-6">
         Importez la liste des étudiants participants au format CSV
       </p>
       
@@ -363,8 +431,8 @@ export default function CreateProjectPage() {
       />
       
       {projectData.students.length > 0 && (
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800">
+        <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <p className="text-emerald-800">
             <span className="font-semibold">{projectData.students.length} étudiants</span> importés avec succès
           </p>
         </div>
@@ -379,33 +447,33 @@ export default function CreateProjectPage() {
       
       return (
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">
             Universités partenaires
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-slate-600 mb-6">
             Ajoutez les universités de destination pour les étudiants
           </p>
           
           {/* Capacity indicator */}
           <div className={`mb-6 p-4 rounded-lg border ${
             totalPlaces >= placesNeeded 
-              ? 'bg-green-50 border-green-200' 
-              : 'bg-orange-50 border-orange-200'
+              ? 'bg-emerald-50 border-emerald-200' 
+              : 'bg-amber-50 border-amber-200'
           }`}>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">
                 Capacité : {totalPlaces} places / {placesNeeded} étudiants
               </span>
               <span className={`text-sm font-bold ${
-                totalPlaces >= placesNeeded ? 'text-green-700' : 'text-orange-700'
+                totalPlaces >= placesNeeded ? 'text-emerald-700' : 'text-amber-700'
               }`}>
-                {totalPlaces >= placesNeeded ? '✓ Suffisant' : '⚠️ Insuffisant'}
+                {totalPlaces >= placesNeeded ? 'Suffisant' : 'Insuffisant'}
               </span>
             </div>
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
               <div 
                 className={`h-2 rounded-full transition-all ${
-                  totalPlaces >= placesNeeded ? 'bg-green-500' : 'bg-orange-500'
+                  totalPlaces >= placesNeeded ? 'bg-emerald-500' : 'bg-amber-500'
                 }`}
                 style={{ width: `${Math.min((totalPlaces / placesNeeded) * 100, 100)}%` }}
               />
@@ -420,14 +488,33 @@ export default function CreateProjectPage() {
           
           {projectData.destinations.length > 0 && (
             <div className="mt-6">
-              <h3 className="font-semibold text-gray-700 mb-3">
+              <h3 className="font-semibold text-slate-700 mb-3">
                 {projectData.destinations.length} universités configurées
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {projectData.destinations.map((dest, idx) => (
                   <div key={idx} className="p-3 bg-white border rounded-lg shadow-sm">
-                    <div className="font-semibold text-gray-800">{dest.university_name}</div>
-                    <div className="text-sm text-gray-600">{dest.city}, {dest.country}</div>
+                    <div className="font-semibold text-slate-800">{dest.university_name}</div>
+                    <div className="text-sm text-slate-600">
+                      {dest.city ? `${dest.city}, ` : ''}
+                      {dest.country && (
+                        <span className="inline-flex items-center gap-2">
+                          {getCountryCode(dest.country) && (
+                            <CountryFlag 
+                              countryCode={getCountryCode(dest.country)} 
+                              svg 
+                              style={{ 
+                                width: '1.5em', 
+                                height: '1.1em',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                borderRadius: '2px'
+                              }} 
+                            />
+                          )}
+                          <span title={dest.country}>{dest.country}</span>
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-blue-600 mt-1">
                       {dest.total_places} places disponibles
                     </div>
@@ -442,7 +529,7 @@ export default function CreateProjectPage() {
 
     return (
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">
           Configuration des groupes
         </h2>
 
@@ -461,7 +548,7 @@ export default function CreateProjectPage() {
             required
           />
 
-          <div className="p-4 bg-gray-50 rounded-lg border">
+          <div className="p-4 bg-slate-50 rounded-lg border">
             <label className="flex items-start space-x-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -471,10 +558,10 @@ export default function CreateProjectPage() {
                 className="mt-1 w-4 h-4 text-blue-600 rounded"
               />
               <div>
-                <div className="font-medium text-gray-800">
+                <div className="font-medium text-slate-800">
                   Activer les préférences de partenaire
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-600">
                   Les étudiants pourront indiquer avec qui ils souhaitent travailler
                 </div>
               </div>
@@ -492,28 +579,28 @@ export default function CreateProjectPage() {
     
     return (
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">
           Confirmation
         </h2>
 
         <div className="space-y-4">
           {/* Project Info */}
-          <div className="bg-gray-50 p-5 rounded-lg">
-            <h3 className="font-semibold text-gray-700 mb-3">Informations</h3>
+          <div className="bg-slate-50 p-5 rounded-lg">
+            <h3 className="font-semibold text-slate-700 mb-3">Informations</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Nom :</span>
+                <span className="text-slate-600">Nom :</span>
                 <span className="font-medium">{projectData.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Type :</span>
+                <span className="text-slate-600">Type :</span>
                 <span className="font-medium">
                   {projectTypes.find(t => t.value === projectData.type)?.label}
                 </span>
               </div>
               {projectData.deadline && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Date limite :</span>
+                  <span className="text-slate-600">Date limite :</span>
                   <span className="font-medium">
                     {new Date(projectData.deadline).toLocaleDateString('fr-FR')}
                   </span>
@@ -524,40 +611,40 @@ export default function CreateProjectPage() {
 
           {/* Students */}
           <div className="bg-blue-50 p-5 rounded-lg">
-            <h3 className="font-semibold text-gray-700 mb-3">Étudiants</h3>
+            <h3 className="font-semibold text-slate-700 mb-3">Étudiants</h3>
             <p className="text-2xl font-bold text-blue-600">
               {projectData.students.length}
             </p>
-            <p className="text-sm text-gray-600">étudiants inscrits</p>
+            <p className="text-sm text-slate-600">étudiants inscrits</p>
           </div>
 
           {/* Destinations or Config */}
           {isExchangeProgram ? (
             <div className="bg-purple-50 p-5 rounded-lg">
-              <h3 className="font-semibold text-gray-700 mb-3">Universités</h3>
+              <h3 className="font-semibold text-slate-700 mb-3">Universités</h3>
               <p className="text-2xl font-bold text-purple-600">
                 {projectData.destinations.length}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-slate-600">
                 {totalPlaces} places disponibles au total
               </p>
             </div>
           ) : (
-            <div className="bg-green-50 p-5 rounded-lg">
-              <h3 className="font-semibold text-gray-700 mb-3">Configuration</h3>
+            <div className="bg-emerald-50 p-5 rounded-lg">
+              <h3 className="font-semibold text-slate-700 mb-3">Configuration</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Taille des groupes :</span>
+                  <span className="text-slate-600">Taille des groupes :</span>
                   <span className="font-medium">{projectData.groupSize} étudiants</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Nombre de groupes :</span>
+                  <span className="text-slate-600">Nombre de groupes :</span>
                   <span className="font-medium">
                     ~{Math.ceil(projectData.students.length / projectData.groupSize)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Préférences :</span>
+                  <span className="text-slate-600">Préférences :</span>
                   <span className="font-medium">
                     {projectData.partnerPreferenceEnabled ? 'Activées' : 'Désactivées'}
                   </span>
@@ -568,6 +655,20 @@ export default function CreateProjectPage() {
 
           {/* Action */}
           <div className="pt-4">
+            {loading && creationProgress.percent > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-700">{creationProgress.step}</span>
+                  <span className="text-sm text-slate-500">{creationProgress.percent}%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${creationProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+            )}
             <Button
               variant="primary"
               fullWidth
@@ -575,9 +676,17 @@ export default function CreateProjectPage() {
               disabled={!isStepValid(currentStep) || loading}
               className="py-4 text-lg"
             >
-              {loading ? 'Création...' : 'Créer le projet'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Création en cours...
+                </span>
+              ) : 'Créer le projet'}
             </Button>
-            <p className="text-center text-sm text-gray-500 mt-3">
+            <p className="text-center text-sm text-slate-500 mt-3">
               Le projet sera créé et les étudiants recevront une notification
             </p>
           </div>
@@ -587,53 +696,61 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 md:py-10">
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6 text-center md:text-left">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-            Nouveau projet
-          </h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">
-            Créez un nouveau projet en quelques étapes
-          </p>
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Nouveau projet</h1>
+          <p className="text-slate-600 mt-1">Créez un nouveau projet en quelques étapes</p>
         </div>
+        <button
+          onClick={() => navigate('/teacher')}
+          className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Annuler
+        </button>
+      </div>
 
-        {/* Step Indicator */}
-        {renderStepIndicator()}
+      {/* Step Indicator */}
+      {renderStepIndicator()}
 
-        {/* Content */}
-        <div className="bg-white rounded-lg shadow-sm p-4 md:p-8 mb-6">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
-        </div>
+      {/* Content */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-8">
+        {currentStep === 1 && renderStep1()}
+        {currentStep === 2 && renderStep2()}
+        {currentStep === 3 && renderStep3()}
+        {currentStep === 4 && renderStep4()}
+      </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between items-center">
-          <div>
-            {currentStep > 1 && (
-              <Button variant="secondary" onClick={prevStep}>
-                ← Retour
-              </Button>
-            )}
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/teacher')}
-            >
-              Annuler
+      {/* Navigation */}
+      <div className="flex justify-between items-center">
+        <div>
+          {currentStep > 1 && (
+            <Button variant="secondary" onClick={prevStep}>
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Retour
+              </span>
             </Button>
+          )}
+        </div>
 
-            {currentStep < 4 && (
-              <Button variant="primary" onClick={nextStep} disabled={!isStepValid(currentStep)}>
-                Continuer →
-              </Button>
-            )}
-          </div>
+        <div className="flex gap-3">
+          {currentStep < 4 && (
+            <Button variant="primary" onClick={nextStep} disabled={!isStepValid(currentStep)}>
+              <span className="flex items-center gap-2">
+                Continuer
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </span>
+            </Button>
+          )}
         </div>
       </div>
     </div>

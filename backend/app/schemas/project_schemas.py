@@ -85,6 +85,7 @@ class ProjectResponse(BaseModel):
     deadline: Optional[str] = None
     is_active: bool
     is_open_for_preferences: bool
+    algorithm_ran: bool
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
     
@@ -93,12 +94,14 @@ class ProjectResponse(BaseModel):
 
 class ProjectWithStudents(ProjectResponse):
     students: List[StudentInProject] = []
+    algorithm_ran: bool
     
     class Config:
         from_attributes = True
 
 class StudentUploadRequest(BaseModel):
     students: List[StudentInProjectCreate]
+    send_emails: bool = True  # Set to False during project creation wizard
 
 class StudentUploadResponse(BaseModel):
     success: bool

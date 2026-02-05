@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
+import { formatFilieres } from '../utils/formatters';
+import CountrySelect from './CountrySelect';
 import Button from './Button'
 import { Alert } from './Loading'
 
@@ -15,6 +19,11 @@ export default function CSVUploader({
   const [editingIndex, setEditingIndex] = useState(null)
   const [showManualForm, setShowManualForm] = useState(false)
   const [manualData, setManualData] = useState({})
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  
+  // Debounce timer ref
+  const debounceTimerRef = useRef(null)
 
   const isDestinations = type === 'destinations'
 
@@ -108,6 +117,13 @@ export default function CSVUploader({
           errors.push(`Ligne ${i + 1}: Email invalide "${item.email || 'vide'}"`)
           continue
         }
+        
+        // Validate ESIEE email format
+        const emailDomain = item.email.split('@')[1]?.toLowerCase()
+        if (!emailDomain || (!emailDomain.endsWith('esiee.fr') && !emailDomain.endsWith('edu.esiee.fr'))) {
+          errors.push(`Ligne ${i + 1}: Email non-ESIEE "${item.email}" - Utilisez une adresse @esiee.fr ou @edu.esiee.fr`)
+          continue
+        }
 
         // Check for duplicate emails in current batch
         if (parsedData.some(s => s.email === item.email)) {
@@ -180,10 +196,26 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
     const updatedData = [...previewData]
     updatedData[index][field] = value
     setPreviewData(updatedData)
-    if (onUploadSuccess) {
-      onUploadSuccess(updatedData)
+    
+    // Debounce the callback to avoid excessive updates
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
     }
+    debounceTimerRef.current = setTimeout(() => {
+      if (onUploadSuccess) {
+        onUploadSuccess(updatedData)
+      }
+    }, 500) // 500ms debounce
   }
+  
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0]
@@ -324,6 +356,13 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
         return
       }
       
+      // Validate ESIEE email format
+      const emailDomain = manualData.email.split('@')[1]?.toLowerCase()
+      if (!emailDomain || (!emailDomain.endsWith('esiee.fr') && !emailDomain.endsWith('edu.esiee.fr'))) {
+        setError('Utilisez une adresse ESIEE (@esiee.fr ou @edu.esiee.fr)')
+        return
+      }
+      
       if (previewData.some(s => s.email === manualData.email)) {
         setError('Un étudiant avec cet email existe déjà')
         return
@@ -355,7 +394,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Nom de l'université <span className="text-red-500">*</span>
             </label>
             <input
@@ -363,25 +402,20 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.university_name || ''}
               onChange={(e) => setManualData({...manualData, university_name: e.target.value})}
               placeholder="Ex: MIT"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Pays <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
+            <CountrySelect
               value={manualData.country || ''}
-              onChange={(e) => setManualData({...manualData, country: e.target.value})}
-              placeholder="Ex: USA"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              onChange={e => setManualData({...manualData, country: e.target.value})}
+              required
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Ville
             </label>
             <input
@@ -389,12 +423,12 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.city || ''}
               onChange={(e) => setManualData({...manualData, city: e.target.value})}
               placeholder="Ex: Boston"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Places disponibles
             </label>
             <input
@@ -402,18 +436,18 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.total_places || ''}
               onChange={(e) => setManualData({...manualData, total_places: e.target.value})}
               placeholder="Ex: 5"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Type de mobilité
             </label>
             <select
               value={manualData.mobility_type || 'ECHANGE_ACADEMIQUE'}
               onChange={(e) => setManualData({...manualData, mobility_type: e.target.value})}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             >
               <option value="ECHANGE_ACADEMIQUE">Échange Académique</option>
               <option value="STAGE_INTERNATIONAL">Stage International</option>
@@ -423,7 +457,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Filières acceptées
             </label>
             <input
@@ -431,18 +465,18 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.accepted_filieres || ''}
               onChange={(e) => setManualData({...manualData, accepted_filieres: e.target.value})}
               placeholder="Ex: INFORMATIQUE,ELECTRONIQUE ou ALL"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Niveau d'anglais min.
             </label>
             <select
               value={manualData.min_english_level || ''}
               onChange={(e) => setManualData({...manualData, min_english_level: e.target.value})}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             >
               <option value="">Aucun</option>
               <option value="A1">A1</option>
@@ -455,7 +489,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Score TOEIC min.
             </label>
             <input
@@ -463,12 +497,12 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.min_toeic_score || ''}
               onChange={(e) => setManualData({...manualData, min_toeic_score: e.target.value})}
               placeholder="Ex: 800"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               GPA minimum
             </label>
             <input
@@ -477,7 +511,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.min_gpa || ''}
               onChange={(e) => setManualData({...manualData, min_gpa: e.target.value})}
               placeholder="Ex: 14.0"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
         </div>
@@ -487,7 +521,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Email <span className="text-red-500">*</span>
             </label>
             <input
@@ -495,13 +529,13 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.email || ''}
               onChange={(e) => setManualData({...manualData, email: e.target.value})}
               placeholder="etudiant@edu.esiee.fr"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
-            <p className="text-xs text-gray-500 mt-1">Le nom sera généré automatiquement si non fourni</p>
+            <p className="text-xs text-slate-500 mt-1">Le nom sera généré automatiquement si non fourni</p>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Nom complet (optionnel)
             </label>
             <input
@@ -509,12 +543,12 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.name || ''}
               onChange={(e) => setManualData({...manualData, name: e.target.value})}
               placeholder="Jean Dupont"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Filière (optionnel)
             </label>
             <input
@@ -522,12 +556,12 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.filiere || ''}
               onChange={(e) => setManualData({...manualData, filiere: e.target.value})}
               placeholder="Ex: E5FI"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Rang (optionnel)
             </label>
             <input
@@ -535,12 +569,12 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.rank || ''}
               onChange={(e) => setManualData({...manualData, rank: e.target.value})}
               placeholder="Ex: 42"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Note moyenne (optionnel)
             </label>
             <input
@@ -549,7 +583,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               value={manualData.grade || ''}
               onChange={(e) => setManualData({...manualData, grade: e.target.value})}
               placeholder="Ex: 14.5"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-esiee-blue"
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
         </div>
@@ -561,22 +595,40 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
     if (isDestinations) {
       return (
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-slate-50 border-b">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Université</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Pays</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Ville</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Places</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Filères</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Université</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Pays</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ville</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Places</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Filères</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-slate-200">
             {previewData.map((item, index) => (
-              <tr key={item.id} className="hover:bg-gray-50">
+              <tr key={item.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium">{item.university_name}</td>
-                <td className="px-4 py-3">{item.country}</td>
+                <td className="px-4 py-3">
+                  {item.country && (
+                    <span className="flex items-center gap-2">
+                      {getCountryCode(item.country) && (
+                        <CountryFlag 
+                          countryCode={getCountryCode(item.country)} 
+                          svg 
+                          style={{ 
+                            width: '1.5em', 
+                            height: '1.1em',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            borderRadius: '2px'
+                          }} 
+                        />
+                      )}
+                      <span className="truncate" title={item.country}>{item.country}</span>
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3">{item.city}</td>
                 <td className="px-4 py-3">
                   <input
@@ -587,7 +639,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
                   />
                 </td>
                 <td className="px-4 py-3">{item.mobility_type}</td>
-                <td className="px-4 py-3 text-sm">{item.accepted_filieres}</td>
+                <td className="px-4 py-3 text-sm">{formatFilieres(item.accepted_filieres)}</td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => handleDeleteItem(index)}
@@ -605,26 +657,26 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
       // Student table (original)
       return (
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-slate-50 border-b">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Nom</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Filière</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rang</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Note</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Nom</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Email</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Filière</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Rang</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Note</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-slate-200">
             {existingStudents.length > 0 && (
-              <tr className="bg-gray-50">
-                <td colSpan="6" className="px-6 py-2 text-sm font-medium text-gray-700">
+              <tr className="bg-slate-50">
+                <td colSpan="6" className="px-6 py-2 text-sm font-medium text-slate-700">
                   {existingStudents.length} étudiant(s) déjà inscrit(s) • {previewData.length} en attente d'import
                 </td>
               </tr>
             )}
             {previewData.map((student, index) => (
-              <tr key={student.id} className="hover:bg-gray-50">
+              <tr key={student.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   {editingIndex === index ? (
                     <input
@@ -637,14 +689,14 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
                     />
                   ) : (
                     <span 
-                      className="cursor-pointer hover:text-esiee-blue"
+                      className="cursor-pointer hover:text-blue-600"
                       onClick={() => setEditingIndex(index)}
                     >
                       {student.name}
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{student.email}</td>
+                <td className="px-4 py-3 text-sm text-slate-600">{student.email}</td>
                 <td className="px-4 py-3">
                   <input
                     type="text"
@@ -700,7 +752,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
       <div
         className={`
           border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${dragActive ? 'border-esiee-blue bg-blue-50' : 'border-gray-300 bg-white'}
+          ${dragActive ? 'border-blue-600 bg-blue-50' : 'border-slate-300 bg-white'}
         `}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -708,12 +760,16 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
         onDrop={handleDrop}
       >
         <div className="space-y-4">
-          <div className="text-4xl">📄</div>
+          <div className="text-slate-400">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
           <div>
-            <p className="text-lg font-semibold text-gray-700 mb-2">
+            <p className="text-lg font-semibold text-slate-700 mb-2">
               Glissez-déposez votre fichier CSV ici
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-slate-500 mb-4">
               ou cliquez pour sélectionner un fichier • Vous pouvez ajouter plusieurs CSV
             </p>
           </div>
@@ -727,17 +783,17 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
                 className="hidden"
                 id="csv-upload"
               />
-              <span className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-esiee-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-esiee-blue">
-                📁 Sélectionner un fichier CSV
+              <span className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600">
+                Sélectionner un fichier CSV
               </span>
             </label>
             
             <Button variant="secondary" onClick={() => setShowManualForm(!showManualForm)}>
-              ➕ Ajouter manuellement
+              Ajouter manuellement
             </Button>
             
             <Button variant="outline" onClick={downloadTemplate}>
-              ⬇️ Télécharger le modèle
+              Télécharger le modèle
             </Button>
           </div>
         </div>
@@ -747,14 +803,16 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
       {showManualForm && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-gray-800">
+            <h3 className="text-lg font-bold text-slate-800">
               Ajouter {isDestinations ? 'une destination' : 'un étudiant'}
             </h3>
             <button 
               onClick={() => setShowManualForm(false)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-slate-500 hover:text-slate-700 p-1 rounded hover:bg-slate-100"
             >
-              ✕
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
           
@@ -765,7 +823,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               Annuler
             </Button>
             <Button variant="primary" onClick={handleAddManualItem}>
-              ➕ Ajouter
+              Ajouter
             </Button>
           </div>
         </div>
@@ -774,7 +832,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
       {/* Data Table */}
       {previewData.length > 0 && (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 bg-esiee-blue text-white">
+          <div className="px-6 py-4 bg-blue-600 text-white">
             <h3 className="text-lg font-bold">
               {isDestinations ? 'Destinations' : 'Étudiants'} Importés ({previewData.length})
             </h3>
@@ -787,23 +845,60 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
       )}
 
       {previewData.length > 0 && onUploadSuccess && (
-        <div className="mt-6 flex justify-end">
-          <Button 
-            variant="primary" 
-            onClick={async () => {
-              try {
-                await onUploadSuccess(previewData)
-                setPreviewData([])
-                setError('')
-              } catch (err) {
-                setError(`Erreur lors de l'importation`)
-                console.error('Erreur:', err)
-              }
-            }}
-            className="px-6 py-2 text-lg"
-          >
-            Terminer l'importation
-          </Button>
+        <div className="mt-6">
+          {isUploading && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-slate-700">
+                  Importation en cours... {type === 'students' ? '(envoi des emails aux étudiants)' : ''}
+                </span>
+                <span className="text-sm text-slate-500">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end">
+            <Button 
+              variant="primary" 
+              onClick={async () => {
+                try {
+                  setIsUploading(true)
+                  setUploadProgress(10)
+                  
+                  // Simulate progress for better UX
+                  const progressInterval = setInterval(() => {
+                    setUploadProgress(prev => Math.min(prev + 5, 90))
+                  }, 200)
+                  
+                  await onUploadSuccess(previewData)
+                  
+                  clearInterval(progressInterval)
+                  setUploadProgress(100)
+                  
+                  setTimeout(() => {
+                    setPreviewData([])
+                    setError('')
+                    setIsUploading(false)
+                    setUploadProgress(0)
+                  }, 500)
+                } catch (err) {
+                  setError(`Erreur lors de l'importation`)
+                  console.error('Erreur:', err)
+                  setIsUploading(false)
+                  setUploadProgress(0)
+                }
+              }}
+              disabled={isUploading}
+              className="px-6 py-2 text-lg"
+            >
+              {isUploading ? 'Importation en cours...' : 'Terminer l\'importation'}
+            </Button>
+          </div>
         </div>
       )}
     </div>

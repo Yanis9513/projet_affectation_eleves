@@ -1,10 +1,34 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
-import { CardSimple } from '../components/Card'
 import { Select } from '../components/Input'
 import { Alert, Loading } from '../components/Loading'
 import { projectAPI, preferenceAPI, studentAPI } from '../services/api'
+
+// SVG Icons
+const CheckCircleIcon = () => (
+  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const InfoIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const ArrowLeftIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+)
+
+const SendIcon = () => (
+  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+  </svg>
+)
 
 export default function StudentFormPage() {
   const { projectId } = useParams()
@@ -110,7 +134,7 @@ export default function StudentFormPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-slate-50 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
           <Loading text="Chargement du formulaire..." />
         </div>
@@ -120,13 +144,16 @@ export default function StudentFormPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-slate-50 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
-          <CardSimple className="text-center fade-in">
-            <h2 className="text-2xl font-bold text-green-600 mb-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center animate-fade-in shadow-sm">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mx-auto mb-4">
+              <CheckCircleIcon />
+            </div>
+            <h2 className="text-2xl font-bold text-emerald-600 mb-4">
               Préférences Envoyées !
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-slate-600 mb-6">
               Vos préférences ont été enregistrées avec succès.
             </p>
             <Button
@@ -135,7 +162,7 @@ export default function StudentFormPage() {
             >
               Retour au Tableau de Bord
             </Button>
-          </CardSimple>
+          </div>
         </div>
       </div>
     )
@@ -143,7 +170,7 @@ export default function StudentFormPage() {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-slate-50 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
           <Alert
             type="error"
@@ -156,31 +183,38 @@ export default function StudentFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
-        <div className="mb-8 fade-in">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+        <div className="mb-8 animate-fade-in">
+          <h1 className="text-4xl font-bold text-slate-800 mb-2">
             Formulaire de Préférences
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             {project.name}
           </p>
         </div>
 
         {/* Project Info */}
-        <CardSimple className="mb-6 bg-blue-50 border-l-4 border-esiee-blue fade-in-delay-1">
-          <h3 className="font-bold text-esiee-blue mb-2">Informations du Projet</h3>
-          <p className="text-sm text-gray-700 mb-2">
-            <strong>Description:</strong> {project.description}
-          </p>
-          <p className="text-sm text-gray-700 mb-2">
-            <strong>Enseignant:</strong> {project.teacher}
-          </p>
-          <p className="text-sm text-gray-700">
-            <strong>Taille des groupes:</strong> {project.groupSize} étudiants par groupe
-          </p>
-        </CardSimple>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 mb-6 fade-in-delay-1">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+              <InfoIcon />
+            </div>
+            <div>
+              <h3 className="font-bold text-blue-900 mb-2">Informations du Projet</h3>
+              <p className="text-sm text-slate-700 mb-2">
+                <strong>Description:</strong> {project.description}
+              </p>
+              <p className="text-sm text-slate-700 mb-2">
+                <strong>Enseignant:</strong> {project.teacher}
+              </p>
+              <p className="text-sm text-slate-700">
+                <strong>Taille des groupes:</strong> {project.groupSize} étudiants par groupe
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Error Alert */}
         {error && (
@@ -193,8 +227,8 @@ export default function StudentFormPage() {
         )}
 
         {/* Preference Form */}
-        <CardSimple className="fade-in-delay-2">
-          <h2 className="text-2xl font-bold text-esiee-blue mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm fade-in-delay-2">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">
             Vos Préférences
           </h2>
 
@@ -238,9 +272,9 @@ export default function StudentFormPage() {
               />
             )}
 
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-bold text-gray-800 mb-2">📌 Rappel Important</h3>
-              <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <h3 className="font-bold text-slate-800 mb-2">Rappel Important</h3>
+              <ul className="text-sm text-slate-700 space-y-1 list-disc list-inside">
                 <li>Les groupes de {project.groupSize} étudiants seront formés automatiquement</li>
                 <li>Vos préférences sont prises en compte mais non garanties</li>
                 <li>L'équilibre des groupes est prioritaire</li>
@@ -262,20 +296,30 @@ export default function StudentFormPage() {
                 variant="primary"
                 disabled={submitting}
               >
+                <SendIcon />
                 {submitting ? 'Envoi en cours...' : 'Envoyer mes Préférences'}
               </Button>
             </div>
           </form>
-        </CardSimple>
+        </div>
 
         {/* Help Section */}
-        <CardSimple className="mt-6 fade-in-delay-3">
-          <h3 className="font-bold text-gray-800 mb-3">❓ Besoin d'aide ?</h3>
-          <p className="text-sm text-gray-600 mb-2">
-            Si vous avez des questions sur ce projet ou si vous rencontrez un problème, 
-            contactez votre enseignant: <strong>{project.teacher}</strong>
-          </p>
-        </CardSimple>
+        <div className="bg-white rounded-xl border border-slate-200 p-5 mt-6 fade-in-delay-3 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-2">Besoin d'aide ?</h3>
+              <p className="text-sm text-slate-600">
+                Si vous avez des questions sur ce projet ou si vous rencontrez un problème, 
+                contactez votre enseignant: <strong className="text-slate-900">{project.teacher}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

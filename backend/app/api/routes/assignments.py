@@ -56,12 +56,46 @@ class RunAlgorithmResponse(BaseModel):
     stats: dict
 
 @router.get("/", response_model=List[AssignmentResponse])
-async def get_assignments(project_id: Optional[int] = None, db: Session = Depends(get_db)):
-    """Get all assignments, optionally filtered by project"""
+async def get_assignments(
+    project_id: Optional[int] = None, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all assignments, optionally filtered by project - requires authentication"""
+    
+    # Build base query
     query = db.query(Assignment)
     
     if project_id:
         query = query.filter(Assignment.project_id == project_id)
+        
+        # Verify access to this project's assignments
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="Projet non trouvé")
+        
+        # Teachers can only view assignments for their own projects
+        is_project_owner = current_user.teacher_profile and project.teacher_id == current_user.teacher_profile.id
+        # Students can only view assignments for projects they're enrolled in
+        is_enrolled = False
+        if current_user.student_profile:
+            from app.models.student import Student
+            student = db.query(Student).filter(Student.id == current_user.student_profile.id).first()
+            if student and project in student.projects:
+                is_enrolled = True
+        
+        if not is_project_owner and not is_enrolled:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Vous n'avez pas accès aux affectations de ce projet"
+            )
+    else:
+        # Without project filter, only teachers can list all
+        if not current_user.teacher_profile:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Accès non autorisé"
+            )
     
     assignments = query.all()
     
@@ -210,6 +244,8 @@ async def run_assignment_algorithm(
                 db.add(assignment)
                 assignments_created += 1
         
+        # Mark algorithm as ran on the project
+        project.algorithm_ran = True
         db.commit()
         
         return RunAlgorithmResponse(

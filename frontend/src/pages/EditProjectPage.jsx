@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
-import { CardSimple } from '../components/Card'
 import { TextInput, TextArea, Select } from '../components/Input'
 import { Alert, Loading } from '../components/Loading'
 import { projectAPI } from '../services/api'
+
+// SVG Icons
+const ArrowLeftIcon = () => (
+  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+)
+
+const SaveIcon = () => (
+  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+  </svg>
+)
 
 export default function EditProjectPage() {
   const { projectId } = useParams()
@@ -125,22 +137,23 @@ export default function EditProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl fade-in">
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="container mx-auto px-4 max-w-4xl animate-fade-in">
         {/* Header */}
-        <div className="mb-6 fade-in">
-          <Button variant="outline" onClick={() => navigate(`/projects/${projectId}`)}>
-            ← Retour au projet
+        <div className="mb-6">
+          <Button variant="secondary" onClick={() => navigate(`/projects/${projectId}`)}>
+            <ArrowLeftIcon />
+            Retour au projet
           </Button>
         </div>
 
         {/* Main Form */}
-        <CardSimple className="fade-in-delay-1">
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm fade-in-delay-1">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
               Modifier le Projet
             </h1>
-            <p className="text-gray-600">
+            <p className="text-slate-600">
               Mettez à jour les informations de votre projet
             </p>
           </div>
@@ -151,7 +164,7 @@ export default function EditProjectPage() {
           <form onSubmit={handleSubmit} className="space-y-6 fade-in-delay-2">
             {/* Basic Information */}
             <div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Informations de Base</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4">Informations de Base</h3>
               
               <TextInput
                 label="Titre du Projet"
@@ -183,7 +196,7 @@ export default function EditProjectPage() {
 
             {/* Group Configuration */}
             <div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Configuration des Groupes</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4">Configuration des Groupes</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <TextInput
@@ -210,7 +223,7 @@ export default function EditProjectPage() {
 
             {/* Status Settings */}
             <div>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Paramètres de Statut</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4">Paramètres de Statut</h3>
               
               <div className="space-y-3">
                 <label className="flex items-center space-x-3 cursor-pointer">
@@ -219,9 +232,9 @@ export default function EditProjectPage() {
                     name="is_active"
                     checked={projectData.is_active}
                     onChange={handleInputChange}
-                    className="w-5 h-5 text-esiee-blue rounded focus:ring-2 focus:ring-esiee-blue"
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-600"
                   />
-                  <span className="text-gray-700 font-medium">Projet actif</span>
+                  <span className="text-slate-700 font-medium">Projet actif</span>
                 </label>
 
                 <label className="flex items-center space-x-3 cursor-pointer">
@@ -230,9 +243,9 @@ export default function EditProjectPage() {
                     name="is_open_for_preferences"
                     checked={projectData.is_open_for_preferences}
                     onChange={handleInputChange}
-                    className="w-5 h-5 text-esiee-blue rounded focus:ring-2 focus:ring-esiee-blue"
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-600"
                   />
-                  <span className="text-gray-700 font-medium">Ouvert aux préférences étudiantes</span>
+                  <span className="text-slate-700 font-medium">Ouvert aux préférences étudiantes</span>
                 </label>
 
                 <label className="flex items-center space-x-3 cursor-pointer">
@@ -241,18 +254,18 @@ export default function EditProjectPage() {
                     name="partner_preference_enabled"
                     checked={projectData.partner_preference_enabled}
                     onChange={handleInputChange}
-                    className="w-5 h-5 text-esiee-blue rounded focus:ring-2 focus:ring-esiee-blue"
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-600"
                   />
-                  <span className="text-gray-700 font-medium">Autoriser les préférences de partenaires</span>
+                  <span className="text-slate-700 font-medium">Autoriser les préférences de partenaires</span>
                 </label>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 pt-6 border-t">
+            <div className="flex gap-4 pt-6 border-t border-slate-200">
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 onClick={() => navigate(`/projects/${projectId}`)}
                 disabled={saving}
               >
@@ -263,11 +276,12 @@ export default function EditProjectPage() {
                 variant="primary"
                 disabled={saving}
               >
+                <SaveIcon />
                 {saving ? 'Enregistrement...' : 'Enregistrer les Modifications'}
               </Button>
             </div>
           </form>
-        </CardSimple>
+        </div>
       </div>
     </div>
   )

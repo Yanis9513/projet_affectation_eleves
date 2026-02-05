@@ -1,43 +1,45 @@
-﻿import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardSimple } from '../components/Card';
 import Button from '../components/Button';
 import { Loading, Alert } from '../components/Loading';
 import ConfirmModal from '../components/ConfirmModal';
-import { projectAPI } from '../services/api';
+import { ProjectTypeBadge } from '../components/StatusBadge';
+import { useProjects, useDeleteProject } from '../services/useQuery';
+
+// Icones
+const ProjectIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const UsersIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, projectId: null, projectTitle: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  
-  const translateProjectType = (type) => {
-    const translations = {
-      'group_project': 'Projet de groupe',
-      'english_leveling': 'Niveau d\'anglais',
-      'exchange_program': 'Programme d\'échange'
-    }
-    return translations[type] || type
-  }
-
-  const loadProjects = async () => {
-    try {
-      const response = await projectAPI.getAll();
-      setProjects(response.data);
-    } catch (error) {
-      console.error('Error loading projects:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Utilisation du hook useProjects avec cache
+  const { data: projects = [], isLoading: loading, refetch } = useProjects();
+  const deleteProject = useDeleteProject();
 
   const handleDeleteClick = (project) => {
     setDeleteModal({
@@ -49,9 +51,9 @@ export default function TeacherDashboard() {
 
   const handleDeleteConfirm = async () => {
     try {
-      await projectAPI.delete(deleteModal.projectId);
-      setSuccess(`Projet "${deleteModal.projectTitle}" supprimé avec succès`);
-      setProjects(projects.filter(p => p.id !== deleteModal.projectId));
+      await deleteProject.mutate(deleteModal.projectId);
+      setSuccess(`Projet "${deleteModal.projectTitle}" supprime avec succes`);
+      refetch(); // Rafraichir la liste
       setDeleteModal({ isOpen: false, projectId: null, projectTitle: '' });
     } catch (error) {
       console.error('Error deleting project:', error);
@@ -70,149 +72,198 @@ export default function TeacherDashboard() {
 
   const activeProjects = projects.filter(p => p.is_active);
   const totalStudents = projects.reduce((sum, p) => sum + (p.students?.length || 0), 0);
+  const openForPreferences = projects.filter(p => p.is_open_for_preferences).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2 fade-in">
-              Tableau de Bord Enseignant
-            </h1>
-            <p className="text-gray-600 fade-in-delay-1">Gérez vos projets et affectations</p>
+    <div className="max-w-6xl mx-auto animate-fade-in">
+      {/* Header - Plus sobre */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">
+            Tableau de bord
+          </h1>
+          <p className="text-slate-500 text-sm mt-0.5">Gérez vos projets et affectations</p>
+        </div>
+        
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => navigate('/teacher/create-project')}
+        >
+          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Nouveau projet
+        </Button>
+      </div>
+
+      {error && <Alert type="error" message={error} onClose={() => setError('')} className="mb-4" />}
+      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
+      
+      {/* Stats - Layout asymétrique avec tailles variables */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="text-slate-400">
+              <ProjectIcon />
+            </div>
+            <div>
+              <p className="text-xl font-semibold text-slate-900">{projects.length}</p>
+              <p className="text-xs text-slate-500">Projets</p>
+            </div>
           </div>
-          
-          <div className="flex gap-3 fade-in-delay-1 ml-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/profile')}
-            >
-              Mon Profil
-            </Button>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="text-emerald-500">
+              <CheckIcon />
+            </div>
+            <div>
+              <p className="text-xl font-semibold text-slate-900">{activeProjects.length}</p>
+              <p className="text-xs text-slate-500">Actifs</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="text-blue-500">
+              <UsersIcon />
+            </div>
+            <div>
+              <p className="text-xl font-semibold text-slate-900">{totalStudents}</p>
+              <p className="text-xs text-slate-500">Étudiants</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="text-amber-500">
+              <ClockIcon />
+            </div>
+            <div>
+              <p className="text-xl font-semibold text-slate-900">{openForPreferences}</p>
+              <p className="text-xs text-slate-500">En attente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Projects List - Plus compact */}
+      <div>
+        <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-3">Mes projets</h2>
+        
+        {projects.length === 0 ? (
+          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
+            <p className="text-slate-500 mb-4">Aucun projet créé</p>
             <Button
               variant="primary"
-              size="lg"
+              size="sm"
               onClick={() => navigate('/teacher/create-project')}
             >
-              Créer un Nouveau Projet
+              Créer un projet
             </Button>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-2">
+            {projects.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onView={() => navigate(`/projects/${project.id}`)}
+                onEdit={() => navigate(`/teacher/edit-project/${project.id}`)}
+                onDelete={() => handleDeleteClick(project)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-        {error && <Alert type="error" message={error} onClose={() => setError('')} className="mb-4" />}
-        {success && <Alert type="success" message={success} onClose={() => setSuccess('')} className="mb-4" />}
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 fade-in-delay-2">
-          <CardSimple className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Mes Projets</p>
-            <p className="text-4xl font-bold text-esiee-blue">{projects.length}</p>
-          </CardSimple>
-          
-          <CardSimple className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Projets Actifs</p>
-            <p className="text-4xl font-bold text-green-600">{activeProjects.length}</p>
-          </CardSimple>
-          
-          <CardSimple className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">Total Étudiants</p>
-            <p className="text-4xl font-bold text-purple-600">{totalStudents}</p>
-          </CardSimple>
-          
-          <CardSimple className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <p className="text-gray-700 text-sm font-medium mb-1">En Attente</p>
-            <p className="text-4xl font-bold text-yellow-600">
-              {projects.filter(p => p.is_open_for_preferences).length}
-            </p>
-          </CardSimple>
-        </div>
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Supprimer le Projet"
+        message={`Etes-vous sur de vouloir supprimer le projet "${deleteModal.projectTitle}" ? Cette action est irreversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
+    </div>
+  );
+}
 
-        <div className="space-y-4 fade-in-delay-3">
-          <h2 className="text-2xl font-bold text-gray-800">Mes Projets</h2>
+// Composant ProjectCard - Design plus épuré
+function ProjectCard({ project, onView, onEdit, onDelete }) {
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 p-4 hover:border-slate-300 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-medium text-slate-900 truncate">{project.title}</h3>
+            {project.is_active && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+            )}
+          </div>
           
-          {projects.length === 0 ? (
-            <CardSimple className="text-center py-12 fade-in-delay-3">
-              <p className="text-gray-600 mb-4">Aucun projet créé</p>
-              <Button
-                variant="primary"
-                onClick={() => navigate('/teacher/create-project')}
-              >
-                Créer votre premier projet
-              </Button>
-            </CardSimple>
-          ) : (
-            projects.map(project => (
-              <CardSimple key={project.id} className="hover:shadow-lg transition-shadow fade-in-delay-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-gray-800">{project.title}</h3>
-                      {project.is_active ? (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Actif
-                        </span>
-                      ) : (
-                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Inactif
-                        </span>
-                      )}
-                      {project.is_open_for_preferences && (
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Ouvert aux préférences
-                        </span>
-                      )}
-                    </div>
-                    
-                    <p className="text-gray-600 mb-3">{project.description}</p>
-                    
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <span>{project.students?.length || 0}/{project.max_students} étudiants</span>
-                      <span>Taille de groupe: {project.group_size || 'N/A'}</span>
-                      {project.project_type && (
-                        <span>Type: {translateProjectType(project.project_type)}</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                    >
-                      Voir Détails
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/teacher/edit-project/${project.id}`)}
-                    >
-                      Modifier
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDeleteClick(project)}
-                    >
-                      Supprimer
-                    </Button>
-                  </div>
-                </div>
-              </CardSimple>
-            ))
+          {project.description && (
+            <p className="text-slate-500 text-sm line-clamp-1 mb-2">{project.description}</p>
           )}
+          
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+            <span>{project.students?.length || 0} étudiants</span>
+            <span>•</span>
+            <span>Groupe de {project.group_size || 'N/A'}</span>
+            {project.project_type && (
+              <>
+                <span>•</span>
+                <ProjectTypeBadge type={project.project_type} />
+              </>
+            )}
+            {project.algorithm_ran && (
+              <>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Groupes formés
+                </span>
+              </>
+            )}
+          </div>
         </div>
-
-        {/* Delete Confirmation Modal */}
-        <ConfirmModal
-          isOpen={deleteModal.isOpen}
-          title="Supprimer le Projet"
-          message={`Êtes-vous sûr de vouloir supprimer le projet "${deleteModal.projectTitle}" ? Cette action est irréversible.`}
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          variant="danger"
-          onConfirm={handleDeleteConfirm}
-          onCancel={handleDeleteCancel}
-        />
+        
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={onView}
+            className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+            title="Voir"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+          <button 
+            onClick={onEdit}
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            title="Modifier"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <button 
+            onClick={onDelete}
+            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            title="Supprimer"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

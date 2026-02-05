@@ -12,6 +12,11 @@ from app.models.destination import Destination, MobilityType
 from app.auth_utils import get_current_user
 from app.services.email_service import email_service
 from typing import List
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -20,9 +25,23 @@ def serialize_project(project: Project, include_students: bool = False, students
     """Helper function to serialize a Project model to a dictionary.
     Avoids code duplication across multiple endpoints.
     """
+    # Get teacher info
+    teacher_info = None
+    if project.teacher and project.teacher.user:
+        teacher_info = {
+            "id": project.teacher.id,
+            "first_name": project.teacher.user.first_name,
+            "last_name": project.teacher.user.last_name,
+            "email": project.teacher.user.email
+        }
+    
+    # Use the database field for algorithm_ran status
+    algorithm_ran = project.algorithm_ran if hasattr(project, 'algorithm_ran') else False
+    
     result = {
         "id": project.id,
         "teacher_id": project.teacher_id,
+        "teacher": teacher_info,
         "title": project.title,
         "description": project.description,
         "project_type": project.project_type.value if hasattr(project.project_type, 'value') else project.project_type,
@@ -35,6 +54,8 @@ def serialize_project(project: Project, include_students: bool = False, students
         "is_open_for_preferences": project.is_open_for_preferences,
         "created_at": project.created_at.isoformat() if project.created_at else None,
         "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+        "destinations_count": len(project.destinations) if project.destinations else 0,
+        "algorithm_ran": algorithm_ran,
     }
     if include_students:
         result["students"] = students_data or []
@@ -148,22 +169,36 @@ async def create_project(
 ):
     """Create a new project with students"""
     
+    # Check if current_user is actually resolved
+    if hasattr(current_user, '__class__') and current_user.__class__.__name__ == 'Depends':
+        logger.error("Authentication dependency not resolved")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur d'authentification"
+        )
+    
     # Get teacher ID from authenticated user
-    if not current_user.teacher_profile:
+    if not hasattr(current_user, 'teacher_profile') or not current_user.teacher_profile:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only teachers can create projects"
+            detail="Seuls les enseignants peuvent créer des projets"
         )
     
     teacher_id = current_user.teacher_profile.id
     
     try:
+        # Convert project_type - handle both string and enum
+        project_type_value = project_data.project_type
+        if hasattr(project_type_value, 'value'):
+            project_type_value = project_type_value.value
+        project_type_enum = ProjectType(project_type_value)
+        
         # Create project
         new_project = Project(
             teacher_id=teacher_id,
             title=project_data.title,
             description=project_data.description,
-            project_type=ProjectType[project_data.project_type.value.upper()],
+            project_type=project_type_enum,
             group_size=project_data.group_size,
             partner_preference_enabled=project_data.partner_preference_enabled,
             required_english_level=project_data.required_english_level,
@@ -177,12 +212,13 @@ async def create_project(
         db.commit()
         db.refresh(new_project)
         
-        # Create/link students if provided
+        # Create/link students if provided (don't send emails during creation - will be sent on finalization)
         if project_data.students:
             await upload_students_to_project(
                 new_project.id, 
-                StudentUploadRequest(students=project_data.students), 
-                db
+                StudentUploadRequest(students=project_data.students, send_emails=True),  # Send emails on project creation
+                db,
+                current_user
             )
         
         # Create destinations if provided (for exchange programs)
@@ -209,17 +245,21 @@ async def create_project(
                     )
                     db.add(new_destination)
                 except Exception as dest_error:
-                    print(f"Error creating destination {dest_data.university_name}: {dest_error}")
+                    logger.warning("Erreur lors de la création d'une destination: %s", type(dest_error).__name__)
             
             db.commit()
         
         return serialize_project(new_project)
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
+        logger.error("Erreur lors de la création du projet: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating project: {str(e)}"
-        )
+            detail="Erreur lors de la création du projet. Veuillez réessayer."
+        ) from e
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
@@ -249,12 +289,16 @@ async def update_project(
         
         db.commit()
         db.refresh(project)
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
+        logger.error("Erreur lors de la mise à jour du projet: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating project: {str(e)}"
-        )
+            detail="Erreur lors de la mise à jour du projet. Veuillez réessayer."
+        ) from e
     
     return serialize_project(project)
 
@@ -324,14 +368,15 @@ async def upload_students_to_project(
                 # Link student to project if not already linked
                 if project not in student.projects:
                     student.projects.append(project)
-                    # Send enrollment email
-                    student_name = f"{existing_user.first_name} {existing_user.last_name}".strip() or existing_user.email
-                    email_service.send_student_enrollment_email(
-                        student_email=existing_user.email,
-                        student_name=student_name,
-                        project_title=project.title,
-                        teacher_name=teacher_name
-                    )
+                    # Send enrollment email only if send_emails is True
+                    if upload_data.send_emails:
+                        student_name = f"{existing_user.first_name} {existing_user.last_name}".strip() or existing_user.email
+                        email_service.send_student_enrollment_email(
+                            student_email=existing_user.email,
+                            student_name=student_name,
+                            project_title=project.title,
+                            teacher_name=teacher_name
+                        )
                 
                 full_name = f"{existing_user.first_name} {existing_user.last_name}" if existing_user.first_name else existing_user.email
                 result_students.append(StudentInProject(
@@ -411,14 +456,15 @@ async def upload_students_to_project(
             # Link student to project
             new_student.projects.append(project)
             
-            # Send enrollment email
-            student_name = f"{new_user.first_name} {new_user.last_name}".strip()
-            email_service.send_student_enrollment_email(
-                student_email=new_user.email,
-                student_name=student_name,
-                project_title=project.title,
-                teacher_name=teacher_name
-            )
+            # Send enrollment email only if send_emails is True
+            if upload_data.send_emails:
+                student_name = f"{new_user.first_name} {new_user.last_name}".strip()
+                email_service.send_student_enrollment_email(
+                    student_email=new_user.email,
+                    student_name=student_name,
+                    project_title=project.title,
+                    teacher_name=teacher_name
+                )
             
             created_count += 1
             full_name = f"{new_user.first_name} {new_user.last_name}".strip()

@@ -4,6 +4,7 @@ from typing import List, Optional
 from app.database import get_db
 from app.models.teacher import Teacher
 from app.models.user import User
+from app.models.project import Project
 from app.auth_utils import get_current_user
 from pydantic import BaseModel
 
@@ -40,6 +41,19 @@ def get_current_teacher_profile(current_user: User = Depends(get_current_user), 
     if not teacher:
         raise HTTPException(status_code=404, detail="Profil professeur non trouvé")
     
+    # Count projects created by this teacher
+    projects_count = db.query(Project).filter(Project.teacher_id == teacher.id).count()
+    
+    # Count total students across all projects
+    projects = db.query(Project).filter(Project.teacher_id == teacher.id).all()
+    students_count = sum(len(p.students) for p in projects)
+    
+    # Count active projects
+    active_projects_count = db.query(Project).filter(
+        Project.teacher_id == teacher.id,
+        Project.is_active == True
+    ).count()
+    
     return {
         "id": teacher.id,
         "user_id": teacher.user_id,
@@ -47,6 +61,9 @@ def get_current_teacher_profile(current_user: User = Depends(get_current_user), 
         "office": teacher.office,
         "phone": teacher.phone,
         "bio": teacher.bio,
+        "projects_count": projects_count,
+        "students_count": students_count,
+        "active_projects_count": active_projects_count,
         "user": {
             "id": current_user.id,
             "email": current_user.email,

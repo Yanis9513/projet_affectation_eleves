@@ -40,12 +40,12 @@ const Button = forwardRef(function Button(
     
     // Secondary: Alternative actions
     secondary: `
-      bg-white text-gray-700
-      hover:bg-gray-50
-      active:bg-gray-100
-      focus:ring-2 focus:ring-gray-300 focus:ring-offset-2
+      bg-white text-slate-700
+      hover:bg-slate-50
+      active:bg-slate-100
+      focus:ring-2 focus:ring-slate-300 focus:ring-offset-2
       shadow-sm hover:shadow-md
-      border border-gray-300
+      border border-slate-300
     `,
     
     // Outline: Less prominent actions
@@ -59,29 +59,29 @@ const Button = forwardRef(function Button(
     
     // Ghost: Subtle actions
     ghost: `
-      bg-transparent text-gray-600
-      hover:bg-gray-100
-      active:bg-gray-200
-      focus:ring-2 focus:ring-gray-300 focus:ring-offset-2
+      bg-transparent text-slate-600
+      hover:bg-slate-100
+      active:bg-slate-200
+      focus:ring-2 focus:ring-slate-300 focus:ring-offset-2
       border border-transparent
     `,
     
     // Success: Positive actions
     success: `
-      bg-green-600 text-white
-      hover:bg-green-700
-      active:bg-green-800
-      focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+      bg-emerald-600 text-white
+      hover:bg-emerald-700
+      active:bg-emerald-800
+      focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2
       shadow-sm hover:shadow-md
       border border-transparent
     `,
     
     // Warning: Caution actions
     warning: `
-      bg-orange-600 text-white
-      hover:bg-orange-700
-      active:bg-orange-800
-      focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
+      bg-amber-600 text-white
+      hover:bg-amber-700
+      active:bg-amber-800
+      focus:ring-2 focus:ring-amber-500 focus:ring-offset-2
       shadow-sm hover:shadow-md
       border border-transparent
     `,

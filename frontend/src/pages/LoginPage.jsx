@@ -76,81 +76,120 @@ function LoginPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-8 border-t-4 border-esiee-blue fade-in">
-        {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <img 
-            src="/logo-esiee.svg" 
-            alt="ESIEE Paris" 
-            className="h-16 transition-transform hover:scale-110 duration-300" 
-          />
-        </div>
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 animate-fade-in-up">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <div className="p-4 bg-gradient-to-br from-blue-50 to-slate-50 rounded-2xl">
+              <img 
+                src="/logo-esiee.svg" 
+                alt="ESIEE Paris" 
+                className="h-12" 
+              />
+            </div>
+          </div>
 
-        {/* Title */}
-        <h2 className="text-3xl font-bold text-center text-esiee-blue mb-2">
-          Connexion
-        </h2>
-        <p className="text-center text-gray-600 mb-6">
-          Connectez-vous pour accéder à votre espace
-        </p>
+          {/* Title */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              Bienvenue
+            </h1>
+            <p className="text-slate-500">
+              Connectez-vous à votre espace étudiant
+            </p>
+          </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <TextInput
-            label="Adresse Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="prenom.nom@edu.esiee.fr"
-            required
-            disabled={loading}
-            error={errors.email}
-          />
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <TextInput
+              label="Adresse Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="prenom.nom@edu.esiee.fr"
+              required
+              disabled={loading}
+              error={errors.email}
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              }
+            />
 
-          <TextInput
-            label="Mot de passe"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="••••••••"
-            required
-            disabled={loading}
-            error={errors.password}
-          />
+            <TextInput
+              label="Mot de passe"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              required
+              disabled={loading}
+              error={errors.password}
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              }
+            />
 
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            disabled={loading || !isFormValid}
-          >
-            {loading ? 'Connexion en cours...' : 'Se connecter'}
-          </Button>
-        </form>
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex items-center gap-2 text-slate-600 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                Se souvenir de moi
+              </label>
+              <a 
+                href="/forgot-password" 
+                className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              >
+                Mot de passe oublié ?
+              </a>
+            </div>
 
-        {/* Additional Links */}
-        <div className="mt-6 space-y-3">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
+              loading={loading}
+              disabled={!isFormValid}
+            >
+              Se connecter
+            </Button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-4 bg-white text-sm text-slate-500">ou</span>
+            </div>
+          </div>
+
+          {/* Sign up link */}
           <div className="text-center">
-            <a 
-              href="/forgot-password" 
-              className="text-esiee-blue hover:text-blue-700 text-sm transition-colors duration-200"
-            >
-              Mot de passe oublié ?
-            </a>
-          </div>
-          <div className="text-center text-sm text-gray-600">
-            Pas encore de compte ?{' '}
-            <a 
-              href="/signup" 
-              className="text-esiee-blue hover:text-blue-700 font-medium transition-colors duration-200"
-            >
-              S'inscrire ici
-            </a>
+            <p className="text-slate-600">
+              Pas encore de compte ?{' '}
+              <a 
+                href="/signup" 
+                className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+              >
+                Créer un compte
+              </a>
+            </p>
           </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-sm text-slate-500 mt-6">
+          © 2026 ESIEE Paris - Système d'Affectation
+        </p>
       </div>
     </div>
   )

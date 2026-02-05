@@ -44,6 +44,7 @@ class Project(Base):
     # Statut et dates
     is_active = Column(Boolean, default=True)
     is_open_for_preferences = Column(Boolean, default=True)  # Les élèves peuvent-ils choisir ce projet?
+    algorithm_ran = Column(Boolean, default=False)  # Indicates if algorithm has been run and groups are formed
     deadline = Column(DateTime, nullable=True)  # Date limite de soumission des préférences
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
