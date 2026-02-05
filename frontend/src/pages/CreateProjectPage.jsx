@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react'
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
 import { invalidateQueries } from '../services/useQuery'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -493,7 +495,26 @@ export default function CreateProjectPage() {
                 {projectData.destinations.map((dest, idx) => (
                   <div key={idx} className="p-3 bg-white border rounded-lg shadow-sm">
                     <div className="font-semibold text-slate-800">{dest.university_name}</div>
-                    <div className="text-sm text-slate-600">{dest.city}, {dest.country}</div>
+                    <div className="text-sm text-slate-600">
+                      {dest.city ? `${dest.city}, ` : ''}
+                      {dest.country && (
+                        <span className="inline-flex items-center gap-2">
+                          {getCountryCode(dest.country) && (
+                            <CountryFlag 
+                              countryCode={getCountryCode(dest.country)} 
+                              svg 
+                              style={{ 
+                                width: '1.5em', 
+                                height: '1.1em',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                borderRadius: '2px'
+                              }} 
+                            />
+                          )}
+                          <span title={dest.country}>{dest.country}</span>
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-blue-600 mt-1">
                       {dest.total_places} places disponibles
                     </div>

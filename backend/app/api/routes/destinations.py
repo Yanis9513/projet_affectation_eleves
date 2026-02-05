@@ -208,6 +208,89 @@ def get_my_destination_preferences(
 # DYNAMIC ROUTES - Must be defined AFTER static routes
 # =============================================================================
 
+@router.post("/{project_id}/bulk", response_model=List[DestinationResponse], status_code=status.HTTP_201_CREATED)
+def upload_destinations_bulk(
+    project_id: int,
+    destinations_data: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_teacher)
+):
+    """
+    Upload multiple destinations at once
+    Body: { "destinations": [ {...}, {...}, ... ] }
+    """
+    # Verify project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    if project.project_type != ProjectType.EXCHANGE_PROGRAM:
+        raise HTTPException(
+            status_code=400,
+            detail="Ce type de projet ne supporte pas les destinations"
+        )
+    
+    destinations = destinations_data.get("destinations", [])
+    if not destinations:
+        raise HTTPException(status_code=400, detail="Aucune destination fournie")
+    
+    created_destinations = []
+    
+    for dest_data in destinations:
+        # Create destination
+        db_destination = Destination(
+            project_id=project_id,
+            university_name=dest_data.get("university_name"),
+            country=dest_data.get("country"),
+            city=dest_data.get("city", ""),
+            total_places=dest_data.get("total_places", 1),
+            available_places=dest_data.get("total_places", 1),  # Initially all places available
+            mobility_type=dest_data.get("mobility_type", "ECHANGE_ACADEMIQUE"),
+            accepted_filieres=dest_data.get("accepted_filieres", "ALL"),
+            min_english_level=dest_data.get("min_english_level"),
+            min_toeic_score=dest_data.get("min_toeic_score"),
+            min_gpa=dest_data.get("min_gpa"),
+            description=dest_data.get("description"),
+            website_url=dest_data.get("website_url"),
+            is_active=True
+        )
+        
+        db.add(db_destination)
+        created_destinations.append(db_destination)
+    
+    db.commit()
+    
+    # Refresh all destinations to get their IDs
+    for dest in created_destinations:
+        db.refresh(dest)
+    
+    # Convert to response format
+    result = []
+    for dest in created_destinations:
+        dest_dict = {
+            "id": dest.id,
+            "project_id": dest.project_id,
+            "university_name": dest.university_name,
+            "country": dest.country,
+            "city": dest.city,
+            "total_places": dest.total_places,
+            "available_places": dest.available_places,
+            "mobility_type": dest.mobility_type.value if hasattr(dest.mobility_type, 'value') else dest.mobility_type,
+            "accepted_filieres": dest.accepted_filieres,
+            "min_english_level": dest.min_english_level,
+            "min_toeic_score": dest.min_toeic_score,
+            "min_gpa": dest.min_gpa,
+            "description": dest.description,
+            "website_url": dest.website_url,
+            "is_active": dest.is_active,
+            "created_at": dest.created_at.isoformat() if dest.created_at else None,
+            "updated_at": dest.updated_at.isoformat() if dest.updated_at else None,
+        }
+        result.append(dest_dict)
+    
+    return result
+
+
 @router.post("/{project_id}", response_model=DestinationResponse, status_code=status.HTTP_201_CREATED)
 def create_destination(
     project_id: int,

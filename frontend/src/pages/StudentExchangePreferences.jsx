@@ -4,6 +4,8 @@ import Button from '../components/Button';
 import { Loading } from '../components/Loading';
 import { destinationAPI, destinationPreferenceAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
 
 // SVG Icons
 const ArrowLeftIcon = () => (
@@ -214,7 +216,24 @@ export default function StudentExchangePreferences() {
                     </h3>
                   </div>
                   <p className="text-slate-600 mb-2">
-                    {dest.city}, {dest.country}
+                    {dest.city ? `${dest.city}, ` : ''}
+                    {dest.country && (
+                      <span className="inline-flex items-center gap-2">
+                        {getCountryCode(dest.country) && (
+                          <CountryFlag 
+                            countryCode={getCountryCode(dest.country)} 
+                            svg 
+                            style={{ 
+                              width: '1.5em', 
+                              height: '1.1em',
+                              border: '1px solid rgba(0,0,0,0.1)',
+                              borderRadius: '2px'
+                            }} 
+                          />
+                        )}
+                        <span title={dest.country}>{dest.country}</span>
+                      </span>
+                    )}
                   </p>
                   <div className="flex flex-wrap gap-2 text-sm">
                     <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">

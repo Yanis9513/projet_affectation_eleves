@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
+import CountrySelect from '../../components/CountrySelect';
 
 /**
  * Formulaire pour ajouter une destination (programme d'echange)
@@ -55,12 +56,10 @@ export default function DestinationForm({ onSubmit, onCancel }) {
             required
           />
           
-          <Input
-            label="Pays"
+          <CountrySelect
             name="country"
             value={formData.country}
             onChange={handleChange}
-            placeholder="France, Allemagne..."
             required
           />
         </div>

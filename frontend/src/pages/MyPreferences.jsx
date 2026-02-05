@@ -5,6 +5,8 @@ import { Loading } from '../components/Loading';
 import { projectAPI, destinationPreferenceAPI, preferenceAPI, studentAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
 
 // SVG Icons
 const ArrowLeftIcon = () => (
@@ -97,7 +99,24 @@ const PreferenceCard = ({ item, navigate, getGradeColor, getGradeDescription, ge
                     {pref.destination?.university_name || 'Université'}
                   </div>
                   <div className="text-sm text-slate-600">
-                    {pref.destination?.city}, {pref.destination?.country}
+                    {pref.destination?.city ? `${pref.destination.city}, ` : ''}
+                    {pref.destination?.country && (
+                      <span className="inline-flex items-center gap-2">
+                        {getCountryCode(pref.destination.country) && (
+                          <CountryFlag 
+                            countryCode={getCountryCode(pref.destination.country)} 
+                            svg 
+                            style={{ 
+                              width: '1.5em', 
+                              height: '1.1em',
+                              border: '1px solid rgba(0,0,0,0.1)',
+                              borderRadius: '2px'
+                            }} 
+                          />
+                        )}
+                        <span title={pref.destination.country}>{pref.destination.country}</span>
+                      </span>
+                    )}
                   </div>
                   <div className={`text-xs font-medium mt-1 ${getGradeColor(pref.grade).replace('bg-', 'text-').replace(' text-white', '')}`}>
                     {getGradeDescription(pref.grade)}

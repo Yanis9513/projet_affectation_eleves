@@ -1,5 +1,7 @@
 import Button from '../../components/Button';
 import StatsCard, { StatsGrid } from '../../components/StatsCard';
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../../utils/countryFlags';
 
 /**
  * Section pour le programme d'echange
@@ -126,9 +128,22 @@ function DestinationCard({ destination }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h4 className="font-semibold text-slate-900">{destination.name}</h4>
-          <p className="text-sm text-slate-500">{destination.country}</p>
+          <p className="text-sm text-slate-500 flex items-center gap-2">
+            {getCountryCode(destination.country) && (
+              <CountryFlag 
+                countryCode={getCountryCode(destination.country)} 
+                svg 
+                style={{ 
+                  width: '1.5em', 
+                  height: '1.1em',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  borderRadius: '2px'
+                }} 
+              />
+            )}
+            <span title={destination.country}>{destination.country}</span>
+          </p>
         </div>
-        <span className="text-2xl">{getCountryFlag(destination.country)}</span>
       </div>
       
       <div className="mb-3">
@@ -151,22 +166,4 @@ function DestinationCard({ destination }) {
   );
 }
 
-function getCountryFlag(country) {
-  const flags = {
-    'France': '🇫🇷',
-    'Allemagne': '🇩🇪',
-    'Espagne': '🇪🇸',
-    'Italie': '🇮🇹',
-    'Royaume-Uni': '🇬🇧',
-    'UK': '🇬🇧',
-    'USA': '🇺🇸',
-    'Etats-Unis': '🇺🇸',
-    'Canada': '🇨🇦',
-    'Japon': '🇯🇵',
-    'Chine': '🇨🇳',
-    'Coree du Sud': '🇰🇷',
-    'Australie': '🇦🇺',
-    'Bresil': '🇧🇷',
-  };
-  return flags[country] || '�️';
-}
+

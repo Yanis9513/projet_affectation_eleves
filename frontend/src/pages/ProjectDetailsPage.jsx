@@ -7,6 +7,9 @@ import CSVUploader from '../components/CSVUploader'
 import { projectAPI, assignmentAPI, destinationAPI, exchangeAPI, preferenceAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
+import { formatFilieres } from '../utils/formatters';
 
 const translateProjectType = (type) => {
   const translations = {
@@ -736,7 +739,7 @@ export default function ProjectDetailsPage() {
                       <div className="text-right">
                         <span className="font-semibold text-purple-700">{assignment.destination_name}</span>
                         {assignment.grade && (
-                          <span className="ml-2 px-2 py-0.5 bg-slate-200 rounded text-xs">
+                          <span className="mt-1 inline-block px-2 py-0.5 bg-slate-200 rounded text-xs">
                             Grade {assignment.grade}
                           </span>
                         )}
@@ -783,7 +786,26 @@ export default function ProjectDetailsPage() {
                             {assignment.destination?.university_name || 'Non assigné'}
                           </div>
                           <div className="text-sm text-slate-500">
-                            {assignment.destination?.city}, {assignment.destination?.country}
+                            {assignment.destination?.city ? `${assignment.destination.city}, ` : ''}
+                            {assignment.destination?.country && (
+                              <span className="inline-flex items-center gap-1">
+                                {getCountryCode(assignment.destination.country) && (
+                                  <CountryFlag 
+                                    countryCode={getCountryCode(assignment.destination.country)} 
+                                    svg 
+                                    style={{ 
+                                      width: '1.5em', 
+                                      height: '1.1em',
+                                      border: '1px solid rgba(0,0,0,0.1)',
+                                      borderRadius: '2px'
+                                    }} 
+                                  />
+                                )}
+                                <span className="truncate" title={assignment.destination.country}>
+                                  {assignment.destination.country}
+                                </span>
+                              </span>
+                            )}
                           </div>
                           {assignment.grade && (
                             <span className="mt-1 inline-block px-2 py-0.5 bg-slate-200 rounded text-xs">
@@ -1137,9 +1159,28 @@ export default function ProjectDetailsPage() {
                         {dest.mobility_type}
                       </span>
                     </div>
-                    <p className="text-slate-600 text-sm mb-3">
-                      {dest.city}, {dest.country}
-                    </p>
+                    <div className="flex items-center gap-2 text-slate-600 text-sm mb-3">
+                      {dest.city && <span>{dest.city},</span>}
+                      {dest.country && (
+                        <>
+                          {getCountryCode(dest.country) && (
+                            <CountryFlag 
+                              countryCode={getCountryCode(dest.country)} 
+                              svg 
+                              style={{ 
+                                width: '1.5em', 
+                                height: '1.1em',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                borderRadius: '2px',
+                                display: 'block',
+                                objectFit: 'cover'
+                              }} 
+                            />
+                          )}
+                          <span title={dest.country}>{dest.country}</span>
+                        </>
+                      )}
+                    </div>
                     <div className="space-y-2 text-sm">
                       <div className="bg-blue-50 p-2 rounded">
                         <span className="text-slate-600">Places:</span>
@@ -1150,7 +1191,7 @@ export default function ProjectDetailsPage() {
                       <div className="bg-emerald-50 p-2 rounded">
                         <span className="text-slate-600">Filères:</span>
                         <span className="font-bold text-emerald-700 ml-1 break-words">
-                          {dest.accepted_filieres}
+                          {formatFilieres(dest.accepted_filieres)}
                         </span>
                       </div>
                     </div>
@@ -1184,9 +1225,17 @@ export default function ProjectDetailsPage() {
                   type="destinations"
                   projectId={projectId}
                   onUploadSuccess={async (destinations) => {
-                    toast.success(`${destinations.length} destination(s) ajoutée(s)`)
-                    await loadExchangeData()
-                    setShowAddDestination(false)
+                    try {
+                      // Upload destinations to backend
+                      await destinationAPI.uploadDestinations(projectId, destinations)
+                      toast.success(`${destinations.length} destination(s) ajoutée(s)`)
+                      // Reload destinations to show the newly added ones
+                      await loadExchangeData()
+                      setShowAddDestination(false)
+                    } catch (err) {
+                      console.error('Error uploading destinations:', err)
+                      toast.error('Erreur lors de l\'ajout des destinations')
+                    }
                   }}
                 />
                 <Button
