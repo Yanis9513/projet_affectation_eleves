@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import CountryFlag from 'react-country-flag';
 import { getCountryCode } from '../utils/countryFlags';
-import { formatFilieres } from '../utils/formatters';
+import { formatFilieres } from '../utils/formatters.jsx';
 
 const translateProjectType = (type) => {
   const translations = {
@@ -1188,11 +1188,11 @@ export default function ProjectDetailsPage() {
                           {dest.available_places}/{dest.total_places}
                         </span>
                       </div>
-                      <div className="bg-emerald-50 p-2 rounded">
-                        <span className="text-slate-600">Filères:</span>
-                        <span className="font-bold text-emerald-700 ml-1 break-words">
+                      <div className="bg-emerald-50 p-2 rounded flex flex-wrap items-center">
+                        <span className="text-slate-600 mr-3">Filières:</span>
+                        <div className="flex-1 min-w-0">
                           {formatFilieres(dest.accepted_filieres)}
-                        </span>
+                        </div>
                       </div>
                     </div>
                     {dest.min_english_level && (

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import CountryFlag from 'react-country-flag';
 import { getCountryCode } from '../utils/countryFlags';
-import { formatFilieres } from '../utils/formatters';
+import { formatFilieres } from '../utils/formatters.jsx';
 import CountrySelect from './CountrySelect';
+import FiliereSelector from './FiliereSelector';
 import Button from './Button'
 import { Alert } from './Loading'
 
@@ -97,7 +98,7 @@ export default function CSVUploader({
         // Parse numeric fields
         if (item.total_places) {
           const places = parseInt(item.total_places)
-          item.total_places = isNaN(places) ? 1 : places
+          item.total_places = isNaN(places) || places < 1 ? 1 : places
         } else {
           item.total_places = 1
         }
@@ -197,15 +198,13 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
     updatedData[index][field] = value
     setPreviewData(updatedData)
     
-    // Debounce the callback to avoid excessive updates
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current)
     }
     debounceTimerRef.current = setTimeout(() => {
-      if (onUploadSuccess) {
-        onUploadSuccess(updatedData)
-      }
-    }, 500) // 500ms debounce
+      // Intentionally do NOT call onUploadSuccess here to avoid triggering the import.
+      // This keeps preview updates local until the user clicks "Terminer l'importation".
+    }, 500)
   }
   
   // Cleanup debounce timer on unmount
@@ -291,7 +290,6 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
           
           const mergedData = [...previewData, ...parsedData]
           setPreviewData(mergedData)
-          onUploadSuccess(mergedData)
           setError('')
         } catch (err) {
           setError(err.message)
@@ -334,12 +332,18 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
         return
       }
       
+      const places = parseInt(manualData.total_places)
+      if (isNaN(places) || places < 1) {
+        setError('Le nombre de places doit être au moins 1')
+        return
+      }
+
       const newDestination = {
         id: Date.now(),
         university_name: manualData.university_name,
         country: manualData.country,
         city: manualData.city || '',
-        total_places: parseInt(manualData.total_places) || 1,
+        total_places: places,
         mobility_type: manualData.mobility_type || 'ECHANGE_ACADEMIQUE',
         accepted_filieres: manualData.accepted_filieres || 'ALL',
         min_english_level: manualData.min_english_level || '',
@@ -385,7 +389,10 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
     
     // Reset form
     setManualData({})
-    setShowManualForm(false)
+
+    if (!isDestinations) {
+      setShowManualForm(false)
+    }
     setError('')
   }
 
@@ -434,6 +441,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
             <input
               type="number"
               value={manualData.total_places || ''}
+              min="1"
               onChange={(e) => setManualData({...manualData, total_places: e.target.value})}
               placeholder="Ex: 5"
               className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -456,18 +464,12 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
             </select>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Filières acceptées
-            </label>
-            <input
-              type="text"
-              value={manualData.accepted_filieres || ''}
-              onChange={(e) => setManualData({...manualData, accepted_filieres: e.target.value})}
-              placeholder="Ex: INFORMATIQUE,ELECTRONIQUE ou ALL"
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-          </div>
+          <FiliereSelector
+            value={manualData.accepted_filieres || ''}
+            onChange={(e) => setManualData({...manualData, accepted_filieres: e.target.value})}
+            name="accepted_filieres"
+            required
+          />
           
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -634,6 +636,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
                   <input
                     type="number"
                     value={item.total_places}
+                    min="1"
                     onChange={(e) => handleEditItem(index, 'total_places', parseInt(e.target.value) || 1)}
                     className="border rounded px-2 py-1 w-16 text-sm"
                   />
@@ -815,9 +818,9 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
               </svg>
             </button>
           </div>
-          
+
           {renderManualForm()}
-          
+
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowManualForm(false)}>
               Annuler
