@@ -386,7 +386,10 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
     
     // Reset form
     setManualData({})
-    setShowManualForm(false)
+
+    if (!isDestinations) {
+      setShowManualForm(false)
+    }
     setError('')
   }
 
