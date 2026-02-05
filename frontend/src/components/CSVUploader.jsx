@@ -198,15 +198,13 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
     updatedData[index][field] = value
     setPreviewData(updatedData)
     
-    // Debounce the callback to avoid excessive updates
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current)
     }
     debounceTimerRef.current = setTimeout(() => {
-      if (onUploadSuccess) {
-        onUploadSuccess(updatedData)
-      }
-    }, 500) // 500ms debounce
+      // Intentionally do NOT call onUploadSuccess here to avoid triggering the import.
+      // This keeps preview updates local until the user clicks "Terminer l'importation".
+    }, 500)
   }
   
   // Cleanup debounce timer on unmount
@@ -292,7 +290,6 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
           
           const mergedData = [...previewData, ...parsedData]
           setPreviewData(mergedData)
-          onUploadSuccess(mergedData)
           setError('')
         } catch (err) {
           setError(err.message)
