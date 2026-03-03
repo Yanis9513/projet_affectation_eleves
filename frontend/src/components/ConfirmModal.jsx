@@ -1,3 +1,4 @@
+import { useEffect, useCallback } from 'react';
 import Button from './Button';
 
 /**
@@ -13,6 +14,24 @@ export default function ConfirmModal({
   onCancel,
   variant = 'danger' // 'danger' | 'warning' | 'info'
 }) {
+  // Handle Escape key
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      onCancel?.();
+    }
+  }, [onCancel]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    document.addEventListener('keydown', handleKeyDown);
+    // Lock body scroll
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, handleKeyDown]);
+
   if (!isOpen) return null;
 
   const iconStyles = {
@@ -48,7 +67,7 @@ export default function ConfirmModal({
   const style = iconStyles[variant];
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={onCancel}>
       <div 
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
