@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
 import toast from 'react-hot-toast'
 import Button from '../components/Button'
 import { TextInput } from '../components/Input'
@@ -243,7 +245,27 @@ function PreferencesPage() {
                       <span className="bg-blue-600 text-white rounded-xl w-10 h-10 flex items-center justify-center font-bold text-lg shadow-sm">
                         {pref.order}
                       </span>
-                      <span className="font-medium text-slate-800">{pref.title}</span>
+                      <span className="font-medium text-slate-800 flex items-center gap-2">
+                        {pref.city ? `${pref.city}, ` : ''}
+                        {pref.country && (
+                          <span className="inline-flex items-center gap-2">
+                            {getCountryCode(pref.country) && (
+                              <CountryFlag 
+                                countryCode={getCountryCode(pref.country)} 
+                                svg 
+                                style={{ 
+                                  width: '1.5em', 
+                                  height: '1.1em',
+                                  border: '1px solid rgba(0,0,0,0.1)',
+                                  borderRadius: '2px'
+                                }} 
+                              />
+                            )}
+                            <span title={pref.country}>{pref.country}</span>
+                          </span>
+                        )}
+                        {pref.title}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <button

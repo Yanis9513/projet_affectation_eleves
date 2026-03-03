@@ -4,6 +4,8 @@ import Button from '../components/Button';
 import { Loading } from '../components/Loading';
 import { studentAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
 
 // SVG Icons
 const ArrowLeftIcon = () => (
@@ -214,7 +216,26 @@ export default function MyAssignments() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        <span>{assignment.destination.city}, {assignment.destination.country}</span>
+                        <span>
+                          {assignment.destination.city ? `${assignment.destination.city}, ` : ''}
+                          {assignment.destination.country && (
+                            <span className="inline-flex items-center gap-2">
+                              {getCountryCode(assignment.destination.country) && (
+                                <CountryFlag 
+                                  countryCode={getCountryCode(assignment.destination.country)} 
+                                  svg 
+                                  style={{ 
+                                    width: '1.5em', 
+                                    height: '1.1em',
+                                    border: '1px solid rgba(0,0,0,0.1)',
+                                    borderRadius: '2px'
+                                  }} 
+                                />
+                              )}
+                              <span title={assignment.destination.country}>{assignment.destination.country}</span>
+                            </span>
+                          )}
+                        </span>
                       </div>
                       {assignment.grade && (
                         <div className="flex items-center gap-2">

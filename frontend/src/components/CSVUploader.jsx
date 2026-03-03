@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
+import { formatFilieres } from '../utils/formatters';
+import CountrySelect from './CountrySelect';
 import Button from './Button'
 import { Alert } from './Loading'
 
@@ -403,15 +407,10 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Pays <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
+            <CountrySelect
               value={manualData.country || ''}
-              onChange={(e) => setManualData({...manualData, country: e.target.value})}
-              placeholder="Ex: USA"
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              onChange={e => setManualData({...manualData, country: e.target.value})}
+              required
             />
           </div>
           
@@ -611,7 +610,25 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
             {previewData.map((item, index) => (
               <tr key={item.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium">{item.university_name}</td>
-                <td className="px-4 py-3">{item.country}</td>
+                <td className="px-4 py-3">
+                  {item.country && (
+                    <span className="flex items-center gap-2">
+                      {getCountryCode(item.country) && (
+                        <CountryFlag 
+                          countryCode={getCountryCode(item.country)} 
+                          svg 
+                          style={{ 
+                            width: '1.5em', 
+                            height: '1.1em',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            borderRadius: '2px'
+                          }} 
+                        />
+                      )}
+                      <span className="truncate" title={item.country}>{item.country}</span>
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3">{item.city}</td>
                 <td className="px-4 py-3">
                   <input
@@ -622,7 +639,7 @@ Imperial College,UK,London,3,ECHANGE_ACADEMIQUE,INFORMATIQUE,C1,900,16.0`
                   />
                 </td>
                 <td className="px-4 py-3">{item.mobility_type}</td>
-                <td className="px-4 py-3 text-sm">{item.accepted_filieres}</td>
+                <td className="px-4 py-3 text-sm">{formatFilieres(item.accepted_filieres)}</td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => handleDeleteItem(index)}

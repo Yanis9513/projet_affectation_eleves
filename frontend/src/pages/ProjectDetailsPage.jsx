@@ -7,6 +7,9 @@ import CSVUploader from '../components/CSVUploader'
 import { projectAPI, assignmentAPI, destinationAPI, exchangeAPI, preferenceAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
+import { formatFilieres } from '../utils/formatters';
 
 const translateProjectType = (type) => {
   const translations = {
@@ -641,41 +644,43 @@ export default function ProjectDetailsPage() {
                   Statut des Préférences des Étudiants
                 </h3>
                 <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-                  <table className="w-full text-sm min-w-[600px] md:min-w-0">
-                    <thead className="bg-slate-100">
-                      <tr>
-                        <th className="px-4 py-2 text-left">Étudiant</th>
-                        <th className="px-4 py-2 text-left">Filière</th>
-                        <th className="px-4 py-2 text-center">Préférences</th>
-                        <th className="px-4 py-2 text-center">Statut</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {studentsStatus.students.map((student) => (
-                        <tr key={student.student_id} className="border-b">
-                          <td className="px-4 py-2">
-                            <div className="font-medium">{student.student_name}</div>
-                            <div className="text-xs text-slate-500">{student.email}</div>
-                          </td>
-                          <td className="px-4 py-2">{student.filiere || '-'}</td>
-                          <td className="px-4 py-2 text-center">
-                            {student.filled_preferences}/{student.total_destinations}
-                          </td>
-                          <td className="px-4 py-2 text-center">
-                            {student.is_complete ? (
-                              <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs">
-                                Complet
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs">
-                                Incomplet
-                              </span>
-                            )}
-                          </td>
+                  <div style={{maxHeight: '320px', overflowY: 'auto'}}>
+                    <table className="w-full text-sm min-w-[600px] md:min-w-0">
+                      <thead className="bg-slate-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left">Étudiant</th>
+                          <th className="px-4 py-2 text-left">Filière</th>
+                          <th className="px-4 py-2 text-center">Préférences</th>
+                          <th className="px-4 py-2 text-center">Statut</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {(studentsStatus.students || []).map((student) => (
+                          <tr key={student.student_id} className="border-b">
+                            <td className="px-4 py-2">
+                              <div className="font-medium">{student.student_name}</div>
+                              <div className="text-xs text-slate-500">{student.email}</div>
+                            </td>
+                            <td className="px-4 py-2">{student.filiere || '-'}</td>
+                            <td className="px-4 py-2 text-center">
+                              {student.filled_preferences}/{student.total_destinations}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              {student.is_complete ? (
+                                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs">
+                                  Complet
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs">
+                                  Incomplet
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -735,7 +740,7 @@ export default function ProjectDetailsPage() {
                       <div className="text-right">
                         <span className="font-semibold text-purple-700">{assignment.destination_name}</span>
                         {assignment.grade && (
-                          <span className="ml-2 px-2 py-0.5 bg-slate-200 rounded text-xs">
+                          <span className="mt-1 inline-block px-2 py-0.5 bg-slate-200 rounded text-xs">
                             Grade {assignment.grade}
                           </span>
                         )}
@@ -756,43 +761,63 @@ export default function ProjectDetailsPage() {
                 Affectations des Étudiants ({assignments.length})
               </h2>
               <div className="space-y-2">
-                {assignments.map((assignment, idx) => {
-                  const student = students.find(s => s.id === assignment.student_id)
-                  return (
-                    <div 
-                      key={assignment.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold">
-                          {student?.name?.[0] || '?'}
+                <div style={{maxHeight: '320px', overflowY: 'auto'}}>
+                  {(assignments || []).map((assignment, idx) => {
+                    const student = students.find(s => s.id === assignment.student_id)
+                    return (
+                      <div 
+                        key={assignment.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold">
+                            {student?.name?.[0] || '?'}
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-800">
+                              {student?.name || 'Unknown'}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              {student?.email}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-800">
-                            {student?.name || 'Unknown'}
+                        <div className="text-right">
+                          <div className="font-semibold text-purple-700">
+                            {assignment.destination?.university_name || 'Non assigné'}
                           </div>
                           <div className="text-sm text-slate-500">
-                            {student?.email}
+                            {assignment.destination?.city ? `${assignment.destination.city}, ` : ''}
+                            {assignment.destination?.country && (
+                              <span className="inline-flex items-center gap-1">
+                                {getCountryCode(assignment.destination.country) && (
+                                  <CountryFlag 
+                                    countryCode={getCountryCode(assignment.destination.country)} 
+                                    svg 
+                                    style={{ 
+                                      width: '1.5em', 
+                                      height: '1.1em',
+                                      border: '1px solid rgba(0,0,0,0.1)',
+                                      borderRadius: '2px'
+                                    }} 
+                                  />
+                                )}
+                                <span className="truncate" title={assignment.destination.country}>
+                                  {assignment.destination.country}
+                                </span>
+                              </span>
+                            )}
                           </div>
+                          {assignment.grade && (
+                            <span className="mt-1 inline-block px-2 py-0.5 bg-slate-200 rounded text-xs">
+                              Grade {assignment.grade}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="text-right">
-                        <div className="font-semibold text-purple-700">
-                          {assignment.destination?.university_name || 'Non assigné'}
-                        </div>
-                        <div className="text-sm text-slate-500">
-                          {assignment.destination?.city}, {assignment.destination?.country}
-                        </div>
-                        {assignment.grade && (
-                          <span className="mt-1 inline-block px-2 py-0.5 bg-slate-200 rounded text-xs">
-                            Grade {assignment.grade}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -1135,9 +1160,28 @@ export default function ProjectDetailsPage() {
                         {dest.mobility_type}
                       </span>
                     </div>
-                    <p className="text-slate-600 text-sm mb-3">
-                      {dest.city}, {dest.country}
-                    </p>
+                    <div className="flex items-center gap-2 text-slate-600 text-sm mb-3">
+                      {dest.city && <span>{dest.city},</span>}
+                      {dest.country && (
+                        <>
+                          {getCountryCode(dest.country) && (
+                            <CountryFlag 
+                              countryCode={getCountryCode(dest.country)} 
+                              svg 
+                              style={{ 
+                                width: '1.5em', 
+                                height: '1.1em',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                borderRadius: '2px',
+                                display: 'block',
+                                objectFit: 'cover'
+                              }} 
+                            />
+                          )}
+                          <span title={dest.country}>{dest.country}</span>
+                        </>
+                      )}
+                    </div>
                     <div className="space-y-2 text-sm">
                       <div className="bg-blue-50 p-2 rounded">
                         <span className="text-slate-600">Places:</span>
@@ -1148,7 +1192,7 @@ export default function ProjectDetailsPage() {
                       <div className="bg-emerald-50 p-2 rounded">
                         <span className="text-slate-600">Filères:</span>
                         <span className="font-bold text-emerald-700 ml-1 break-words">
-                          {dest.accepted_filieres}
+                          {formatFilieres(dest.accepted_filieres)}
                         </span>
                       </div>
                     </div>
@@ -1182,9 +1226,17 @@ export default function ProjectDetailsPage() {
                   type="destinations"
                   projectId={projectId}
                   onUploadSuccess={async (destinations) => {
-                    toast.success(`${destinations.length} destination(s) ajoutée(s)`)
-                    await loadExchangeData()
-                    setShowAddDestination(false)
+                    try {
+                      // Upload destinations to backend
+                      await destinationAPI.uploadDestinations(projectId, destinations)
+                      toast.success(`${destinations.length} destination(s) ajoutée(s)`)
+                      // Reload destinations to show the newly added ones
+                      await loadExchangeData()
+                      setShowAddDestination(false)
+                    } catch (err) {
+                      console.error('Error uploading destinations:', err)
+                      toast.error('Erreur lors de l\'ajout des destinations')
+                    }
                   }}
                 />
                 <Button

@@ -5,6 +5,8 @@ import { Loading } from '../components/Loading';
 import { projectAPI, destinationPreferenceAPI, preferenceAPI, studentAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import CountryFlag from 'react-country-flag';
+import { getCountryCode } from '../utils/countryFlags';
 
 // SVG Icons
 const ArrowLeftIcon = () => (
@@ -23,18 +25,13 @@ const ClipboardIcon = () => (
 const PreferenceCard = ({ item, navigate, getGradeColor, getGradeDescription, getEnglishLevelColor }) => {
   const { type, project, preferences, submittedAt, englishLevel } = item;
   
-  // Determine the status badge based on algorithm_ran and is_open_for_preferences
+  // Determine the status badge based on algorithm_ran only
+  // algorithm_ran = true means groups have been formed by the teacher
   const isFormed = project?.algorithm_ran || false;
-  const isOpen = project?.is_open_for_preferences || false;
   
-  let statusBadge;
-  if (isFormed) {
-    statusBadge = { text: 'Groupes formés', className: 'bg-blue-100 text-blue-700' };
-  } else if (isOpen) {
-    statusBadge = { text: 'En attente', className: 'bg-amber-100 text-amber-700' };
-  } else {
-    statusBadge = { text: 'Préférences soumises', className: 'bg-emerald-100 text-emerald-700' };
-  }
+  const statusBadge = isFormed 
+    ? { text: 'Groupes formés', className: 'bg-blue-100 text-blue-700' }
+    : { text: 'Préférences soumises', className: 'bg-emerald-100 text-emerald-700' };
   
   // Type indicator colors
   const typeColors = {
@@ -102,7 +99,24 @@ const PreferenceCard = ({ item, navigate, getGradeColor, getGradeDescription, ge
                     {pref.destination?.university_name || 'Université'}
                   </div>
                   <div className="text-sm text-slate-600">
-                    {pref.destination?.city}, {pref.destination?.country}
+                    {pref.destination?.city ? `${pref.destination.city}, ` : ''}
+                    {pref.destination?.country && (
+                      <span className="inline-flex items-center gap-2">
+                        {getCountryCode(pref.destination.country) && (
+                          <CountryFlag 
+                            countryCode={getCountryCode(pref.destination.country)} 
+                            svg 
+                            style={{ 
+                              width: '1.5em', 
+                              height: '1.1em',
+                              border: '1px solid rgba(0,0,0,0.1)',
+                              borderRadius: '2px'
+                            }} 
+                          />
+                        )}
+                        <span title={pref.destination.country}>{pref.destination.country}</span>
+                      </span>
+                    )}
                   </div>
                   <div className={`text-xs font-medium mt-1 ${getGradeColor(pref.grade).replace('bg-', 'text-').replace(' text-white', '')}`}>
                     {getGradeDescription(pref.grade)}
@@ -467,21 +481,21 @@ export default function MyPreferences() {
                   onClick={() => handleFilterChange('formed')}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterStatus === 'formed' 
-                      ? 'bg-emerald-600 text-white' 
+                      ? 'bg-blue-600 text-white' 
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  Groupes formés
+                  Groupes formés ({getAllPreferences().filter(p => p.project?.algorithm_ran).length})
                 </button>
                 <button
                   onClick={() => handleFilterChange('pending')}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterStatus === 'pending' 
-                      ? 'bg-amber-600 text-white' 
+                      ? 'bg-emerald-600 text-white' 
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  En attente
+                  Préférences soumises ({getAllPreferences().filter(p => !p.project?.algorithm_ran).length})
                 </button>
               </div>
             </div>

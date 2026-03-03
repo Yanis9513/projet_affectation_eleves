@@ -50,7 +50,8 @@ export default function ProjectsPage() {
         response = await projectAPI.getAll();
       }
       
-      const filtered = response.data.filter(p => p.is_active && p.is_open_for_preferences);
+      // Show all active projects, not just those with open preferences
+      const filtered = response.data.filter(p => p.is_active);
       setProjects(filtered);
     } catch (error) {
       console.error('Error loading projects:', error);
