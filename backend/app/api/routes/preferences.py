@@ -96,8 +96,12 @@ def create_student_preferences(
                 detail=f"La deadline pour le projet '{project.title}' est dépassée"
             )
     
-    # Supprimer les préférences existantes de cet étudiant
-    db.query(StudentPreference).filter(StudentPreference.student_id == student_id).delete()
+    # Supprimer les préférences existantes de cet étudiant pour les projets concernés uniquement
+    project_ids = [pref.project_id for pref in preferences_data.preferences]
+    db.query(StudentPreference).filter(
+        StudentPreference.student_id == student_id,
+        StudentPreference.project_id.in_(project_ids)
+    ).delete(synchronize_session='fetch')
     
     # Créer les nouvelles préférences
     db_preferences = []
@@ -349,73 +353,90 @@ def get_project_preferences(
     ).filter(
         StudentPreference.project_id == project_id
     ).order_by(StudentPreference.student_id).all()
-    
+
+    # Build a quick lookup: student_id -> preferred_partner_id
+    partner_lookup = {pref.student_id: pref.preferred_partner_id for pref in preferences}
+
     # Build detailed list with student and partner info
     detailed_preferences = []
     for pref in preferences:
         student = pref.student
         student_user = student.user if student else None
-        
-        partner = None
+
+        partner_name = None
+        partner_email = None
         if pref.preferred_partner_id:
             partner_student = db.query(Student).filter(Student.id == pref.preferred_partner_id).first()
-            if partner_student:
-                partner = {
-                    "id": partner_student.id,
-                    "name": f"{partner_student.user.first_name} {partner_student.user.last_name}" if partner_student.user else "Unknown",
-                    "email": partner_student.user.email if partner_student.user else None
-                }
-        
+            if partner_student and partner_student.user:
+                partner_name = f"{partner_student.user.first_name} {partner_student.user.last_name}"
+                partner_email = partner_student.user.email
+
+        # Determine mutual match: partner also chose this student
+        is_mutual = (
+            pref.preferred_partner_id is not None and
+            partner_lookup.get(pref.preferred_partner_id) == pref.student_id
+        )
+
         detailed_preferences.append({
             "id": pref.id,
             "student_id": pref.student_id,
             "student_name": f"{student_user.first_name} {student_user.last_name}" if student_user else "Unknown",
             "student_email": student_user.email if student_user else None,
             "preferred_partner_id": pref.preferred_partner_id,
-            "preferred_partner": partner,
+            "partner_name": partner_name,
+            "partner_email": partner_email,
+            "is_mutual": is_mutual,
             "rank": pref.rank,
             "submitted_at": pref.created_at.isoformat() if pref.created_at else None
         })
-    
-    # Calculate mutual matches
+
+    # Calculate mutual matches (deduplicated pairs)
     mutual_matches = []
+    seen_pairs = set()
     for pref in detailed_preferences:
-        if pref["preferred_partner_id"]:
-            # Check if the partner also prefers this student
-            partner_pref = next(
-                (p for p in detailed_preferences if p["student_id"] == pref["preferred_partner_id"]),
-                None
-            )
-            if partner_pref and partner_pref["preferred_partner_id"] == pref["student_id"]:
-                # This is a mutual match - add if not already added
-                pair = tuple(sorted([pref["student_id"], pref["preferred_partner_id"]]))
-                if pair not in [(tuple(sorted([m["student1"]["id"], m["student2"]["id"]]))) for m in mutual_matches]:
-                    mutual_matches.append({
-                        "student1": {
-                            "id": pref["student_id"],
-                            "name": pref["student_name"]
-                        },
-                        "student2": {
-                            "id": partner_pref["student_id"],
-                            "name": partner_pref["student_name"]
-                        }
-                    })
-    
-    # Count students with and without preferences
-    total_students_in_project = db.query(Student).filter(
+        if pref["is_mutual"]:
+            pair = tuple(sorted([pref["student_id"], pref["preferred_partner_id"]]))
+            if pair not in seen_pairs:
+                seen_pairs.add(pair)
+                partner_entry = next(
+                    (p for p in detailed_preferences if p["student_id"] == pref["preferred_partner_id"]),
+                    None
+                )
+                mutual_matches.append({
+                    "student1": {"id": pref["student_id"], "name": pref["student_name"]},
+                    "student2": {"id": pref["preferred_partner_id"], "name": partner_entry["student_name"] if partner_entry else "Unknown"}
+                })
+
+    # Build the list of students without preferences (full objects, not just a count)
+    students_with_pref_ids = {pref.student_id for pref in preferences}
+    all_project_students = db.query(Student).options(
+        joinedload(Student.user)
+    ).filter(
         Student.projects.any(id=project_id)
-    ).count()
-    
+    ).all()
+
+    students_without_preferences = [
+        {
+            "id": s.id,
+            "name": f"{s.user.first_name} {s.user.last_name}" if s.user else "Unknown",
+            "email": s.user.email if s.user else None,
+            "filiere": s.filiere.value if s.filiere else None
+        }
+        for s in all_project_students if s.id not in students_with_pref_ids
+    ]
+
+    total_students_in_project = len(all_project_students)
+
     return {
         "project_id": project_id,
         "project_title": project.title,
         "project_type": project.project_type.value if hasattr(project.project_type, 'value') else str(project.project_type),
         "total_students": total_students_in_project,
         "students_with_preferences": len(preferences),
-        "students_without_preferences": total_students_in_project - len(preferences),
         "mutual_matches_count": len(mutual_matches),
         "mutual_matches": mutual_matches,
-        "preferences": detailed_preferences
+        "preferences": detailed_preferences,
+        "students_without_preferences": students_without_preferences
     }
 
 @router.get("/preferences/stats")
