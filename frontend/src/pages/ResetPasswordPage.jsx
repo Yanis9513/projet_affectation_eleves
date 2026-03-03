@@ -11,6 +11,13 @@ function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
   const { isLoggedIn, userRole } = useAuth()
 
+  // All hooks MUST be called before any conditional return (React Rules of Hooks)
+  const [formData, setFormData] = useState({
+    password: '',
+    confirmPassword: ''
+  })
+  const [loading, setLoading] = useState(false)
+
   const token = searchParams.get('token')
 
   // If no token, redirect to forgot password
@@ -22,13 +29,6 @@ function ResetPasswordPage() {
   if (isLoggedIn) {
     return <Navigate to={`/${userRole}`} replace />
   }
-
-  const [formData, setFormData] = useState({
-    password: '',
-    confirmPassword: ''
-  })
-
-  const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
     setFormData({

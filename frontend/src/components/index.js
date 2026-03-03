@@ -4,7 +4,7 @@
 
 // Composants de base
 export { default as Button } from './Button';
-export { default as Card, CardGrid, CardHeader, CardBody, CardFooter } from './Card';
+export { default as Card, CardSimple, StatCard, CardGrid } from './Card';
 export { TextInput, TextArea } from './Input';
 export { default as Modal } from './Modal';
 export { default as ConfirmModal } from './ConfirmModal';
@@ -22,7 +22,7 @@ export { default as Tooltip, InfoTooltip } from './Tooltip';
 export { default as Avatar, AvatarGroup } from './Avatar';
 export { default as ProgressBar, CircularProgress, StepProgress } from './ProgressBar';
 export { default as EmptyState, EmptyStateCompact, ErrorState } from './EmptyState';
-export { default as Skeleton, CardSkeleton, TableSkeleton, ListSkeleton, StatsSkeleton, FormSkeleton } from './Skeleton';
+export { SkeletonCard, SkeletonTable, SkeletonList, SkeletonText, SkeletonButton, SkeletonPage } from './Skeleton';
 export { default as Dropdown, DropdownItem, DropdownDivider, DropdownLabel, Select } from './Dropdown';
 export { default as Tabs, TabsList, Tab, TabsContent, TabsUnderline, TabsPills } from './Tabs';
 export { default as SearchInput, SearchBar } from './SearchInput';
@@ -30,4 +30,4 @@ export { default as Badge, CountBadge, BadgeGroup } from './Badge';
 export { default as AlertBox, TimedAlert, Banner } from './AlertBox';
 
 // Composants de chargement
-export { Loading, Alert, SkeletonCard, LoadingOverlay, Toast, EmptyState as EmptyStateBasic } from './Loading';
+export { Loading, Alert, SkeletonCard as SkeletonCardBasic, LoadingOverlay, Toast, EmptyState as EmptyStateBasic } from './Loading';

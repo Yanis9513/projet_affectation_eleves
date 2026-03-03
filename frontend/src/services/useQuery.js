@@ -130,35 +130,49 @@ export function useMutation(mutationFn, options = {}) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
 
+  // Use refs to avoid stale closures in callbacks
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  const onSettledRef = useRef(onSettled);
+  const invalidateKeysRef = useRef(invalidateKeys);
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
+  onSettledRef.current = onSettled;
+  invalidateKeysRef.current = invalidateKeys;
+
   const mutate = useCallback(async (variables) => {
     setIsLoading(true);
     setError(null);
     setIsSuccess(false);
     setIsError(false);
 
+    let result = undefined;
+    let mutationError = undefined;
+
     try {
-      const result = await mutationFn(variables);
+      result = await mutationFn(variables);
       setData(result);
       setIsSuccess(true);
       
       // Invalider les caches specifiees
-      invalidateKeys.forEach(key => {
+      invalidateKeysRef.current.forEach(key => {
         const cacheKey = typeof key === 'string' ? key : JSON.stringify(key);
         cache.delete(cacheKey);
       });
       
-      onSuccess?.(result, variables);
+      onSuccessRef.current?.(result, variables);
       return result;
     } catch (err) {
+      mutationError = err;
       setError(err);
       setIsError(true);
-      onError?.(err, variables);
+      onErrorRef.current?.(err, variables);
       throw err;
     } finally {
       setIsLoading(false);
-      onSettled?.(data, error, variables);
+      onSettledRef.current?.(result, mutationError, variables);
     }
-  }, [mutationFn, onSuccess, onError, onSettled, invalidateKeys]);
+  }, [mutationFn]);
 
   const reset = useCallback(() => {
     setData(null);
@@ -372,8 +386,8 @@ export function useStudentPreferences(projectId) {
   return useQuery(
     ['preferences', projectId],
     async () => {
-      const { preferenceAPI } = await import('./api');
-      const response = await preferenceAPI.getMine(projectId);
+      const { destinationPreferenceAPI } = await import('./api');
+      const response = await destinationPreferenceAPI.getMyPreferences(projectId);
       return response.data;
     },
     { enabled: !!projectId }
@@ -386,8 +400,8 @@ export function useStudentPreferences(projectId) {
 export function useSubmitPreferences() {
   return useMutation(
     async ({ projectId, preferences }) => {
-      const { preferenceAPI } = await import('./api');
-      const response = await preferenceAPI.submit(projectId, preferences);
+      const { destinationPreferenceAPI } = await import('./api');
+      const response = await destinationPreferenceAPI.submit({ project_id: projectId, preferences });
       return response.data;
     },
     {
@@ -406,7 +420,7 @@ export function useExchangeStats(projectId) {
     ['exchangeStats', projectId],
     async () => {
       const { exchangeAPI } = await import('./api');
-      const response = await exchangeAPI.getStats(projectId);
+      const response = await exchangeAPI.getStatistics(projectId);
       return response.data;
     },
     { enabled: !!projectId }
@@ -420,7 +434,7 @@ export function useOptimize() {
   return useMutation(
     async (projectId) => {
       const { exchangeAPI } = await import('./api');
-      const response = await exchangeAPI.optimize(projectId);
+      const response = await exchangeAPI.runOptimization(projectId);
       return response.data;
     },
     {
@@ -454,7 +468,7 @@ export function useAuthCheck() {
     
     const { authAPI } = await import('./api');
     try {
-      const response = await authAPI.verifyToken();
+      const response = await authAPI.getCurrentUser();
       return response.data;
     } catch {
       localStorage.removeItem('token');

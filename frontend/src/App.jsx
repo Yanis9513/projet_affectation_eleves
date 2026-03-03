@@ -171,6 +171,15 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+
+            {/* 404 catch-all */}
+            <Route path="*" element={
+              <div className="min-h-[60vh] flex flex-col items-center justify-center">
+                <h1 className="text-6xl font-bold text-slate-300 mb-4">404</h1>
+                <p className="text-slate-500 mb-6">Page introuvable</p>
+                <a href="/" className="text-blue-600 hover:underline">Retour à l'accueil</a>
+              </div>
+            } />
           </Route>
         </Routes>
       </Router>
