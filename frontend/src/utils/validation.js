@@ -24,10 +24,11 @@ export const getPasswordStrength = (password) => {
   const labels = ['Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort']
   const colors = ['red', 'orange', 'yellow', 'green', 'emerald']
   
+  const clampedIndex = Math.min(strength, labels.length - 1)
   return {
     strength,
-    label: labels[strength],
-    color: colors[strength]
+    label: labels[clampedIndex],
+    color: colors[clampedIndex]
   }
 }
 
