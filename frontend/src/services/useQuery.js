@@ -28,6 +28,13 @@ export function useQuery(key, fetcher, options = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const mountedRef = useRef(true);
+  // Stabilize fetcher and callbacks via refs to avoid infinite re-fetch loops
+  const fetcherRef = useRef(fetcher);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  fetcherRef.current = fetcher;
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
 
   const fetchData = useCallback(async (skipCache = false) => {
     if (!enabled) return;
@@ -45,7 +52,7 @@ export function useQuery(key, fetcher, options = {}) {
     setIsFetching(true);
     
     try {
-      const result = await fetcher();
+      const result = await fetcherRef.current();
       
       if (!mountedRef.current) return;
       
@@ -57,18 +64,18 @@ export function useQuery(key, fetcher, options = {}) {
       
       setData(result);
       setError(null);
-      onSuccess?.(result);
+      onSuccessRef.current?.(result);
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err);
-      onError?.(err);
+      onErrorRef.current?.(err);
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
         setIsFetching(false);
       }
     }
-  }, [key, fetcher, enabled, cacheTime, onSuccess, onError]);
+  }, [key, enabled, cacheTime]);
 
   const refetch = useCallback(() => {
     return fetchData(true);
@@ -130,14 +137,28 @@ export function useMutation(mutationFn, options = {}) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
 
+  // Stabilize callbacks via refs to avoid stale closures
+  const mutationFnRef = useRef(mutationFn);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  const onSettledRef = useRef(onSettled);
+  mutationFnRef.current = mutationFn;
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
+  onSettledRef.current = onSettled;
+
   const mutate = useCallback(async (variables) => {
     setIsLoading(true);
     setError(null);
     setIsSuccess(false);
     setIsError(false);
 
+    let resultData = undefined;
+    let resultError = undefined;
+
     try {
-      const result = await mutationFn(variables);
+      const result = await mutationFnRef.current(variables);
+      resultData = result;
       setData(result);
       setIsSuccess(true);
       
@@ -147,18 +168,19 @@ export function useMutation(mutationFn, options = {}) {
         cache.delete(cacheKey);
       });
       
-      onSuccess?.(result, variables);
+      onSuccessRef.current?.(result, variables);
       return result;
     } catch (err) {
+      resultError = err;
       setError(err);
       setIsError(true);
-      onError?.(err, variables);
+      onErrorRef.current?.(err, variables);
       throw err;
     } finally {
       setIsLoading(false);
-      onSettled?.(data, error, variables);
+      onSettledRef.current?.(resultData, resultError, variables);
     }
-  }, [mutationFn, onSuccess, onError, onSettled, invalidateKeys]);
+  }, [invalidateKeys]);
 
   const reset = useCallback(() => {
     setData(null);
