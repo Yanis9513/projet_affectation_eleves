@@ -26,6 +26,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle network errors (no response from server)
+    if (!error.response) {
+      console.error('Network error:', error.message)
+      error.message = 'Erreur réseau. Vérifiez votre connexion internet.'
+      return Promise.reject(error)
+    }
+
     if (error.response?.status === 401) {
       // Only redirect if not already on login page and not a login attempt
       const isLoginPage = window.location.pathname === '/login'
