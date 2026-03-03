@@ -126,7 +126,7 @@ export default function ProjectDetailsPage() {
         }
       } else if (projectResponse.data?.project_type === 'english_leveling') {
         // Load English leveling statistics
-        await loadEnglishLevelingStats()
+        await loadEnglishLevelingStats(studentsResponse.data || [])
         // Also load assignments for English leveling
         try {
           const assignmentsResponse = await assignmentAPI.getByProject(projectId)
@@ -190,7 +190,7 @@ export default function ProjectDetailsPage() {
     }
   }
 
-  const loadEnglishLevelingStats = async () => {
+  const loadEnglishLevelingStats = async (studentsList) => {
     try {
       setIsLoadingEnglishStats(true)
       // Calculate English level statistics from students
@@ -204,7 +204,8 @@ export default function ProjectDetailsPage() {
         unknown: 0
       }
       
-      students.forEach(student => {
+      const data = studentsList || students
+      data.forEach(student => {
         const level = student.english_level || 'unknown'
         if (levelStats.hasOwnProperty(level)) {
           levelStats[level]++
@@ -844,7 +845,7 @@ export default function ProjectDetailsPage() {
                   </div>
                   <div className="text-sm text-slate-600">Préférences soumises</div>
                   <div className="text-xs text-slate-500 mt-1">
-                    {((groupPreferences.total_preferences / students.length) * 100).toFixed(1)}% des étudiants
+                    {((groupPreferences.total_preferences / (students.length || 1)) * 100).toFixed(1)}% des étudiants
                   </div>
                 </div>
                 
@@ -1014,7 +1015,7 @@ export default function ProjectDetailsPage() {
                       </div>
                       <div className="text-xs text-slate-600">{level === 'unknown' ? 'Inconnu' : level}</div>
                       <div className="text-xs text-slate-500 mt-1">
-                        {((englishLevelStats[level] / students.length) * 100).toFixed(1)}%
+                        {((englishLevelStats[level] / (students.length || 1)) * 100).toFixed(1)}%
                       </div>
                     </div>
                   ))}
