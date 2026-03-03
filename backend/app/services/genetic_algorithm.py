@@ -7,6 +7,8 @@ tout en respectant les contraintes de capacité, mobilité et filière.
 """
 
 import random
+import logging
+import threading
 import numpy as np
 from typing import List, Dict, Optional, Tuple
 from sqlalchemy.orm import Session
@@ -16,6 +18,29 @@ from app.models.student import Student
 from app.models.destination import Destination
 from app.models.destination_preference import DestinationPreference
 from app.models.assignment import Assignment
+
+logger = logging.getLogger(__name__)
+
+# Grade to numeric score mapping (A=6 best, F=1 worst)
+GRADE_TO_SCORE = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
+
+# Thread-safe DEAP creator initialization
+_deap_lock = threading.Lock()
+_deap_initialized = False
+
+def _ensure_deap_types():
+    """Create DEAP types once in a thread-safe manner."""
+    global _deap_initialized
+    if _deap_initialized:
+        return
+    with _deap_lock:
+        if _deap_initialized:
+            return
+        if not hasattr(creator, "FitnessMulti"):
+            creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0))
+        if not hasattr(creator, "Individual"):
+            creator.create("Individual", list, fitness=creator.FitnessMulti)
+        _deap_initialized = True
 
 
 class GeneticAlgorithmService:
@@ -68,28 +93,23 @@ class GeneticAlgorithmService:
         )
         
         # Construire la map des préférences
-        # preferences_map[student_id] = {1: dest_id, 2: dest_id, ...}
+        # preferences_map[student_id] = {rank: dest_id, ...} where rank is derived from grade (A=1, B=2, ...)
         for student in self.students:
             prefs = self.db.query(DestinationPreference).filter(
                 DestinationPreference.student_id == student.id,
                 DestinationPreference.project_id == self.project_id
-            ).order_by(DestinationPreference.rank).all()
+            ).all()
             
+            # Convert grade (A-F) to numeric rank (1-6) for compatibility
+            grade_to_rank = {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6}
             self.preferences_map[student.id] = {
-                pref.rank: pref.destination_id for pref in prefs
+                grade_to_rank.get(pref.grade, 6): pref.destination_id for pref in prefs
             }
     
     def setup_deap(self):
         """Configure DEAP pour l'algorithme génétique"""
-        # Nettoyer les créations précédentes
-        if hasattr(creator, "FitnessMulti"):
-            del creator.FitnessMulti
-        if hasattr(creator, "Individual"):
-            del creator.Individual
-        
-        # Créer les types DEAP
-        creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0))
-        creator.create("Individual", list, fitness=creator.FitnessMulti)
+        # Thread-safe initialization of DEAP creator types
+        _ensure_deap_types()
         
         self.toolbox = base.Toolbox()
         self.toolbox.register("individual", tools.initIterate, creator.Individual, self.generate_valid_assignment)
@@ -214,7 +234,7 @@ class GeneticAlgorithmService:
     
     def run_optimization(self, population_size: int = 40, generations: int = 30) -> List[Optional[int]]:
         """Exécute l'optimisation"""
-        print(f"Démarrage optimisation: {len(self.students)} étudiants, {len(self.destinations)} destinations")
+        logger.info(f"Démarrage optimisation: {len(self.students)} étudiants, {len(self.destinations)} destinations")
         
         # Créer population initiale
         population = self.toolbox.population(n=population_size)
@@ -237,7 +257,7 @@ class GeneticAlgorithmService:
         
         # Meilleure solution
         best = tools.selBest(population, 1)[0]
-        print(f"Optimisation terminée. Score: {best.fitness.values}")
+        logger.info(f"Optimisation terminée. Score: {best.fitness.values}")
         
         return best
     
