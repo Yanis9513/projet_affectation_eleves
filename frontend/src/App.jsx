@@ -1,9 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
-import { useEffect } from 'react'
+import React from 'react'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
@@ -25,8 +25,65 @@ import MyAssignments from './pages/MyAssignments'
 import ProfilePage from './pages/ProfilePage'
 import './App.css'
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Application error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <div className="text-center p-8 max-w-md">
+            <h1 className="text-2xl font-bold text-slate-800 mb-4">Une erreur est survenue</h1>
+            <p className="text-slate-600 mb-6">
+              {this.state.error?.message || "L'application a rencontré un problème inattendu."}
+            </p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null })
+                window.location.href = '/'
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+// 404 Not Found page
+function NotFoundPage() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-6xl font-bold text-slate-300 mb-4">404</h1>
+        <p className="text-xl text-slate-600 mb-6">Page non trouvée</p>
+        <Link to="/" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition inline-block">
+          Retour à l'accueil
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <Router>
         <Toaster 
@@ -171,10 +228,14 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            {/* 404 Catch-all */}
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
