@@ -1,19 +1,16 @@
 """
 JWT Authentication Configuration
+Delegates to app.config.settings for a single source of truth.
 """
-import os
 from datetime import timedelta
-from dotenv import load_dotenv
+from app.config import settings
 
-# Load environment variables
-load_dotenv()
-
-# Secret key for JWT token signing
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key-for-development-only")
+# Secret key for JWT token signing — single source from settings
+SECRET_KEY = settings.SECRET_KEY
 
 # JWT algorithm
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ALGORITHM = settings.ALGORITHM
 
 # Token expiration time
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 ACCESS_TOKEN_EXPIRE_DELTA = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

@@ -7,6 +7,7 @@ tout en respectant les contraintes de capacité, mobilité et filière.
 """
 
 import random
+import logging
 import numpy as np
 from typing import List, Dict, Optional, Tuple
 from sqlalchemy.orm import Session
@@ -16,6 +17,11 @@ from app.models.student import Student
 from app.models.destination import Destination
 from app.models.destination_preference import DestinationPreference
 from app.models.assignment import Assignment
+
+logger = logging.getLogger(__name__)
+
+# Grade to numeric rank mapping (A=best=1, F=worst=6)
+GRADE_TO_RANK = {"A": 1, "B": 2, "C": 3, "D": 4, "E": 5, "F": 6}
 
 
 class GeneticAlgorithmService:
@@ -69,23 +75,28 @@ class GeneticAlgorithmService:
         
         # Construire la map des préférences
         # preferences_map[student_id] = {1: dest_id, 2: dest_id, ...}
+        # Le modèle DestinationPreference utilise 'grade' (A-F), pas 'rank'
         for student in self.students:
             prefs = self.db.query(DestinationPreference).filter(
                 DestinationPreference.student_id == student.id,
                 DestinationPreference.project_id == self.project_id
-            ).order_by(DestinationPreference.rank).all()
+            ).order_by(DestinationPreference.grade).all()
             
             self.preferences_map[student.id] = {
-                pref.rank: pref.destination_id for pref in prefs
+                GRADE_TO_RANK.get(pref.grade, 6): pref.destination_id for pref in prefs
             }
     
     def setup_deap(self):
         """Configure DEAP pour l'algorithme génétique"""
-        # Nettoyer les créations précédentes
-        if hasattr(creator, "FitnessMulti"):
+        # Nettoyer les créations précédentes (thread-safe with try/except)
+        try:
             del creator.FitnessMulti
-        if hasattr(creator, "Individual"):
+        except AttributeError:
+            pass
+        try:
             del creator.Individual
+        except AttributeError:
+            pass
         
         # Créer les types DEAP
         creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0))
@@ -214,7 +225,7 @@ class GeneticAlgorithmService:
     
     def run_optimization(self, population_size: int = 40, generations: int = 30) -> List[Optional[int]]:
         """Exécute l'optimisation"""
-        print(f"Démarrage optimisation: {len(self.students)} étudiants, {len(self.destinations)} destinations")
+        logger.info(f"Démarrage optimisation: {len(self.students)} étudiants, {len(self.destinations)} destinations")
         
         # Créer population initiale
         population = self.toolbox.population(n=population_size)
@@ -237,7 +248,7 @@ class GeneticAlgorithmService:
         
         # Meilleure solution
         best = tools.selBest(population, 1)[0]
-        print(f"Optimisation terminée. Score: {best.fitness.values}")
+        logger.info(f"Optimisation terminée. Score: {best.fitness.values}")
         
         return best
     
