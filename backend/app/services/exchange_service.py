@@ -6,8 +6,11 @@ from typing import List, Dict, Tuple, Optional
 from sqlalchemy.orm import Session
 from collections import defaultdict
 import random
+import logging
 
 from app.models import Project, Destination, DestinationPreference, Student, ProjectType
+
+logger = logging.getLogger(__name__)
 
 # Mapping des grades vers des scores numériques (A=6, B=5, C=4, D=3, E=2, F=1)
 GRADE_TO_SCORE = {
@@ -219,7 +222,7 @@ def run_exchange_optimization(
         # If no one got assigned with strict constraints, try without constraints as fallback
         assigned_count = sum(1 for a in assignments if a.get('destination_id'))
         if assigned_count == 0 and respect_constraints:
-            print(f"[EXCHANGE] No assignments with strict constraints, trying without constraints...")
+            logger.warning("No assignments with strict constraints, trying without constraints...")
             assignments = _greedy_algorithm(student_list, dest_list, preferences, False)
     
     # SAUVEGARDER les affectations dans la base de données
@@ -316,7 +319,7 @@ def _greedy_algorithm(
                     is_valid, errors = check_destination_constraints(student, destination)
                     if not is_valid:
                         # Log why assignment failed for debugging
-                        print(f"[GREEDY] Student {student_id} rejected for {destination.university_name}: {errors}")
+                        logger.debug(f"Student {student_id} rejected for {destination.university_name}: {errors}")
                         continue
                 
                 # Assigner l'étudiant
@@ -388,6 +391,14 @@ def _genetic_algorithm(
                 dest_counts[dest_id] += 1
                 if dest_counts[dest_id] > destination.total_places:
                     score -= 50  # Pénalité pour surcharge
+                
+                # Vérifier les contraintes si demandé
+                if respect_constraints:
+                    student = next((s for s in students if s.id == student_id), None)
+                    if student:
+                        is_valid, _ = check_destination_constraints(student, destination)
+                        if not is_valid:
+                            score -= 30  # Pénalité pour contrainte non respectée
         
         return score
     
