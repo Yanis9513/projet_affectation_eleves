@@ -35,24 +35,13 @@ def submit_destination_preferences(
     Soumettre les préférences de destination pour un étudiant
     L'étudiant attribue une note de A (plus préférable) à F (moins préférable) à chaque destination
     """
-    # DEBUG: Print current user info
-    print(f"DEBUG - submit_destination_preferences called")
-    print(f"DEBUG - current_user type: {type(current_user)}" )
-    print(f"DEBUG - current_user id: {getattr(current_user, 'id', 'NO ID')}")
-    print(f"DEBUG - current_user email: {getattr(current_user, 'email', 'NO EMAIL')}")
-    print(f"DEBUG - current_user role: {getattr(current_user, 'role', 'NO ROLE')}")
-    print(f"DEBUG - preferences_data: {preferences_data}")
-    
     # Vérifier que l'utilisateur est un étudiant
     student = db.query(Student).filter(Student.user_id == current_user.id).first()
-    print(f"DEBUG - Student query result: {student}")
     
     if not student:
-        # Log pour debugging
-        print(f"ERROR - User {current_user.id} ({current_user.email}, role: {current_user.role}) attempted to submit preferences but has no student profile")
         raise HTTPException(
             status_code=403, 
-            detail=f"Vous devez être un étudiant pour soumettre des préférences. User ID: {current_user.id}, Role: {current_user.role}"
+            detail="Vous devez être un étudiant pour soumettre des préférences"
         )
     
     # Vérifier que le projet existe et est de type exchange_program
@@ -310,10 +299,12 @@ def create_destination(
             detail="Les destinations ne peuvent être ajoutées qu'aux projets de type 'exchange_program'"
         )
     
-    # Créer la destination
+    # Créer la destination — set available_places = total_places by default
+    dest_data = destination.model_dump()
     db_destination = Destination(
         project_id=project_id,
-        **destination.model_dump()
+        available_places=dest_data.get("total_places", 0),
+        **dest_data
     )
     
     db.add(db_destination)

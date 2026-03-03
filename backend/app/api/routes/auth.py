@@ -353,14 +353,16 @@ async def complete_password(data: CompleteSignupSimple, db: Session = Depends(ge
     
     db.flush()
     
-    # Create student profile (default)
-    student_profile = Student(
-        user_id=user.id,
-        student_number=f"STU{user.id:06d}",
-        filiere=Filiere.INFORMATIQUE,
-        english_level=EnglishLevel.B1
-    )
-    db.add(student_profile)
+    # Create student profile only if one doesn't already exist
+    existing_profile = db.query(Student).filter(Student.user_id == user.id).first()
+    if not existing_profile:
+        student_profile = Student(
+            user_id=user.id,
+            student_number=f"STU{user.id:06d}",
+            filiere=Filiere.INFORMATIQUE,
+            english_level=EnglishLevel.B1
+        )
+        db.add(student_profile)
     db.commit()
     
     # Create access token
@@ -390,14 +392,15 @@ async def complete_password(data: CompleteSignupSimple, db: Session = Depends(ge
 @limiter.limit("3/minute")
 async def forgot_password(request: Request, data: SignupRequest, db: Session = Depends(get_db)):
     """Request password reset - verify user exists and send reset link via email"""
-    # Find user by email
+    # Find user by email — always return success to prevent user enumeration
     user = db.query(User).filter(User.email == data.email).first()
     
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found with this email"
-        )
+        # Return generic success to prevent email enumeration attacks
+        return {
+            "message": "If an account with this email exists, a reset link has been sent",
+            "email": data.email
+        }
     
     # Generate token (valid for 24 hours)
     token = secrets.token_urlsafe(32)

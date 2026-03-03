@@ -96,8 +96,12 @@ def create_student_preferences(
                 detail=f"La deadline pour le projet '{project.title}' est dépassée"
             )
     
-    # Supprimer les préférences existantes de cet étudiant
-    db.query(StudentPreference).filter(StudentPreference.student_id == student_id).delete()
+    # Supprimer les préférences existantes de cet étudiant UNIQUEMENT pour les projets soumis
+    submitted_project_ids = list(set(pref.project_id for pref in preferences_data.preferences))
+    db.query(StudentPreference).filter(
+        StudentPreference.student_id == student_id,
+        StudentPreference.project_id.in_(submitted_project_ids)
+    ).delete(synchronize_session='fetch')
     
     # Créer les nouvelles préférences
     db_preferences = []
