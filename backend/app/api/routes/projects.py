@@ -137,8 +137,8 @@ async def get_my_projects(
     return projects_with_students
 
 @router.get("/{project_id}", response_model=ProjectWithStudents)
-async def get_project(project_id: int, db: Session = Depends(get_db)):
-    """Get a specific project by ID with students"""
+async def get_project(project_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Get a specific project by ID with students - requires authentication"""
     project = db.query(Project).filter(Project.id == project_id).first()
     
     if not project:
@@ -488,8 +488,8 @@ async def upload_students_to_project(
     )
 
 @router.get("/{project_id}/students", response_model=List[StudentInProject])
-async def get_project_students(project_id: int, db: Session = Depends(get_db)):
-    """Get all students enrolled in a project"""
+async def get_project_students(project_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Get all students enrolled in a project - requires authentication"""
     
     # Check if project exists
     project = db.query(Project).filter(Project.id == project_id).first()

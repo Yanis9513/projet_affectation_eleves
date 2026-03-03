@@ -175,20 +175,19 @@ async def get_student(
     }
 
 @router.post("/", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
-
-async def create_student(student: StudentCreate, db: Session = Depends(get_db)):
-    """Create a new student"""
+async def create_student(student: StudentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Create a new student - requires authentication"""
     # Handled via project upload functionality
     raise HTTPException(status_code=501, detail="Use project CSV upload to add students")
 
 @router.put("/{student_id}", response_model=StudentResponse)
-async def update_student(student_id: int, student: StudentBase, db: Session = Depends(get_db)):
-    """Update a student"""
+async def update_student(student_id: int, student: StudentBase, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Update a student - requires authentication"""
     raise HTTPException(status_code=501, detail="Not implemented")
 
 @router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_student(student_id: int, db: Session = Depends(get_db)):
-    """Delete a student"""
+async def delete_student(student_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Delete a student - requires authentication"""
     raise HTTPException(status_code=501, detail="Not implemented")
 
 @router.get("/me/assignments")

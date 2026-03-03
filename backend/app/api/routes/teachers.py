@@ -105,15 +105,14 @@ def update_current_teacher_profile(teacher_update: TeacherUpdate, current_user: 
     }
 
 @router.get("/", response_model=List[TeacherResponse])
-
-def get_all_teachers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Récupérer la liste de tous les professeurs"""
+def get_all_teachers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Récupérer la liste de tous les professeurs - requires authentication"""
     teachers = db.query(Teacher).offset(skip).limit(limit).all()
     return teachers
 
 @router.get("/{teacher_id}", response_model=TeacherWithUserResponse)
-def get_teacher(teacher_id: int, db: Session = Depends(get_db)):
-    """Récupérer le profil d'un professeur"""
+def get_teacher(teacher_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Récupérer le profil d'un professeur - requires authentication"""
     teacher = db.query(Teacher).filter(Teacher.id == teacher_id).first()
     if not teacher:
         raise HTTPException(status_code=404, detail="Professeur non trouvé")
@@ -130,11 +129,15 @@ def get_teacher(teacher_id: int, db: Session = Depends(get_db)):
     }
 
 @router.put("/{teacher_id}", response_model=TeacherResponse)
-def update_teacher(teacher_id: int, teacher_update: TeacherUpdate, db: Session = Depends(get_db)):
-    """Modifier le profil d'un professeur"""
+def update_teacher(teacher_id: int, teacher_update: TeacherUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Modifier le profil d'un professeur - requires authentication"""
     teacher = db.query(Teacher).filter(Teacher.id == teacher_id).first()
     if not teacher:
         raise HTTPException(status_code=404, detail="Professeur non trouvé")
+    
+    # Only the teacher themselves or an admin can update
+    if current_user.teacher_profile and current_user.teacher_profile.id != teacher_id:
+        raise HTTPException(status_code=403, detail="Vous ne pouvez modifier que votre propre profil")
     
     # Update fields
     for field, value in teacher_update.model_dump(exclude_unset=True).items():
@@ -145,9 +148,8 @@ def update_teacher(teacher_id: int, teacher_update: TeacherUpdate, db: Session =
     return teacher
 
 @router.get("/{teacher_id}/projects")
-
-def get_teacher_projects(teacher_id: int, db: Session = Depends(get_db)):
-    """Récupérer tous les projets d'un professeur"""
+def get_teacher_projects(teacher_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Récupérer tous les projets d'un professeur - requires authentication"""
     teacher = db.query(Teacher).filter(Teacher.id == teacher_id).first()
     if not teacher:
         raise HTTPException(status_code=404, detail="Professeur non trouvé")
